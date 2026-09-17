@@ -35,3 +35,4 @@ packages = ["src/ragaudit"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = ["ignore::pytest.PytestCollectionWarning"]

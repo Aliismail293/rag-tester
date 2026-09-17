@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ragaudit report — 4c0fa668-8304-48f6-99d2-341dbeb45095</title>
+<style>
+/* Shared stylesheet for the ragaudit HTML report and the docs/ landing page.
+   Dark theme, system font stack, no external fonts or frameworks. */
+
+:root {
+  --bg: #0f1115;
+  --surface: #171a21;
+  --surface-raised: #1f232c;
+  --border: #2a2f3a;
+  --text: #e6e6e6;
+  --text-muted: #9aa0a6;
+  --accent: #5b9dff;
+
+  --true-pass: #2ecc71;
+  --lucky-pass: #f5a623;
+  --generation-failure: #e74c3c;
+  --retrieval-failure: #8a94a6;
+
+  --true-pass-bg: rgba(46, 204, 113, 0.12);
+  --lucky-pass-bg: rgba(245, 166, 35, 0.16);
+  --generation-failure-bg: rgba(231, 76, 60, 0.12);
+  --retrieval-failure-bg: rgba(138, 148, 166, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+header.report-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+header.report-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+}
+
+.meta {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.meta code {
+  background: var(--surface);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+section h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+.headline-sentence {
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.stat {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.stat .value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  display: block;
+}
+
+.stat .label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+table.matrix-table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: center;
+}
+
+table.matrix-table th,
+table.matrix-table td {
+  border: 1px solid var(--border);
+  padding: 1rem;
+}
+
+table.matrix-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+table.matrix-table td {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.cell-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.cell-true-pass {
+  background: var(--true-pass-bg);
+  color: var(--true-pass);
+}
+
+.cell-lucky-pass {
+  background: var(--lucky-pass-bg);
+  color: var(--lucky-pass);
+}
+
+.cell-generation-failure {
+  background: var(--generation-failure-bg);
+  color: var(--generation-failure);
+}
+
+.cell-retrieval-failure {
+  background: var(--retrieval-failure-bg);
+  color: var(--retrieval-failure);
+}
+
+.warning {
+  color: var(--lucky-pass);
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filter-btn {
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  border-color: var(--accent);
+}
+
+.filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #061021;
+  font-weight: 600;
+}
+
+table#case-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table#case-table th,
+table#case-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+table#case-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+  user-select: none;
+}
+
+table#case-table th[data-sort]::after {
+  content: " \2195";
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-true_pass {
+  background: var(--true-pass-bg);
+  color: var(--true-pass);
+}
+
+.badge-lucky_pass {
+  background: var(--lucky-pass-bg);
+  color: var(--lucky-pass);
+}
+
+.badge-generation_failure {
+  background: var(--generation-failure-bg);
+  color: var(--generation-failure);
+}
+
+.badge-retrieval_failure {
+  background: var(--retrieval-failure-bg);
+  color: var(--retrieval-failure);
+}
+
+details summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+details dl {
+  margin: 0.75rem 0 0;
+}
+
+details dt {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+details dd {
+  margin: 0.2rem 0 0;
+  white-space: pre-wrap;
+}
+
+details ol {
+  margin: 0.2rem 0 0;
+  padding-left: 1.2rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="report-header">
+    <h1>ragaudit report</h1>
+    <div class="meta">
+      Run <code>4c0fa668-8304-48f6-99d2-341dbeb45095</code> ·
+      test set <code>ae7c4dfb4601c0d4ae5c9f81da9cee37bcdd87d6f28fc838717a3c2388f61ba2</code> ·
+      adapter <code>/app/demo/weak_adapter.py</code> ·
+      started 2026-09-17 21:04:17.331793+00:00
+    </div>
+  </header>
+
+  <section class="headline">
+    <h2>The headline finding</h2>
+    <p class="headline-sentence">
+      
+      The dominant story in this run is retrieval failure:
+      <strong>6 of 18 questions (33.3%)</strong>
+      were answered wrong because the pipeline never retrieved the passage that held the answer.
+      There were no lucky passes to mask it &mdash; when retrieval missed, the answer came back
+      wrong too.
+      
+    </p>
+    <div class="stats-grid">
+      <div class="stat">
+        <span class="value">18</span>
+        <span class="label">Total questions</span>
+      </div>
+      <div class="stat">
+        <span class="value">66.7%</span>
+        <span class="label">Retrieval hit rate</span>
+      </div>
+      <div class="stat">
+        <span class="value">66.7%</span>
+        <span class="label">Answer correctness rate</span>
+      </div>
+      <div class="stat">
+        <span class="value">
+          94.4%
+        </span>
+        <span class="label">Mean groundedness</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="matrix">
+    <h2>Verdict breakdown</h2>
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Retrieved</th>
+          <th>Not retrieved</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Correct</th>
+          <td class="cell-true-pass">12<span class="cell-label">True pass</span></td>
+          <td class="cell-lucky-pass">0<span class="cell-label">Lucky pass</span></td>
+        </tr>
+        <tr>
+          <th>Wrong</th>
+          <td class="cell-generation-failure">0<span class="cell-label">Generation failure</span></td>
+          <td class="cell-retrieval-failure">6<span class="cell-label">Retrieval failure</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="ablation">
+    <h2>Ablation check</h2>
+    
+    <p>No lucky-pass candidates were found in this run, so ablation was skipped &mdash; there was
+    nothing that qualified for it.</p>
+    
+  </section>
+
+  <section class="judge-failures">
+    <h2>Judge reliability</h2>
+    <p>
+      
+      All judge responses in this run parsed successfully &mdash; 0 parsing failures.
+      
+    </p>
+  </section>
+
+  <section class="cases">
+    <h2>Per-case results</h2>
+    <div class="filter-bar" role="group" aria-label="Filter by verdict">
+      <button type="button" class="filter-btn active" data-filter="all">All (18)</button>
+      <button type="button" class="filter-btn" data-filter="true_pass">True pass (12)</button>
+      <button type="button" class="filter-btn" data-filter="lucky_pass">Lucky pass (0)</button>
+      <button type="button" class="filter-btn" data-filter="generation_failure">Generation failure (0)</button>
+      <button type="button" class="filter-btn" data-filter="retrieval_failure">Retrieval failure (6)</button>
+    </div>
+    <table id="case-table">
+      <thead>
+        <tr>
+          <th data-sort="question">Question</th>
+          <th data-sort="verdict">Verdict</th>
+          <th data-sort="rank">Retrieval rank</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr class="case-row" data-verdict="retrieval_failure" data-rank="-1">
+          <td>What is the uptime guarantee provided by the Enterprise SLA Addendum?</td>
+          <td><span class="badge badge-retrieval_failure">Retrieval failure</span></td>
+          <td>not retrieved</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>99.9% measured monthly</dd>
+                <dt>Model answer</dt>
+                <dd>I don&#39;t know.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Internal Tools Naming Convention
+
+Thistlewick Robotics names most of its internal tools after fire or
+ember imagery, a tradition that started with the Redwatch Protocol and
+has stuck ever since: the expense system is Ledgerfox, the travel
+booking tool is Farroute, and the offboarding process is the Emberdown
+Process. New internal tools are supposed to follow this convention, but
+it is enforced only loosely; the engineering team&#39;s internal wiki is
+simply called &#34;the Wiki&#34; and nobody has ever proposed renaming it. Any
+new tool name must be approved by the internal tools committee before
+it ships company-wide.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="retrieval_failure" data-rank="-1">
+          <td>How many automated test cases does the hardware regression suite run?</td>
+          <td><span class="badge badge-retrieval_failure">Retrieval failure</span></td>
+          <td>not retrieved</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>212</dd>
+                <dt>Model answer</dt>
+                <dd>I don&#39;t know.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Expense Policy
+
+Thistlewick Robotics reimburses employee expenses submitted within 60
+days of purchase; anything older is denied automatically by the
+expense system, with no manual override. Meals during business travel
+are capped at 45 dollars per day. Any single expense over 500 dollars
+requires manager approval before submission, not just after. The
+expense system, internally called Ledgerfox, was adopted in 2022 and
+replaced a manual spreadsheet process that had been in place since the
+company&#39;s founding.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>Who is the first point of contact for suspected security incidents at Thistlewick Robotics?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>The on-call security lead.</dd>
+                <dt>Model answer</dt>
+                <dd>The first point of contact for suspected security incidents at Thistlewick Robotics is the on-call security lead.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Security Incident Escalation
+
+Suspected security incidents at Thistlewick Robotics are escalated
+through a chain separate from the Redwatch Protocol used for
+operational incidents. The first point of contact is the on-call
+security lead, who must acknowledge a report within 15 minutes. If the
+security lead does not acknowledge within that window, the report
+automatically pages the CTO directly. All confirmed security incidents
+are logged in a register that only two people can edit: the CTO and
+the head of security. The register has never been reset since it was
+created in 2021.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>What is the name of the travel booking tool at Thistlewick Robotics?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>Farroute</dd>
+                <dt>Model answer</dt>
+                <dd>The name of the travel booking tool at Thistlewick Robotics is Farroute.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Internal Tools Naming Convention
+
+Thistlewick Robotics names most of its internal tools after fire or
+ember imagery, a tradition that started with the Redwatch Protocol and
+has stuck ever since: the expense system is Ledgerfox, the travel
+booking tool is Farroute, and the offboarding process is the Emberdown
+Process. New internal tools are supposed to follow this convention, but
+it is enforced only loosely; the engineering team&#39;s internal wiki is
+simply called &#34;the Wiki&#34; and nobody has ever proposed renaming it. Any
+new tool name must be approved by the internal tools committee before
+it ships company-wide.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>When was the Emberloop EL-6 discontinued?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>March 2023</dd>
+                <dt>Model answer</dt>
+                <dd>The Emberloop EL-6 was discontinued in March 2023.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># The Emberloop EL-6 (Legacy)
+
+Before the EL-7, Thistlewick Robotics sold the Emberloop EL-6, which
+shipped from 2020 until it was discontinued in March 2023 when the EL-7
+launched. The EL-6 weighed 2.9 kilograms, noticeably heavier than the
+EL-7&#39;s 2.4 kilograms, and had no sealed housing, so it was not rated
+for outdoor use the way the EL-7 is. Thistlewick Robotics still
+supports EL-6 units already in the field with spare parts through
+2027, but all new firmware features are built for the EL-7 only.
+Customers upgrading from an EL-6 to an EL-7 receive a 15% trade-in
+credit.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>How many concurrent calibration channels can the EL-7 support per rig?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>14 concurrent calibration channels</dd>
+                <dt>Model answer</dt>
+                <dd>The EL-7 can support a maximum of 14 concurrent calibration channels per rig.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Field Calibration for the EL-7
+
+Every Emberloop EL-7 unit must be field-calibrated within 30 days of
+installation. The EL-7 calibration procedure supports a maximum of 14
+concurrent calibration channels per rig, and a full calibration pass
+takes approximately 40 minutes per channel. Field technicians use a
+handheld tool called the Calibration Wand to run the procedure; the
+Calibration Wand itself must be recalibrated against a reference EL-7
+unit every 90 days. Skipping a scheduled calibration voids the EL-7&#39;s
+torque-accuracy warranty, though the general 5-year mechanical
+warranty is unaffected.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>How long does Thistlewick Robotics retain customer telemetry data from Emberloop units if no add-on is chosen?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>18 months</dd>
+                <dt>Model answer</dt>
+                <dd>Thistlewick Robotics retains customer telemetry data from Emberloop units for 18 months if no add-on is chosen.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Data Retention Policy
+
+Thistlewick Robotics retains customer telemetry data from Emberloop
+units for 18 months before automatic deletion, unless a customer has
+opted into the Extended Retention add-on, which keeps data for 5
+years. Internal chat logs are retained for 90 days by default.
+Security incident records, by contrast, are kept indefinitely and are
+never subject to automatic deletion. Requests to delete a customer&#39;s
+data early must be approved by the data protection officer, a role
+that has been held by the same person since the policy was written in
+2022.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="retrieval_failure" data-rank="-1">
+          <td>Who is the founder and CEO of Thistlewick Robotics?</td>
+          <td><span class="badge badge-retrieval_failure">Retrieval failure</span></td>
+          <td>not retrieved</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>Mira Oyelaran</dd>
+                <dt>Model answer</dt>
+                <dd>I don&#39;t know.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Field Calibration for the EL-7
+
+Every Emberloop EL-7 unit must be field-calibrated within 30 days of
+installation. The EL-7 calibration procedure supports a maximum of 14
+concurrent calibration channels per rig, and a full calibration pass
+takes approximately 40 minutes per channel. Field technicians use a
+handheld tool called the Calibration Wand to run the procedure; the
+Calibration Wand itself must be recalibrated against a reference EL-7
+unit every 90 days. Skipping a scheduled calibration voids the EL-7&#39;s
+torque-accuracy warranty, though the general 5-year mechanical
+warranty is unaffected.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="retrieval_failure" data-rank="-1">
+          <td>What is the response time guarantee for Anchorline support?</td>
+          <td><span class="badge badge-retrieval_failure">Retrieval failure</span></td>
+          <td>not retrieved</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>8-hour response during business hours.</dd>
+                <dt>Model answer</dt>
+                <dd>I don&#39;t know.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Thistlewick Robotics — Company Overview
+
+Thistlewick Robotics was founded in 2019 and is headquartered in Port
+Callendra. The company currently employs 143 people across two offices.
+Thistlewick Robotics is led by its founder and CEO, Mira Oyelaran, who
+previously ran the company&#39;s research division before taking over as
+chief executive in 2022. The company&#39;s stated mission is &#34;to make
+precision actuation boring, reliable, and cheap.&#34; Thistlewick Robotics
+is privately held and has not taken outside investment since its
+founding round.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>What is the cap for meals during business travel?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>45 dollars per day</dd>
+                <dt>Model answer</dt>
+                <dd>The cap for meals during business travel is 45 dollars per day.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Expense Policy
+
+Thistlewick Robotics reimburses employee expenses submitted within 60
+days of purchase; anything older is denied automatically by the
+expense system, with no manual override. Meals during business travel
+are capped at 45 dollars per day. Any single expense over 500 dollars
+requires manager approval before submission, not just after. The
+expense system, internally called Ledgerfox, was adopted in 2022 and
+replaced a manual spreadsheet process that had been in place since the
+company&#39;s founding.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>What is the first response time required for an Inferno-tier incident?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>12 minutes</dd>
+                <dt>Model answer</dt>
+                <dd>The first response time required for an Inferno-tier incident is within 12 minutes of being declared.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># The Redwatch Protocol
+
+Thistlewick Robotics handles production incidents under the Redwatch
+Protocol, which defines three severity tiers: Ember, Blaze, and
+Inferno, in increasing order of severity. An Inferno-tier incident, the
+most severe tier, must receive a first response from the on-call
+engineer within 12 minutes of being declared. The team responsible for
+running the Redwatch Protocol is the Cinder Response Unit, a rotating
+group of eight engineers. Every Inferno-tier incident requires a
+written postmortem within 5 business days of resolution, reviewed by
+the Cinder Response Unit lead before it is closed.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="retrieval_failure" data-rank="-1">
+          <td>Which sales territory has a dedicated field sales team?</td>
+          <td><span class="badge badge-retrieval_failure">Retrieval failure</span></td>
+          <td>not retrieved</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>Callendra Metro</dd>
+                <dt>Model answer</dt>
+                <dd>I don&#39;t know.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Enterprise SLA Addendum
+
+Customers on the Coreline support tier can sign an optional Enterprise
+SLA Addendum on top of the standard 2-hour response guarantee. The
+Addendum adds an uptime guarantee of 99.9% measured monthly, and pays
+an automatic service credit equal to 5% of the monthly contract value
+for every hour the guarantee is breached, up to a cap of 50% in a
+single month. The Enterprise SLA Addendum is only available to
+customers with at least 3 EL-7 units under contract, and it must be
+renewed annually rather than automatically.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>What is the internal booking tool that must be used for business travel at Thistlewick Robotics?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>Farroute</dd>
+                <dt>Model answer</dt>
+                <dd>The internal booking tool that must be used for business travel at Thistlewick Robotics is Farroute.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Travel Policy
+
+Business travel booked through Thistlewick Robotics&#39; travel policy
+must go through the internal booking tool, Farroute, rather than being
+booked directly and expensed afterward. Flights under 6 hours must be
+economy class; flights over 6 hours may be booked in premium economy.
+Employees must book at least 10 business days in advance except for
+customer emergencies, which are exempt from the advance-booking rule
+entirely. Rental cars require a second approval from the employee&#39;s
+manager beyond the standard Farroute booking approval.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>What is the maximum continuous torque of the Emberloop EL-7?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>38 newton-meters</dd>
+                <dt>Model answer</dt>
+                <dd>The maximum continuous torque of the Emberloop EL-7 is 38 newton-meters.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># The Emberloop Actuator
+
+The Emberloop Actuator is Thistlewick Robotics&#39; flagship product. The
+current model, the Emberloop EL-7, weighs 2.4 kilograms and delivers a
+maximum continuous torque of 38 newton-meters. On a full charge, the
+EL-7&#39;s internal battery lasts 11 hours under typical duty cycles. The
+EL-7 replaced the earlier EL-6 model in March 2023 and added a sealed
+housing rated for outdoor use. Every Emberloop unit ships with a
+5-year mechanical warranty, which is two years longer than the
+warranty offered on the EL-6.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="retrieval_failure" data-rank="-1">
+          <td>How often does Thistlewick Robotics ship firmware updates?</td>
+          <td><span class="badge badge-retrieval_failure">Retrieval failure</span></td>
+          <td>not retrieved</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>every 6 weeks</dd>
+                <dt>Model answer</dt>
+                <dd>I don&#39;t know.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># The Redwatch Protocol
+
+Thistlewick Robotics handles production incidents under the Redwatch
+Protocol, which defines three severity tiers: Ember, Blaze, and
+Inferno, in increasing order of severity. An Inferno-tier incident, the
+most severe tier, must receive a first response from the on-call
+engineer within 12 minutes of being declared. The team responsible for
+running the Redwatch Protocol is the Cinder Response Unit, a rotating
+group of eight engineers. Every Inferno-tier incident requires a
+written postmortem within 5 business days of resolution, reviewed by
+the Cinder Response Unit lead before it is closed.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>What happens to an employee&#39;s IT access after they leave Thistlewick Robotics?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>IT access is revoked within 4 hours of the employee&#39;s last day being confirmed.</dd>
+                <dt>Model answer</dt>
+                <dd>An employee&#39;s IT access is revoked within 4 hours of their last day being confirmed.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># The Emberdown Process
+
+When an employee leaves Thistlewick Robotics, their departure is
+handled under the Emberdown Process. IT access is revoked within 4
+hours of the employee&#39;s last day being confirmed, and the departing
+employee&#39;s manager must complete a handover document within 3 business
+days. Emberdown does not apply to contractors, who are offboarded
+immediately by their engagement manager instead. The Emberdown Process
+was introduced in 2022 after an internal audit found offboarding times
+varied wildly across teams; before that, there was no company-wide
+standard at all.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>How long does the Kindlepath Program last?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>21 business days</dd>
+                <dt>Model answer</dt>
+                <dd>The Kindlepath Program lasts for 21 business days.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># The Kindlepath Program
+
+New engineering hires at Thistlewick Robotics go through the Kindlepath
+Program, an onboarding track that runs for 21 business days. Each
+participant is paired with a mentor and has 4 scheduled check-ins over
+the course of the program: one in the first week, two in the second
+week, and a final review in the third week. Participants who complete
+all four check-ins and finish their onboarding project receive a
+Compass Badge, which is displayed on their internal profile. The
+Kindlepath Program was introduced in 2021 and replaced an earlier,
+unstructured onboarding process that had no fixed length.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr class="case-row" data-verdict="true_pass" data-rank="0">
+          <td>What are the two levels of certification in the Ironclasp Certification Program?</td>
+          <td><span class="badge badge-true_pass">True pass</span></td>
+          <td>0</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>Ironclasp Associate and Ironclasp Master.</dd>
+                <dt>Model answer</dt>
+                <dd>The two levels of certification in the Ironclasp Certification Program are Ironclasp Associate and Ironclasp Master.</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  
+                  <ol>
+                    
+                    <li># Partner Certification Program
+
+External integrators can become certified to install and service
+Emberloop units through the Ironclasp Certification Program. Ironclasp
+certification requires passing a written exam and a hands-on
+installation review, and it must be renewed every 2 years. There are
+two levels: Ironclasp Associate, which covers installation only, and
+Ironclasp Master, which also covers field calibration and warranty
+repairs. As of the program&#39;s last review, fewer than 40 partners
+worldwide hold Ironclasp Master certification.
+</li>
+                    
+                  </ol>
+                  
+                </dd>
+                
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var filterButtons = Array.prototype.slice.call(document.querySelectorAll(".filter-btn"));
+  var rows = Array.prototype.slice.call(document.querySelectorAll("#case-table tbody tr"));
+
+  filterButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      filterButtons.forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      var filter = btn.getAttribute("data-filter");
+      rows.forEach(function (row) {
+        var show = filter === "all" || row.getAttribute("data-verdict") === filter;
+        row.style.display = show ? "" : "none";
+      });
+    });
+  });
+
+  var sortState = {};
+  Array.prototype.slice.call(document.querySelectorAll("#case-table th[data-sort]")).forEach(function (th) {
+    th.addEventListener("click", function () {
+      var key = th.getAttribute("data-sort");
+      var ascending = !sortState[key];
+      sortState = {};
+      sortState[key] = ascending;
+
+      var tbody = document.querySelector("#case-table tbody");
+      var sorted = rows.slice().sort(function (a, b) {
+        var av, bv;
+        if (key === "rank") {
+          av = parseFloat(a.getAttribute("data-rank"));
+          bv = parseFloat(b.getAttribute("data-rank"));
+        } else if (key === "verdict") {
+          av = a.getAttribute("data-verdict");
+          bv = b.getAttribute("data-verdict");
+        } else {
+          av = a.cells[0].textContent.trim().toLowerCase();
+          bv = b.cells[0].textContent.trim().toLowerCase();
+        }
+        if (av < bv) { return ascending ? -1 : 1; }
+        if (av > bv) { return ascending ? 1 : -1; }
+        return 0;
+      });
+      sorted.forEach(function (row) { tbody.appendChild(row); });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

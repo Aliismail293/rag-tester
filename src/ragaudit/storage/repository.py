@@ -11,9 +11,64 @@ import json
 import sqlite3
 from datetime import datetime
 
+from ragaudit.models.document import Chunk, Document
 from ragaudit.models.run import Run, RunConfig, RunSummary
 from ragaudit.models.scoring import ScoredCase
 from ragaudit.models.testset import TestCase, TestSet
+
+
+def save_documents(conn: sqlite3.Connection, documents: list[Document]) -> None:
+    """Replace the full set of ingested documents with `documents`."""
+    conn.execute("DELETE FROM documents")
+    for document in documents:
+        conn.execute(
+            "INSERT INTO documents (doc_id, source_path, content, content_hash, metadata_json) VALUES (?, ?, ?, ?, ?)",
+            (document.doc_id, document.source_path, document.content, document.content_hash, json.dumps(document.metadata)),
+        )
+    conn.commit()
+
+
+def load_documents(conn: sqlite3.Connection) -> list[Document]:
+    """Load every ingested Document."""
+    rows = conn.execute("SELECT doc_id, source_path, content, content_hash, metadata_json FROM documents").fetchall()
+    return [
+        Document(doc_id=r[0], source_path=r[1], content=r[2], content_hash=r[3], metadata=json.loads(r[4]))
+        for r in rows
+    ]
+
+
+def save_chunks(conn: sqlite3.Connection, chunks: list[Chunk]) -> None:
+    """Replace the full set of ingested chunks with `chunks`."""
+    conn.execute("DELETE FROM chunks")
+    for chunk in chunks:
+        conn.execute(
+            "INSERT INTO chunks (chunk_id, doc_id, position, text, token_count, metadata_json) VALUES (?, ?, ?, ?, ?, ?)",
+            (chunk.chunk_id, chunk.doc_id, chunk.position, chunk.text, chunk.token_count, json.dumps(chunk.metadata)),
+        )
+    conn.commit()
+
+
+def load_chunks(conn: sqlite3.Connection) -> list[Chunk]:
+    """Load every ingested Chunk, ordered by document then position."""
+    rows = conn.execute(
+        "SELECT chunk_id, doc_id, position, text, token_count, metadata_json FROM chunks ORDER BY doc_id, position"
+    ).fetchall()
+    return [
+        Chunk(chunk_id=r[0], doc_id=r[1], position=r[2], text=r[3], token_count=r[4], metadata=json.loads(r[5]))
+        for r in rows
+    ]
+
+
+def get_latest_testset_id(conn: sqlite3.Connection) -> str | None:
+    """Return the testset_id of the most recently created TestSet, or None if there is none."""
+    row = conn.execute("SELECT testset_id FROM testsets ORDER BY created_at DESC LIMIT 1").fetchone()
+    return row[0] if row else None
+
+
+def get_latest_run_id(conn: sqlite3.Connection) -> str | None:
+    """Return the run_id of the most recently started Run, or None if there is none."""
+    row = conn.execute("SELECT run_id FROM runs ORDER BY started_at DESC LIMIT 1").fetchone()
+    return row[0] if row else None
 
 
 def save_test_set(conn: sqlite3.Connection, test_set: TestSet) -> None:

@@ -1,0 +1,9 @@
+services:
+  ragaudit-demo:
+    build: .
+    environment:
+      - RAGAUDIT_API_BASE=${RAGAUDIT_API_BASE}
+      - RAGAUDIT_API_KEY=${RAGAUDIT_API_KEY}
+      - RAGAUDIT_MODEL=${RAGAUDIT_MODEL}
+    volumes:
+      - ./demo/output:/app/output

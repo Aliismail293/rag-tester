@@ -1,5 +1,30 @@
 # ragaudit
 
+## Try it in 60 seconds
+
+Requires Docker and an OpenAI-compatible API key.
+
+```bash
+export RAGAUDIT_API_KEY=sk-...
+export RAGAUDIT_API_BASE=https://api.openai.com/v1   # any OpenAI-compatible endpoint
+export RAGAUDIT_MODEL=gpt-4o-mini
+
+docker compose up --build
+```
+
+This ingests a small invented corpus (`demo/sample_corpus/`), generates a
+test set from it, runs the test set through a deliberately mediocre
+keyword/BM25 adapter (`demo/example_adapter.py`, no embeddings, no vector
+DB), and writes the finished report to `demo/output/report.html`. Open
+that file in a browser once the container exits.
+
+The demo corpus describes an invented company, an invented product, and
+invented internal processes — facts that don't exist anywhere for an LLM
+to have learned during pretraining. That's deliberate: it means any
+answer the adapter gets right had to actually come from the retrieved
+context, so a `LUCKY_PASS` in this demo's report is a real, meaningful
+finding rather than an artifact of the model already knowing the answer.
+
 Audits RAG pipelines by checking whether retrieval actually did the work —
 not just whether the final answer was correct.
 
@@ -10,8 +35,9 @@ labels it `LUCKY_PASS`.
 
 ## Status
 
-Early scaffold. Data models are defined; ingestion, generation, running,
-scoring, and reporting are not implemented yet.
+Functional end to end: ingestion, test-set generation, running, scoring
+(including ablation), storage, reporting, and the CLI are all implemented.
+See `demo/` for a working example.
 
 ## How it works
 
@@ -67,14 +93,17 @@ def query(question: str) -> RAGResponse:
 
 Adapters ship for: a raw callable, LangChain, LlamaIndex.
 
-## CLI (planned)
+## CLI
 
 ```
-ragaudit ingest ./docs
-ragaudit generate --n 100
-ragaudit run --adapter my_adapter.py
-ragaudit report --out report.html
+ragaudit ingest ./docs                  # load, chunk, and persist a corpus
+ragaudit generate --n 100               # generate a test set (n questions/chunk)
+ragaudit run --adapter my_adapter.py    # run + score + ablate against the latest test set
+ragaudit report --out report.html       # render the latest run as a static HTML report
 ```
+
+Every command takes `--db` (default `./ragaudit.db`) to point at a
+specific database file.
 
 ## License
 

@@ -15,9 +15,22 @@ DEFAULT_QUESTIONS_PER_CHUNK = 1
 
 SYSTEM_PROMPT = (
     "You are generating a test set for a RAG evaluation. Given a single "
-    "passage of text, write questions that can be answered ONLY using "
-    "information contained in that passage, along with the exact answer. "
-    'Respond with strict JSON only, no prose, no markdown fences, in the '
+    "passage of text, write questions that can be answered ONLY using facts "
+    "stated in that passage — not from general knowledge about the topic, "
+    "and not answerable by someone who has never seen this passage but "
+    "knows the subject well.\n"
+    "\n"
+    "Phrase every question exactly as a real user would ask it. Never refer "
+    "to \"the passage\", \"the document\", \"the text\", \"this section\", "
+    "or any other document structure — the reader must not be able to tell "
+    "the question was generated from a document. Do not ask meta-questions "
+    "about ordering, sections, or headings.\n"
+    "\n"
+    "If asked for more than one question, each question must target a "
+    "different fact from the passage — no two questions may test the same "
+    "piece of information.\n"
+    "\n"
+    "Respond with strict JSON only, no prose, no markdown fences, in the "
     'form: {"questions": [{"question": str, "answer": str}, ...]}'
 )
 

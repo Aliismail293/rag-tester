@@ -1,4 +1,5 @@
 from ragaudit.generate.testset_generator import (
+    SYSTEM_PROMPT,
     compute_corpus_hash,
     generate_test_cases_for_chunk,
     generate_test_set,
@@ -26,6 +27,26 @@ def make_chunk(chunk_id: str = "chunk1", doc_id: str = "doc1", text: str = "some
 
 def make_document(doc_id: str, content_hash: str) -> Document:
     return Document(doc_id=doc_id, source_path=f"{doc_id}.txt", content="x", content_hash=content_hash)
+
+
+# --- prompt content ---
+
+
+def test_system_prompt_forbids_document_referential_phrasing():
+    lowered = SYSTEM_PROMPT.lower()
+
+    ban_sentence_start = lowered.index('never refer to')
+    ban_sentence_end = lowered.index("headings.")
+    ban_clause = lowered[ban_sentence_start:ban_sentence_end]
+
+    for phrase in ['"the passage"', '"the document"', '"the text"', '"this section"']:
+        assert phrase in ban_clause, f"{phrase} should be explicitly forbidden"
+
+    assert "real user would ask" in lowered
+    assert "must not be able to tell the question was generated from a document" in lowered
+    assert "meta-questions about ordering, sections, or headings" in lowered
+    assert "different fact" in lowered
+    assert "general knowledge" in lowered
 
 
 # --- JSON parsing ---

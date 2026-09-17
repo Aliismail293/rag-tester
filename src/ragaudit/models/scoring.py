@@ -24,6 +24,8 @@ class CorrectnessResult(BaseModel):
     """Raw judge score in [0, 1], if the judge emits one."""
     rationale: str | None = None
     judge_model: str
+    judge_parse_failed: bool = False
+    """True if the judge's response couldn't be parsed and is_correct fell back to False."""
 
 
 class RetrievalResult(BaseModel):
@@ -43,6 +45,8 @@ class GroundednessResult(BaseModel):
     score: float | None = None
     rationale: str | None = None
     judge_model: str
+    judge_parse_failed: bool = False
+    """True if the judge's response couldn't be parsed and is_grounded fell back to False."""
 
 
 class AblationResult(BaseModel):

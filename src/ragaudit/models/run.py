@@ -31,6 +31,8 @@ class RunSummary(BaseModel):
     mean_groundedness: float | None = None
     ablation_confirmed_count: int | None = None
     """Of LUCKY_PASS cases, how many ablation confirmed."""
+    judge_failure_count: int = 0
+    """Cases where the correctness judge, groundedness judge, or both failed to parse."""
 
 
 class Run(BaseModel):

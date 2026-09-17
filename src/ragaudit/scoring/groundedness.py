@@ -75,6 +75,7 @@ def judge_groundedness(client: Completer, answer: str, contexts: list[str]) -> G
             score=None,
             rationale="judge returned unparseable JSON",
             judge_model=client.model,
+            judge_parse_failed=True,
         )
 
     return GroundednessResult(

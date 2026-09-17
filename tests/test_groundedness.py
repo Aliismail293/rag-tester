@@ -29,6 +29,7 @@ def test_judge_groundedness_returns_result_on_valid_response():
     assert result.is_grounded is False
     assert result.score == 0.1
     assert result.judge_model == "judge-model"
+    assert result.judge_parse_failed is False
 
 
 def test_judge_groundedness_falls_back_safely_on_malformed_json():
@@ -36,3 +37,4 @@ def test_judge_groundedness_falls_back_safely_on_malformed_json():
     result = judge_groundedness(client, "some answer", [])
     assert result.is_grounded is False
     assert "unparseable" in result.rationale
+    assert result.judge_parse_failed is True

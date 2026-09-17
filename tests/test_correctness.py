@@ -42,6 +42,7 @@ def test_judge_correctness_returns_result_on_valid_response():
     assert result.is_correct is True
     assert result.score == 1.0
     assert result.judge_model == "judge-model"
+    assert result.judge_parse_failed is False
 
 
 def test_judge_correctness_falls_back_safely_on_malformed_json():
@@ -50,3 +51,4 @@ def test_judge_correctness_falls_back_safely_on_malformed_json():
     assert result.is_correct is False
     assert result.judge_model == "judge-model"
     assert "unparseable" in result.rationale
+    assert result.judge_parse_failed is True

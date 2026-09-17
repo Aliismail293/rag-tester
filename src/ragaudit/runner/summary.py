@@ -12,6 +12,7 @@ def compute_run_summary(scored_cases: list[ScoredCase]) -> RunSummary:
     lucky_pass_cases: list[ScoredCase] = []
     retrieval_hits = 0
     correct = 0
+    judge_failures = 0
 
     for case in scored_cases:
         verdict_counts[case.verdict] += 1
@@ -23,6 +24,8 @@ def compute_run_summary(scored_cases: list[ScoredCase]) -> RunSummary:
             groundedness_scores.append(case.groundedness.score)
         if case.verdict == Verdict.LUCKY_PASS:
             lucky_pass_cases.append(case)
+        if case.correctness.judge_parse_failed or case.groundedness.judge_parse_failed:
+            judge_failures += 1
 
     ablation_confirmed_count = None
     if lucky_pass_cases:
@@ -38,4 +41,5 @@ def compute_run_summary(scored_cases: list[ScoredCase]) -> RunSummary:
         lucky_pass_rate=(verdict_counts[Verdict.LUCKY_PASS] / total) if total else 0.0,
         mean_groundedness=(sum(groundedness_scores) / len(groundedness_scores)) if groundedness_scores else None,
         ablation_confirmed_count=ablation_confirmed_count,
+        judge_failure_count=judge_failures,
     )

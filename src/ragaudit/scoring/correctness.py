@@ -83,6 +83,7 @@ def judge_correctness(
             score=None,
             rationale="judge returned unparseable JSON",
             judge_model=client.model,
+            judge_parse_failed=True,
         )
 
     return CorrectnessResult(

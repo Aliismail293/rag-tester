@@ -1,0 +1,269 @@
+/* Shared stylesheet for the ragaudit HTML report and the docs/ landing page.
+   Dark theme, system font stack, no external fonts or frameworks. */
+
+:root {
+  --bg: #0f1115;
+  --surface: #171a21;
+  --surface-raised: #1f232c;
+  --border: #2a2f3a;
+  --text: #e6e6e6;
+  --text-muted: #9aa0a6;
+  --accent: #5b9dff;
+
+  --true-pass: #2ecc71;
+  --lucky-pass: #f5a623;
+  --generation-failure: #e74c3c;
+  --retrieval-failure: #8a94a6;
+
+  --true-pass-bg: rgba(46, 204, 113, 0.12);
+  --lucky-pass-bg: rgba(245, 166, 35, 0.16);
+  --generation-failure-bg: rgba(231, 76, 60, 0.12);
+  --retrieval-failure-bg: rgba(138, 148, 166, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+header.report-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+header.report-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+}
+
+.meta {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.meta code {
+  background: var(--surface);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+section h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+.headline-sentence {
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.stat {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.stat .value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  display: block;
+}
+
+.stat .label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+table.matrix-table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: center;
+}
+
+table.matrix-table th,
+table.matrix-table td {
+  border: 1px solid var(--border);
+  padding: 1rem;
+}
+
+table.matrix-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+table.matrix-table td {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.cell-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.cell-true-pass {
+  background: var(--true-pass-bg);
+  color: var(--true-pass);
+}
+
+.cell-lucky-pass {
+  background: var(--lucky-pass-bg);
+  color: var(--lucky-pass);
+}
+
+.cell-generation-failure {
+  background: var(--generation-failure-bg);
+  color: var(--generation-failure);
+}
+
+.cell-retrieval-failure {
+  background: var(--retrieval-failure-bg);
+  color: var(--retrieval-failure);
+}
+
+.warning {
+  color: var(--lucky-pass);
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filter-btn {
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  border-color: var(--accent);
+}
+
+.filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #061021;
+  font-weight: 600;
+}
+
+table#case-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table#case-table th,
+table#case-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+table#case-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+  user-select: none;
+}
+
+table#case-table th[data-sort]::after {
+  content: " \2195";
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-true_pass {
+  background: var(--true-pass-bg);
+  color: var(--true-pass);
+}
+
+.badge-lucky_pass {
+  background: var(--lucky-pass-bg);
+  color: var(--lucky-pass);
+}
+
+.badge-generation_failure {
+  background: var(--generation-failure-bg);
+  color: var(--generation-failure);
+}
+
+.badge-retrieval_failure {
+  background: var(--retrieval-failure-bg);
+  color: var(--retrieval-failure);
+}
+
+details summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+details dl {
+  margin: 0.75rem 0 0;
+}
+
+details dt {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+details dd {
+  margin: 0.2rem 0 0;
+  white-space: pre-wrap;
+}
+
+details ol {
+  margin: 0.2rem 0 0;
+  padding-left: 1.2rem;
+}
+
+a {
+  color: var(--accent);
+}

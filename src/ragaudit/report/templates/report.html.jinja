@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ragaudit report — {{ run.config.run_id }}</title>
+<style>
+{{ style_css | safe }}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="report-header">
+    <h1>ragaudit report</h1>
+    <div class="meta">
+      Run <code>{{ run.config.run_id }}</code> ·
+      test set <code>{{ run.config.testset_id }}</code> ·
+      adapter <code>{{ run.config.adapter_path }}</code> ·
+      started {{ run.config.started_at }}
+    </div>
+  </header>
+
+  <section class="headline">
+    <h2>The headline finding</h2>
+    <p class="headline-sentence">
+      {% if lucky_pass_count > 0 %}
+      Out of {{ total_cases }} test questions, <strong>{{ lucky_pass_count }} ({{ lucky_pass_pct }}%)</strong>
+      were answered correctly even though the pipeline never retrieved the passage the answer
+      actually came from. In other words, the model got these right despite retrieval &mdash;
+      not because of it.
+      {% else %}
+      None of the correct answers in this run were &ldquo;lucky.&rdquo; Every correct answer out
+      of {{ total_cases }} test questions was backed by a real, on-target retrieval.
+      {% endif %}
+    </p>
+    <div class="stats-grid">
+      <div class="stat">
+        <span class="value">{{ total_cases }}</span>
+        <span class="label">Total questions</span>
+      </div>
+      <div class="stat">
+        <span class="value">{{ (summary.retrieval_hit_rate * 100) | round(1) }}%</span>
+        <span class="label">Retrieval hit rate</span>
+      </div>
+      <div class="stat">
+        <span class="value">{{ (summary.answer_correctness_rate * 100) | round(1) }}%</span>
+        <span class="label">Answer correctness rate</span>
+      </div>
+      <div class="stat">
+        <span class="value">
+          {% if summary.mean_groundedness is not none %}{{ (summary.mean_groundedness * 100) | round(1) }}%{% else %}n/a{% endif %}
+        </span>
+        <span class="label">Mean groundedness</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="matrix">
+    <h2>Verdict breakdown</h2>
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Retrieved</th>
+          <th>Not retrieved</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Correct</th>
+          <td class="cell-true-pass">{{ verdict_matrix.true_pass }}<span class="cell-label">True pass</span></td>
+          <td class="cell-lucky-pass">{{ verdict_matrix.lucky_pass }}<span class="cell-label">Lucky pass</span></td>
+        </tr>
+        <tr>
+          <th>Wrong</th>
+          <td class="cell-generation-failure">{{ verdict_matrix.generation_failure }}<span class="cell-label">Generation failure</span></td>
+          <td class="cell-retrieval-failure">{{ verdict_matrix.retrieval_failure }}<span class="cell-label">Retrieval failure</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="ablation">
+    <h2>Ablation check</h2>
+    {% if ablation_confirmed_count is not none %}
+    <p>
+      Of the {{ lucky_pass_count }} lucky-pass case(s), <strong>{{ ablation_confirmed_count }}</strong>
+      stayed correct even with retrieval turned off entirely &mdash; confirming the model didn't
+      need retrieval to answer them.
+    </p>
+    {% else %}
+    <p>Ablation was not run for this run, so the lucky-pass cases above are unconfirmed candidates.</p>
+    {% endif %}
+  </section>
+
+  <section class="judge-failures">
+    <h2>Judge reliability</h2>
+    <p>
+      {% if judge_failure_count > 0 %}
+      <strong>{{ judge_failure_count }}</strong> of {{ total_cases }} case(s) had a judge response
+      that could not be parsed as valid JSON. Those cases were conservatively scored as
+      incorrect / not grounded rather than silently dropped &mdash; treat their verdicts with
+      extra caution.
+      {% else %}
+      All judge responses in this run parsed successfully &mdash; 0 parsing failures.
+      {% endif %}
+    </p>
+  </section>
+
+  <section class="cases">
+    <h2>Per-case results</h2>
+    <div class="filter-bar" role="group" aria-label="Filter by verdict">
+      <button type="button" class="filter-btn active" data-filter="all">All ({{ total_cases }})</button>
+      <button type="button" class="filter-btn" data-filter="true_pass">True pass ({{ verdict_matrix.true_pass }})</button>
+      <button type="button" class="filter-btn" data-filter="lucky_pass">Lucky pass ({{ verdict_matrix.lucky_pass }})</button>
+      <button type="button" class="filter-btn" data-filter="generation_failure">Generation failure ({{ verdict_matrix.generation_failure }})</button>
+      <button type="button" class="filter-btn" data-filter="retrieval_failure">Retrieval failure ({{ verdict_matrix.retrieval_failure }})</button>
+    </div>
+    <table id="case-table">
+      <thead>
+        <tr>
+          <th data-sort="question">Question</th>
+          <th data-sort="verdict">Verdict</th>
+          <th data-sort="rank">Retrieval rank</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr class="case-row" data-verdict="{{ row.verdict }}" data-rank="{{ row.retrieval_rank if row.retrieval_rank is not none else -1 }}">
+          <td>{{ row.question }}</td>
+          <td><span class="badge badge-{{ row.verdict }}">{{ row.verdict_label }}</span></td>
+          <td>{% if row.retrieval_rank is not none %}{{ row.retrieval_rank }}{% else %}not retrieved{% endif %}</td>
+          <td>
+            <details>
+              <summary>Show</summary>
+              <dl>
+                <dt>Expected answer</dt>
+                <dd>{{ row.expected_answer }}</dd>
+                <dt>Model answer</dt>
+                <dd>{{ row.answer }}</dd>
+                <dt>Retrieved contexts</dt>
+                <dd>
+                  {% if row.contexts %}
+                  <ol>
+                    {% for ctx in row.contexts %}
+                    <li>{{ ctx }}</li>
+                    {% endfor %}
+                  </ol>
+                  {% else %}
+                  <em>none</em>
+                  {% endif %}
+                </dd>
+                {% if row.judge_parse_failed %}
+                <dt>Judge warning</dt>
+                <dd class="warning">A judge response for this case could not be parsed; it was conservatively scored as incorrect / not grounded.</dd>
+                {% endif %}
+                {% if row.ablation %}
+                <dt>Ablation (no-context) answer</dt>
+                <dd>{{ row.ablation.answer }}</dd>
+                <dt>Ablation confirms lucky pass</dt>
+                <dd>{{ "Yes" if row.ablation.confirms_lucky_pass else "No" }}</dd>
+                {% endif %}
+              </dl>
+            </details>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var filterButtons = Array.prototype.slice.call(document.querySelectorAll(".filter-btn"));
+  var rows = Array.prototype.slice.call(document.querySelectorAll("#case-table tbody tr"));
+
+  filterButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      filterButtons.forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      var filter = btn.getAttribute("data-filter");
+      rows.forEach(function (row) {
+        var show = filter === "all" || row.getAttribute("data-verdict") === filter;
+        row.style.display = show ? "" : "none";
+      });
+    });
+  });
+
+  var sortState = {};
+  Array.prototype.slice.call(document.querySelectorAll("#case-table th[data-sort]")).forEach(function (th) {
+    th.addEventListener("click", function () {
+      var key = th.getAttribute("data-sort");
+      var ascending = !sortState[key];
+      sortState = {};
+      sortState[key] = ascending;
+
+      var tbody = document.querySelector("#case-table tbody");
+      var sorted = rows.slice().sort(function (a, b) {
+        var av, bv;
+        if (key === "rank") {
+          av = parseFloat(a.getAttribute("data-rank"));
+          bv = parseFloat(b.getAttribute("data-rank"));
+        } else if (key === "verdict") {
+          av = a.getAttribute("data-verdict");
+          bv = b.getAttribute("data-verdict");
+        } else {
+          av = a.cells[0].textContent.trim().toLowerCase();
+          bv = b.cells[0].textContent.trim().toLowerCase();
+        }
+        if (av < bv) { return ascending ? -1 : 1; }
+        if (av > bv) { return ascending ? 1 : -1; }
+        return 0;
+      });
+      sorted.forEach(function (row) { tbody.appendChild(row); });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -18,7 +18,7 @@ This runs three scenarios and writes three reports to `demo/output/`:
 |---|---|---|---|
 | `report-healthy.html` | `demo/sample_corpus/` (invented facts) | `example_adapter.py` | Retrieval working, answers grounded. |
 | `report-degraded.html` | `demo/sample_corpus/` (invented facts) | `weak_adapter.py` | Retrieval quietly broken (30% random chunks), failures visible. |
-| `report-lucky.html` | `demo/lucky_corpus/` (well-known facts) | `weak_adapter.py` | Answers correct anyway, retrieval contributing nothing. |
+| `report-lucky.html` | `demo/lucky_corpus/` (well-known facts) | `ungrounded_adapter.py` | Answers correct anyway, retrieval contributing nothing. |
 
 `demo/sample_corpus/` (18 chunks, deliberately overlapping topics —
 multiple chunks touch the same product or the same SLA terms) describes
@@ -32,21 +32,33 @@ already knowing the answer. Comparing `report-healthy.html` against
 retrieval quality changed — shows how much retrieval quality alone moves
 the verdict breakdown.
 
-`demo/lucky_corpus/` (12 chunks: capital cities, basic chemistry, famous
-historical dates) flips the premise: these are facts any LLM already
-knows cold. Running the *degraded* adapter against it means retrieval
-frequently returns the wrong chunk, or a random one — yet the model
-answers correctly anyway, from pretraining, and ablation (re-asking with
-no context at all) confirms it stayed correct. `report-lucky.html` is
-what a corpus full of `LUCKY_PASS` actually looks like: the case ragaudit
-exists to catch, that a correctness-only eval would score as a clean
-pass.
+`demo/lucky_corpus/` (13 chunks: world capitals, the periodic table and
+other basic chemistry, famous historical dates, basic physics constants)
+flips the premise: these are facts any LLM already knows cold. It's
+ingested into its own database (`ragaudit-lucky.db`) rather than sharing
+the sample corpus's, so ingesting it can't overwrite chunks the other two
+reports depend on. Running `ungrounded_adapter.py` against it, with
+ablation enabled, means retrieval frequently returns the wrong chunk, or
+a random one — yet the model answers correctly anyway, from pretraining,
+and ablation (re-asking with no context at all) confirms it stayed
+correct. `report-lucky.html` is what a corpus full of `LUCKY_PASS`
+actually looks like: the case ragaudit exists to catch, that a
+correctness-only eval would score as a clean pass.
 
 - `demo/example_adapter.py` — keyword/BM25 retrieval, no embeddings, no
   vector DB, top-1 only — "healthy but mediocre."
 - `demo/weak_adapter.py` — identical retrieval, except a seeded 30% of
   queries get a random chunk instead of the true top match, simulating a
-  retrieval index that has quietly gone stale — "degraded."
+  retrieval index that has quietly gone stale — "degraded." Its
+  generation prompt strictly says "only use the provided context," so a
+  bad retrieval mostly shows up as a visible failure, not a lucky guess.
+- `demo/ungrounded_adapter.py` — same retrieval logic, degraded further
+  (70% random), but with a permissive generation prompt: the context is
+  offered as background, and the model is told to answer from its own
+  knowledge if the context doesn't help. That prompt difference is the
+  whole point — it's what turns bad retrieval into a *hidden* failure
+  instead of a visible one, which is exactly what `report-lucky.html`
+  is built to catch.
 
 Audits RAG pipelines by checking whether retrieval actually did the work —
 not just whether the final answer was correct.

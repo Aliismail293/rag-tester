@@ -24,14 +24,26 @@
   <section class="headline">
     <h2>The headline finding</h2>
     <p class="headline-sentence">
-      {% if lucky_pass_count > 0 %}
-      Out of {{ total_cases }} test questions, <strong>{{ lucky_pass_count }} ({{ lucky_pass_pct }}%)</strong>
+      {% if headline.kind == "lucky_pass" %}
+      Out of {{ total_cases }} test questions, <strong>{{ headline.count }} ({{ headline.pct }}%)</strong>
       were answered correctly even though the pipeline never retrieved the passage the answer
       actually came from. In other words, the model got these right despite retrieval &mdash;
       not because of it.
+      {% elif headline.kind == "retrieval_failure" %}
+      The dominant story in this run is retrieval failure:
+      <strong>{{ headline.count }} of {{ total_cases }} questions ({{ headline.pct }}%)</strong>
+      were answered wrong because the pipeline never retrieved the passage that held the answer.
+      There were no lucky passes to mask it &mdash; when retrieval missed, the answer came back
+      wrong too.
+      {% elif headline.kind == "generation_failure" %}
+      The dominant story in this run is generation failure:
+      <strong>{{ headline.count }} of {{ total_cases }} questions ({{ headline.pct }}%)</strong>
+      were answered wrong even though the pipeline retrieved the right passage &mdash; the answer
+      was right there in the context and the model still got it wrong.
       {% else %}
-      None of the correct answers in this run were &ldquo;lucky.&rdquo; Every correct answer out
-      of {{ total_cases }} test questions was backed by a real, on-target retrieval.
+      Every correct answer in this run (<strong>{{ headline.count }} of {{ total_cases }}</strong>)
+      was backed by a real, on-target retrieval, and there were no lucky passes and no failures
+      to report.
       {% endif %}
     </p>
     <div class="stats-grid">
@@ -83,14 +95,18 @@
 
   <section class="ablation">
     <h2>Ablation check</h2>
-    {% if ablation_confirmed_count is not none %}
+    {% if lucky_pass_count == 0 %}
+    <p>No lucky-pass candidates were found in this run, so ablation was skipped &mdash; there was
+    nothing that qualified for it.</p>
+    {% elif not run.config.run_ablation %}
+    <p>Ablation was disabled for this run, so the {{ lucky_pass_count }} lucky-pass case(s) above are
+    unconfirmed candidates.</p>
+    {% else %}
     <p>
       Of the {{ lucky_pass_count }} lucky-pass case(s), <strong>{{ ablation_confirmed_count }}</strong>
       stayed correct even with retrieval turned off entirely &mdash; confirming the model didn't
       need retrieval to answer them.
     </p>
-    {% else %}
-    <p>Ablation was not run for this run, so the lucky-pass cases above are unconfirmed candidates.</p>
     {% endif %}
   </section>
 

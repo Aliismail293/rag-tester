@@ -175,7 +175,7 @@ def run_cmd(
         if run_ablation_flag:
             lucky_pass_count = sum(1 for case in scored_cases if case.verdict == Verdict.LUCKY_PASS)
             if lucky_pass_count:
-                typer.echo(f"Running ablation for {lucky_pass_count} lucky-pass candidate(s)...")
+                typer.echo(f"Ablation: enabled — running against {lucky_pass_count} lucky-pass candidate(s)...")
 
                 def no_context_query(question: str) -> str:
                     return client.complete(NO_CONTEXT_SYSTEM_PROMPT, question)
@@ -184,6 +184,10 @@ def run_cmd(
                     return judge_correctness(client, question, expected_answer, candidate_answer).is_correct
 
                 scored_cases = run_ablation(scored_cases, test_set.test_cases, no_context_query, check_correctness)
+            else:
+                typer.echo("Ablation: enabled, but no lucky-pass candidates were found — nothing to ablate.")
+        else:
+            typer.echo("Ablation: disabled (--no-ablation).")
 
         summary = compute_run_summary(scored_cases)
         run_id = str(uuid.uuid4())

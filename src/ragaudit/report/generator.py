@@ -43,6 +43,36 @@ def _build_case_row(case: ScoredCase, question: str, expected_answer: str) -> di
     }
 
 
+def _compute_headline(total_cases: int, verdict_matrix: dict) -> dict:
+    """Pick the single dominant finding to state in the headline sentence.
+
+    Lucky passes are always the headline when any exist — that is the
+    tool's core claim. Otherwise, headline the largest failure category
+    (retrieval beats generation on a tie) so a run full of failures never
+    reads as quietly clean just because nothing was "lucky." Only when
+    there are no lucky passes and no failures at all does the headline
+    turn positive.
+    """
+
+    def pct(count: int) -> float:
+        return round(count / total_cases * 100, 1) if total_cases else 0.0
+
+    lucky_pass = verdict_matrix["lucky_pass"]
+    if lucky_pass > 0:
+        return {"kind": "lucky_pass", "count": lucky_pass, "pct": pct(lucky_pass)}
+
+    failure_counts = {
+        "retrieval_failure": verdict_matrix["retrieval_failure"],
+        "generation_failure": verdict_matrix["generation_failure"],
+    }
+    dominant_kind = max(failure_counts, key=failure_counts.get)
+    dominant_count = failure_counts[dominant_kind]
+    if dominant_count > 0:
+        return {"kind": dominant_kind, "count": dominant_count, "pct": pct(dominant_count)}
+
+    return {"kind": "all_true_pass", "count": verdict_matrix["true_pass"], "pct": pct(verdict_matrix["true_pass"])}
+
+
 def _build_case_rows(run: Run, test_set: TestSet) -> list[dict]:
     test_case_by_id = {tc.test_id: tc for tc in test_set.test_cases}
     rows = []
@@ -108,6 +138,7 @@ def generate_report(run: Run, test_set: TestSet, output_path: str | Path) -> Pat
         style_css=_load_style_css(),
         rows=_build_case_rows(run, test_set),
         verdict_matrix=verdict_matrix,
+        headline=_compute_headline(summary.total_cases, verdict_matrix),
         lucky_pass_count=lucky_pass_count,
         lucky_pass_pct=round(summary.lucky_pass_rate * 100, 1),
         total_cases=summary.total_cases,

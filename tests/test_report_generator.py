@@ -153,10 +153,139 @@ def test_report_surfaces_ablation_confirmed_count(tmp_path):
     assert "stayed correct even with retrieval turned off" in html
 
 
-def test_report_states_ablation_not_run_when_absent(tmp_path):
+def test_report_states_ablation_disabled_when_candidates_exist_but_not_ablated(tmp_path):
     run, test_set = make_fixture(with_ablation=False)
     html = generate_report(run, test_set, tmp_path / "report.html").read_text(encoding="utf-8")
-    assert "Ablation was not run for this run" in html
+    assert "Ablation was disabled for this run" in html
+    assert "1 lucky-pass case(s) above" in html
+    assert "unconfirmed candidates" in html
+
+
+def test_report_states_ablation_skipped_when_no_lucky_pass_candidates(tmp_path):
+    test_set = TestSet(
+        testset_id="ts2",
+        corpus_hash="hash2",
+        created_at=datetime.now(timezone.utc),
+        generation_model="gen-model",
+        test_cases=[make_test_case("t1", "What is the capital of Freedonia?")],
+    )
+    scored_cases = [make_scored_case("t1", Verdict.TRUE_PASS, rank=0)]
+    summary = RunSummary(
+        total_cases=1,
+        verdict_counts={
+            Verdict.TRUE_PASS: 1,
+            Verdict.LUCKY_PASS: 0,
+            Verdict.GENERATION_FAILURE: 0,
+            Verdict.RETRIEVAL_FAILURE: 0,
+        },
+        retrieval_hit_rate=1.0,
+        answer_correctness_rate=1.0,
+        lucky_pass_rate=0.0,
+        mean_groundedness=None,
+        ablation_confirmed_count=None,
+        judge_failure_count=0,
+    )
+    run = Run(
+        config=RunConfig(
+            run_id="run2",
+            testset_id="ts2",
+            adapter_path="my_adapter.py",
+            correctness_judge_model="j1",
+            groundedness_judge_model="j2",
+            run_ablation=True,
+            started_at=datetime.now(timezone.utc),
+        ),
+        finished_at=datetime.now(timezone.utc),
+        scored_cases=scored_cases,
+        summary=summary,
+    )
+
+    html = generate_report(run, test_set, tmp_path / "report.html").read_text(encoding="utf-8")
+    assert "ablation was skipped" in html
+    assert "Ablation was disabled" not in html
+    assert "unconfirmed candidates" not in html
+
+
+def make_run_with_verdict_counts(counts: dict) -> tuple:
+    """Build a minimal Run/TestSet pair with exactly the given verdict counts.
+
+    `counts` maps Verdict -> number of cases with that verdict. Retrieval
+    rank is set consistently with each verdict's retrieval-hit side of the
+    2x2 (TRUE_PASS/GENERATION_FAILURE retrieved, LUCKY_PASS/RETRIEVAL_FAILURE not).
+    """
+    test_cases = []
+    scored_cases = []
+    i = 0
+    for verdict, count in counts.items():
+        for _ in range(count):
+            test_id = f"t{i}"
+            i += 1
+            test_cases.append(make_test_case(test_id, f"question {test_id}"))
+            rank = 0 if verdict in (Verdict.TRUE_PASS, Verdict.GENERATION_FAILURE) else None
+            scored_cases.append(make_scored_case(test_id, verdict, rank=rank))
+
+    total = sum(counts.values())
+    full_counts = {v: counts.get(v, 0) for v in Verdict}
+    test_set = TestSet(
+        testset_id="ts-dominant",
+        corpus_hash="hash-dominant",
+        created_at=datetime.now(timezone.utc),
+        generation_model="gen-model",
+        test_cases=test_cases,
+    )
+    summary = RunSummary(
+        total_cases=total,
+        verdict_counts=full_counts,
+        retrieval_hit_rate=0.0,
+        answer_correctness_rate=0.0,
+        lucky_pass_rate=0.0,
+        mean_groundedness=None,
+        ablation_confirmed_count=None,
+        judge_failure_count=0,
+    )
+    run = Run(
+        config=RunConfig(
+            run_id="run-dominant",
+            testset_id="ts-dominant",
+            adapter_path="my_adapter.py",
+            correctness_judge_model="j1",
+            groundedness_judge_model="j2",
+            run_ablation=True,
+            started_at=datetime.now(timezone.utc),
+        ),
+        finished_at=datetime.now(timezone.utc),
+        scored_cases=scored_cases,
+        summary=summary,
+    )
+    return run, test_set
+
+
+def test_headline_highlights_dominant_retrieval_failure_when_no_lucky_pass(tmp_path):
+    run, test_set = make_run_with_verdict_counts(
+        {Verdict.TRUE_PASS: 12, Verdict.RETRIEVAL_FAILURE: 6}
+    )
+    html = generate_report(run, test_set, tmp_path / "report.html").read_text(encoding="utf-8")
+
+    assert "dominant story in this run is retrieval failure" in html
+    assert "6 of 18" in html
+    assert "None of the correct answers" not in html
+
+
+def test_headline_highlights_dominant_generation_failure_when_no_lucky_pass(tmp_path):
+    run, test_set = make_run_with_verdict_counts(
+        {Verdict.TRUE_PASS: 2, Verdict.GENERATION_FAILURE: 5, Verdict.RETRIEVAL_FAILURE: 3}
+    )
+    html = generate_report(run, test_set, tmp_path / "report.html").read_text(encoding="utf-8")
+
+    assert "dominant story in this run is generation failure" in html
+    assert "5 of 10" in html
+
+
+def test_headline_all_true_pass_when_no_lucky_pass_and_no_failures(tmp_path):
+    run, test_set = make_run_with_verdict_counts({Verdict.TRUE_PASS: 4})
+    html = generate_report(run, test_set, tmp_path / "report.html").read_text(encoding="utf-8")
+
+    assert "no lucky passes and no failures" in html
 
 
 def test_report_surfaces_judge_failure_count_honestly(tmp_path):

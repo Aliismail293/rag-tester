@@ -1,4 +1,6 @@
+import re
 from datetime import datetime, timezone
+from unittest import mock
 
 from ragaudit.models.adapter import RAGResponse
 from ragaudit.models.run import Run, RunConfig, RunSummary
@@ -190,6 +192,34 @@ def test_report_contains_sort_and_filter_js_no_framework(tmp_path):
     assert "data-filter" in html
     assert "data-sort" in html
     assert "cdn" not in html.lower()
+
+
+def test_report_style_block_contains_real_css_rules(tmp_path):
+    run, test_set = make_fixture()
+    html = generate_report(run, test_set, tmp_path / "report.html").read_text(encoding="utf-8")
+
+    match = re.search(r"<style>(.*?)</style>", html, re.DOTALL)
+    assert match is not None, "expected a <style> block in the report"
+
+    style_block = match.group(1)
+    # Not just non-empty — actual CSS rule syntax: a selector followed by
+    # at least one declaration inside braces, not e.g. a stray comment.
+    assert len(style_block.strip()) > 500
+    rule_pattern = re.compile(r"[.#a-zA-Z][^{}]*\{[^{}]*[a-zA-Z-]+\s*:\s*[^{}]+;[^{}]*\}")
+    assert rule_pattern.search(style_block), "expected at least one real CSS rule (selector { prop: value; })"
+    assert "--bg" in style_block
+    assert "font-family" in style_block
+
+
+def test_generate_report_raises_if_stylesheet_cannot_be_loaded(tmp_path):
+    run, test_set = make_fixture()
+
+    with mock.patch("ragaudit.report.generator.resources.files", side_effect=FileNotFoundError("missing")):
+        try:
+            generate_report(run, test_set, tmp_path / "report.html")
+            assert False, "expected RuntimeError when the stylesheet can't be loaded"
+        except RuntimeError as exc:
+            assert "stylesheet" in str(exc).lower()
 
 
 def test_report_raises_without_summary(tmp_path):

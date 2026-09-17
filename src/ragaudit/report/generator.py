@@ -5,6 +5,7 @@ TestCase, not ScoredCase — so this takes both the Run and the TestSet it
 was run against, cross-referenced by test_id.
 """
 
+from importlib import resources
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -14,8 +15,6 @@ from ragaudit.models.scoring import ScoredCase, Verdict
 from ragaudit.models.testset import TestSet
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
-REPO_ROOT = Path(__file__).resolve().parents[3]
-STYLE_PATH = REPO_ROOT / "docs" / "style.css"
 
 _VERDICT_LABELS = {
     Verdict.TRUE_PASS: "True pass",
@@ -56,16 +55,32 @@ def _build_case_rows(run: Run, test_set: TestSet) -> list[dict]:
 
 
 def _load_style_css() -> str:
-    if STYLE_PATH.exists():
-        return STYLE_PATH.read_text(encoding="utf-8")
-    return ""
+    """Load the canonical stylesheet from package data.
+
+    A silently unstyled report is worse than a crash — if the stylesheet
+    can't be loaded (e.g. it was left out of a packaging change), raise
+    rather than falling back to an empty string.
+    """
+    try:
+        css = resources.files("ragaudit.report").joinpath("templates", "style.css").read_text(encoding="utf-8")
+    except (FileNotFoundError, ModuleNotFoundError, OSError) as exc:
+        raise RuntimeError(
+            "Could not load the report stylesheet from package data "
+            "(ragaudit/report/templates/style.css). The report cannot be rendered without it."
+        ) from exc
+
+    if not css.strip():
+        raise RuntimeError("The report stylesheet (ragaudit/report/templates/style.css) is empty.")
+
+    return css
 
 
 def generate_report(run: Run, test_set: TestSet, output_path: str | Path) -> Path:
     """Render `run` into a self-contained HTML file at `output_path`.
 
-    The stylesheet at docs/style.css is inlined into the output, so the
-    resulting file has no external dependencies. Returns output_path.
+    The canonical stylesheet (ragaudit/report/templates/style.css, shipped
+    as package data) is inlined into the output, so the resulting file has
+    no external dependencies. Returns output_path.
     """
     if run.summary is None:
         raise ValueError("Run.summary must be computed (see runner.summary.compute_run_summary) before reporting")

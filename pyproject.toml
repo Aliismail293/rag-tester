@@ -32,6 +32,16 @@ ragaudit = "ragaudit.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ragaudit"]
+include = [
+    "src/ragaudit/report/templates/*.css",
+    "src/ragaudit/report/templates/*.jinja",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/ragaudit/report/templates/*.css",
+    "src/ragaudit/report/templates/*.jinja",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

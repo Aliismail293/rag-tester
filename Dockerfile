@@ -5,6 +5,7 @@ WORKDIR /app
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
 COPY demo ./demo
+COPY docs ./docs
 
 RUN pip install --no-cache-dir -e .
 

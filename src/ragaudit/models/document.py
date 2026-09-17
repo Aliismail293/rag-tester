@@ -7,8 +7,9 @@ class Document(BaseModel):
     """A single ingested source file."""
 
     doc_id: str
-    """Stable hash of source_path + content."""
+    """Stable hash of source_path + content_hash."""
     source_path: str
+    content: str
     content_hash: str
     """Sha256 of raw content, used to detect re-ingestion changes."""
     metadata: dict[str, str] = Field(default_factory=dict)

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" class="ln" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,136 +7,331 @@
 <meta name="description" content="Audits RAG pipelines by checking whether retrieval actually did the work, not just whether the answer was correct.">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<main class="landing">
+<body class="ln-page">
 
-  <section>
-    <h1>RAG Tester</h1>
-    <p class="landing-tagline">
-      Audits RAG pipelines by checking whether retrieval actually did the work,
-      not just whether the final answer was correct.
-    </p>
+<nav class="ln-nav" aria-label="Site">
+  <div class="ln-col">
+    <a class="ln-brand" href="#top">RAG Tester</a>
+    <ul class="ln-nav-links">
+      <li><a href="#problem">The problem</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#reports">Reports</a></li>
+      <li><a href="#install">Install</a></li>
+      <li><a class="ln-nav-gh" href="https://github.com/Aliismail293/rag-tester">GitHub</a></li>
+    </ul>
+  </div>
+</nav>
 
-    <div class="landing-stats">
-      <div class="landing-stat">
-        <span class="value">100%</span>
-        <span class="label">answer correctness</span>
-      </div>
-      <div class="landing-stat landing-stat--lucky">
-        <span class="value">30.8%</span>
-        <span class="label">retrieval hit rate</span>
-      </div>
-    </div>
-    <p class="landing-stats-note">
-      Same run, same 13 questions. Every answer was right, but retrieval found the
-      relevant passage for fewer than a third of them &mdash; the model was answering
-      from what it already knew, and a correctness-only eval would never have noticed.
-    </p>
-  </section>
+<main>
 
-  <section>
-    <h2>The problem</h2>
-    <p>
-      A RAG system can answer a question correctly while retrieving nothing useful for
-      it. The model already knew the answer from its training data and never needed the
-      context. Existing evaluation tools check only whether the final answer is correct,
-      so they score this as a pass.
-    </p>
-    <p>
-      RAG Tester generates questions from your own corpus, records which chunk each
-      answer came from, then runs your pipeline and checks two things independently:
-      was the answer right, and was that chunk actually retrieved. Crossing the two
-      gives four outcomes instead of one.
-    </p>
-  </section>
+  <section id="top" class="ln-hero">
+    <div class="ln-col ln-hero-grid">
 
-  <section>
-    <h2>The four outcomes</h2>
-    <div class="landing-matrix">
-      <div></div>
-      <div class="axis axis--col">Retrieved the right chunk</div>
-      <div class="axis axis--col">Did not</div>
+      <div>
+        <h1>RAG Tester</h1>
+        <p class="ln-desc">
+          Audits RAG pipelines by checking whether retrieval actually did the work,
+          not just whether the final answer was correct.
+        </p>
 
-      <div class="axis axis--row">Correct</div>
-      <div class="landing-cell">
-        <span class="verdict">TRUE_PASS</span>
-        <span class="explain">The pipeline worked. Retrieval found the source and the model used it.</span>
-      </div>
-      <div class="landing-cell landing-cell--dominant">
-        <span class="verdict">LUCKY_PASS</span>
-        <span class="explain">The answer is right and retrieval had nothing to do with it. Every other eval calls this a pass. This is the case the tool exists to find.</span>
+        <div class="ln-stats">
+          <div class="ln-stat">
+            <span class="value">100%</span>
+            <span class="label">answer correctness</span>
+          </div>
+          <div class="ln-stat ln-stat--lucky">
+            <span class="value">30.8%</span>
+            <span class="label">retrieval hit rate</span>
+          </div>
+        </div>
+        <p class="ln-stats-note">
+          Same run, same 13 questions. Every answer was right, and retrieval found the
+          relevant passage for fewer than a third of them. The model was answering from
+          what it already knew. A correctness-only eval would have called this pipeline
+          perfect.
+        </p>
+
+        <div class="ln-actions">
+          <a class="ln-btn ln-btn--primary" href="#reports">View a sample report</a>
+          <a class="ln-btn ln-btn--secondary" href="https://github.com/Aliismail293/rag-tester">GitHub</a>
+        </div>
       </div>
 
-      <div class="axis axis--row">Wrong</div>
-      <div class="landing-cell">
-        <span class="verdict">GENERATION_FAILURE</span>
-        <span class="explain">The right context was there and the model still got it wrong.</span>
-      </div>
-      <div class="landing-cell">
-        <span class="verdict">RETRIEVAL_FAILURE</span>
-        <span class="explain">Wrong context, wrong answer. The honest failure.</span>
-      </div>
-    </div>
-    <p style="margin-top: 1.5rem;">
-      For every LUCKY_PASS candidate, the question is re-asked with retrieval disabled
-      entirely. If the answer is still correct, the verdict is confirmed rather than
-      inferred.
-    </p>
-  </section>
+      <div>
+        <div class="ln-matrix" role="group" aria-label="The four verdicts">
+          <div></div>
+          <div class="axis axis--col">Retrieved the right chunk</div>
+          <div class="axis axis--col">Did not</div>
 
-  <section>
-    <h2>Sample reports</h2>
-    <p>
-      Three runs from the bundled demo. The first two use an invented corpus whose facts
-      exist nowhere else, so a correct answer has to have come from retrieval. The third
-      uses facts any model knows cold.
-    </p>
-    <div class="landing-cards">
-      <a class="landing-card landing-card--lucky" href="sample-report-lucky.html">
-        <span class="title">Lucky</span>
-        <span class="desc">Well-known facts, retrieval mostly wrong, every answer correct anyway.</span>
-        <span class="number">9 of 13</span>
-        <span class="number-label">lucky passes, all confirmed by ablation</span>
-      </a>
-      <a class="landing-card landing-card--degraded" href="sample-report-degraded.html">
-        <span class="title">Degraded</span>
-        <span class="desc">Invented facts, a retriever that returns the wrong chunk 30% of the time.</span>
-        <span class="number">6 of 18</span>
-        <span class="number-label">retrieval failures, none hidden</span>
-      </a>
-      <a class="landing-card landing-card--healthy" href="sample-report-healthy.html">
-        <span class="title">Healthy</span>
-        <span class="desc">The same invented corpus with retrieval working as intended.</span>
-        <span class="number">18 of 18</span>
-        <span class="number-label">true passes</span>
-      </a>
+          <div class="axis">Correct</div>
+          <button type="button" class="ln-cell ln-cell--true" data-verdict="true" aria-pressed="false">
+            <span class="verdict">TRUE_PASS</span>
+            <span class="explain">Retrieval found the source and the model used it.</span>
+          </button>
+          <button type="button" class="ln-cell ln-cell--lucky" data-verdict="lucky" aria-pressed="true">
+            <span class="verdict">LUCKY_PASS</span>
+            <span class="explain">The answer is right and retrieval had nothing to do with it.</span>
+          </button>
+
+          <div class="axis">Wrong</div>
+          <button type="button" class="ln-cell ln-cell--gen" data-verdict="gen" aria-pressed="false">
+            <span class="verdict">GENERATION_FAILURE</span>
+            <span class="explain">The right context was there and the model still got it wrong.</span>
+          </button>
+          <button type="button" class="ln-cell ln-cell--ret" data-verdict="ret" aria-pressed="false">
+            <span class="verdict">RETRIEVAL_FAILURE</span>
+            <span class="explain">Wrong context, wrong answer.</span>
+          </button>
+        </div>
+
+        <div class="ln-cell-detail" id="cell-detail" aria-live="polite">
+          <div data-detail="lucky" class="is-active">
+            <span class="ln-detail-title">LUCKY_PASS</span>
+            <p>Every other eval scores this as a pass. It is the case this tool exists to find: the answer is correct, but the chunk it should have come from was never retrieved, so retrieval contributed nothing.</p>
+            <p>What to do: check the ablation column. If the answer is still right with retrieval disabled entirely, your test set is answerable from pretraining and isn't measuring your pipeline. Regenerate it from a corpus the model can't already know.</p>
+          </div>
+          <div data-detail="true">
+            <span class="ln-detail-title">TRUE_PASS</span>
+            <p>The pipeline worked end to end. The right chunk was retrieved and the answer is grounded in it.</p>
+            <p>What to do: nothing. This is the number to protect. Re-run after any change to chunking, embeddings, or top-k and make sure it doesn't move.</p>
+          </div>
+          <div data-detail="gen">
+            <span class="ln-detail-title">GENERATION_FAILURE</span>
+            <p>Retrieval did its job. The correct passage was in the context and the model still produced a wrong answer.</p>
+            <p>What to do: the retriever is not the problem. Look at the prompt, where in the context window the chunk landed, and whether the chunk is too long for the model to use.</p>
+          </div>
+          <div data-detail="ret">
+            <span class="ln-detail-title">RETRIEVAL_FAILURE</span>
+            <p>The wrong context came back and the answer was wrong. This is the honest failure, and the easy one to catch.</p>
+            <p>What to do: open the report's retrieval rank column. If the right chunk is ranked 2 or 3, raise top-k. If it's absent entirely, the problem is chunking or embeddings.</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 
-  <section>
-    <h2>Install and run</h2>
-    <p>Python 3.11 or newer. Any OpenAI-compatible API works for the judge and generator.</p>
+  <section id="problem" class="ln-band ln-band--alt">
+    <div class="ln-col">
+      <h2>The problem</h2>
+      <p class="ln-lead">A correct answer is not evidence that retrieval worked.</p>
+      <p>
+        A RAG system can answer a question correctly while retrieving nothing useful for
+        it. The model already knew the answer from its training data and never needed
+        the context. Existing evaluation tools check only whether the final answer is
+        correct, so they score this as a pass, and the retriever can quietly stop
+        contributing without anyone noticing.
+      </p>
+      <p>
+        That failure is invisible until the questions move to something the model
+        doesn't already know, which is usually the moment the system reaches real users.
+      </p>
+    </div>
+  </section>
+
+  <section id="how" class="ln-band">
+    <div class="ln-col">
+      <h2>How it works</h2>
+      <p class="ln-lead">
+        Ground truth for retrieval comes from the corpus itself, so correctness and
+        retrieval can be judged independently and then crossed.
+      </p>
+      <div class="ln-steps">
+        <div class="ln-step">
+          <span class="k">01 &middot; ingest</span>
+          <strong>Chunk the corpus</strong>
+          <p>Each chunk gets a stable ID derived from its content. Same corpus in, same IDs out.</p>
+        </div>
+        <div class="ln-step">
+          <span class="k">02 &middot; generate</span>
+          <strong>Write the test set</strong>
+          <p>An LLM writes questions per chunk, answerable only from that chunk. The chunk ID is recorded as the expected retrieval.</p>
+        </div>
+        <div class="ln-step">
+          <span class="k">03 &middot; run</span>
+          <strong>Run your pipeline</strong>
+          <p>Your adapter returns the answer plus the chunk IDs it retrieved. Correctness and retrieval are scored separately.</p>
+        </div>
+        <div class="ln-step">
+          <span class="k">04 &middot; ablate</span>
+          <strong>Confirm the lucky ones</strong>
+          <p>Every LUCKY_PASS candidate is re-asked with retrieval off. Still correct means retrieval was never needed.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="reports" class="ln-band ln-band--alt">
+    <div class="ln-col">
+      <h2>Sample reports</h2>
+      <p class="ln-lead">
+        Three runs from the bundled demo, rendered by the tool itself. The first two use
+        an invented corpus whose facts exist nowhere else, so a correct answer has to
+        have come from retrieval. The third uses facts any model knows cold.
+      </p>
+
+      <p class="ln-viewer-desc" id="viewer-desc">Well-known facts, retrieval mostly wrong, every answer correct anyway. 9 of 13 lucky passes, all confirmed by ablation.</p>
+
+      <div class="ln-tabs" role="tablist" aria-label="Sample report">
+        <button type="button" class="ln-tab" role="tab" aria-selected="true"
+          data-src="sample-report-lucky.html"
+          data-desc="Well-known facts, retrieval mostly wrong, every answer correct anyway. 9 of 13 lucky passes, all confirmed by ablation.">Lucky pass</button>
+        <button type="button" class="ln-tab" role="tab" aria-selected="false"
+          data-src="sample-report-degraded.html"
+          data-desc="Invented facts and a retriever that returns the wrong chunk 30% of the time. 6 of 18 retrieval failures, none hidden.">Degraded</button>
+        <button type="button" class="ln-tab" role="tab" aria-selected="false"
+          data-src="sample-report-healthy.html"
+          data-desc="The same invented corpus with retrieval working as intended. 18 of 18 true passes.">Healthy</button>
+      </div>
+
+      <iframe class="ln-frame" id="report-frame" src="sample-report-lucky.html"
+        title="Sample report" loading="lazy"></iframe>
+      <p class="ln-viewer-foot">
+        Open directly:
+        <a href="sample-report-lucky.html">lucky</a> &middot;
+        <a href="sample-report-degraded.html">degraded</a> &middot;
+        <a href="sample-report-healthy.html">healthy</a>.
+        Each report is a single self-contained HTML file.
+      </p>
+    </div>
+  </section>
+
+  <section id="install" class="ln-band">
+    <div class="ln-col">
+      <h2>Install and run</h2>
+      <p class="ln-lead">Python 3.11 or newer. Any OpenAI-compatible API works for the judge and generator.</p>
+
+      <div class="ln-install-grid">
+        <div>
+          <div class="ln-code">
 <pre><code>pip install git+https://github.com/Aliismail293/rag-tester.git</code></pre>
-    <p>Against your own corpus and adapter:</p>
+            <button type="button" class="ln-copy" aria-label="Copy install command">Copy</button>
+          </div>
+
+          <p>Against your own corpus and adapter:</p>
+          <div class="ln-code">
 <pre><code>ragaudit ingest ./docs
 ragaudit generate --n 100
 ragaudit run --adapter my_adapter.py
 ragaudit report --out report.html</code></pre>
-    <p>Or run the whole bundled demo, three reports included:</p>
-<pre><code>docker compose up --build</code></pre>
-    <p>
-      An adapter is one function, <code>query(question) -&gt; RAGResponse</code>, returning
-      the answer, the retrieved chunk IDs, and the contexts. Your pipeline needs to be
-      indexed against the chunks <code>ragaudit ingest</code> produced so the IDs line up;
-      the README explains why.
-    </p>
-  </section>
+            <button type="button" class="ln-copy" aria-label="Copy CLI commands">Copy</button>
+          </div>
 
-  <section class="landing-footer">
-    Source and issues: <a href="https://github.com/Aliismail293/rag-tester">github.com/Aliismail293/rag-tester</a>.
-    MIT licensed.
+          <p>Or run the whole bundled demo, three reports included:</p>
+          <div class="ln-code">
+<pre><code>docker compose up --build</code></pre>
+            <button type="button" class="ln-copy" aria-label="Copy docker command">Copy</button>
+          </div>
+        </div>
+
+        <aside class="ln-aside">
+          <p>
+            An adapter is one function, <code>query(question) -&gt; RAGResponse</code>,
+            returning the answer, the retrieved chunk IDs, and the contexts it used.
+          </p>
+          <p>
+            Your pipeline needs to be indexed against the chunks <code>ragaudit ingest</code>
+            produced so the IDs line up. If it isn't, every hit reads as a miss and the
+            tool looks broken. The README covers this in detail.
+          </p>
+        </aside>
+      </div>
+    </div>
   </section>
 
 </main>
+
+<footer class="ln-footer">
+  <div class="ln-col">
+    <span>RAG Tester &middot; MIT licensed</span>
+    <a href="https://github.com/Aliismail293/rag-tester">github.com/Aliismail293/rag-tester</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  // Interactive 2x2: one cell selected at a time, detail panel follows.
+  var cells = Array.prototype.slice.call(document.querySelectorAll(".ln-cell"));
+  var details = Array.prototype.slice.call(document.querySelectorAll("#cell-detail [data-detail]"));
+
+  function selectCell(verdict) {
+    cells.forEach(function (c) {
+      c.setAttribute("aria-pressed", c.getAttribute("data-verdict") === verdict ? "true" : "false");
+    });
+    details.forEach(function (d) {
+      d.classList.toggle("is-active", d.getAttribute("data-detail") === verdict);
+    });
+  }
+
+  cells.forEach(function (c) {
+    c.addEventListener("click", function () {
+      selectCell(c.getAttribute("data-verdict"));
+    });
+  });
+
+  // Report viewer: tabs swap the iframe src and the one-line description.
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".ln-tab"));
+  var frame = document.getElementById("report-frame");
+  var desc = document.getElementById("viewer-desc");
+
+  function selectTab(tab) {
+    tabs.forEach(function (t) {
+      t.setAttribute("aria-selected", t === tab ? "true" : "false");
+    });
+    var src = tab.getAttribute("data-src");
+    if (frame.getAttribute("src") !== src) {
+      frame.setAttribute("src", src);
+    }
+    desc.textContent = tab.getAttribute("data-desc");
+  }
+
+  tabs.forEach(function (t) {
+    t.addEventListener("click", function () { selectTab(t); });
+  });
+  selectTab(tabs[0]);
+
+  // Copy buttons.
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function confirmCopy(btn) {
+    var original = btn.textContent;
+    btn.textContent = "Copied";
+    btn.classList.add("is-done");
+    window.setTimeout(function () {
+      btn.textContent = original;
+      btn.classList.remove("is-done");
+    }, 1500);
+  }
+
+  Array.prototype.slice.call(document.querySelectorAll(".ln-copy")).forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var pre = btn.parentNode.querySelector("pre");
+      var text = pre ? pre.textContent : "";
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function () { confirmCopy(btn); }, function () {
+          if (fallbackCopy(text)) { confirmCopy(btn); }
+        });
+      } else if (fallbackCopy(text)) {
+        confirmCopy(btn);
+      }
+    });
+  });
+})();
+</script>
+
 </body>
 </html>

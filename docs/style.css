@@ -271,3 +271,278 @@ details ol {
 a {
   color: var(--accent);
 }
+
+/* --- Code blocks (shared) --- */
+
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+code {
+  font-size: 0.9em;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 0;
+  overflow-x: auto;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+pre code {
+  font-size: inherit;
+}
+
+/* --- Landing page (docs/index.html) ---
+   Scoped under .landing so the report's own section/h2/table styles
+   above are untouched. The report is data-dense; the landing page is
+   read cold and needs room. */
+
+.landing {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem 6rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.landing h1 {
+  font-size: 2.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.75rem;
+}
+
+.landing h2 {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  margin: 0 0 1.25rem;
+}
+
+.landing p {
+  margin: 0 0 1rem;
+  max-width: 68ch;
+}
+
+.landing section {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0 5rem;
+}
+
+.landing section:last-child {
+  margin-bottom: 0;
+}
+
+.landing-tagline {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  max-width: 60ch;
+  margin: 0 0 3rem;
+}
+
+.landing-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+  margin: 0 0 1.5rem;
+}
+
+.landing-stat .value {
+  display: block;
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.landing-stat .label {
+  display: block;
+  margin-top: 0.75rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.landing-stat--lucky .value {
+  color: var(--lucky-pass);
+}
+
+.landing-stats-note {
+  font-size: 1.1rem;
+  max-width: 64ch;
+}
+
+.landing-matrix {
+  display: grid;
+  grid-template-columns: 7rem repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.landing-matrix .axis {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+
+.landing-matrix .axis--col {
+  justify-content: flex-start;
+  padding-left: 0.25rem;
+}
+
+.landing-cell {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2rem 1.75rem;
+  background: var(--surface);
+}
+
+.landing-cell .verdict {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.landing-cell .explain {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.landing-cell--dominant {
+  border: 2px solid var(--lucky-pass);
+  background: var(--lucky-pass-bg);
+}
+
+.landing-cell--dominant .verdict {
+  font-size: 1.5rem;
+  color: var(--lucky-pass);
+}
+
+.landing-cell--dominant .explain {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.landing-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.landing-card {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.landing-card:hover {
+  border-color: var(--accent);
+}
+
+.landing-card .title {
+  display: block;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.landing-card .desc {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 1.25rem;
+  min-height: 3.6em;
+}
+
+.landing-card .number {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.landing-card .number-label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 0.35rem;
+}
+
+.landing-card--lucky .number {
+  color: var(--lucky-pass);
+}
+
+.landing-card--degraded .number {
+  color: var(--generation-failure);
+}
+
+.landing-card--healthy .number {
+  color: var(--true-pass);
+}
+
+.landing pre {
+  margin: 0 0 1.5rem;
+}
+
+.landing-footer {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+}
+
+@media (max-width: 720px) {
+  .landing {
+    padding: 2.5rem 1rem 4rem;
+  }
+
+  .landing h1 {
+    font-size: 2rem;
+  }
+
+  .landing section {
+    margin-bottom: 3.5rem;
+  }
+
+  .landing-stats {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .landing-stat .value {
+    font-size: 3.25rem;
+  }
+
+  .landing-matrix {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-matrix .axis--col {
+    display: none;
+  }
+
+  .landing-matrix .axis--row {
+    padding-top: 0.5rem;
+  }
+
+  .landing-cards {
+    grid-template-columns: 1fr;
+  }
+}

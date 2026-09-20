@@ -1,8 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><title>RAG Tester</title></head>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG Tester</title>
+<meta name="description" content="Audits RAG pipelines by checking whether retrieval actually did the work, not just whether the answer was correct.">
+<link rel="stylesheet" href="style.css">
+</head>
 <body>
-<h1>RAG Tester</h1>
-<p>Audits RAG pipelines by checking whether retrieval actually did the work.</p>
+<main class="landing">
+
+  <section>
+    <h1>RAG Tester</h1>
+    <p class="landing-tagline">
+      Audits RAG pipelines by checking whether retrieval actually did the work,
+      not just whether the final answer was correct.
+    </p>
+
+    <div class="landing-stats">
+      <div class="landing-stat">
+        <span class="value">100%</span>
+        <span class="label">answer correctness</span>
+      </div>
+      <div class="landing-stat landing-stat--lucky">
+        <span class="value">30.8%</span>
+        <span class="label">retrieval hit rate</span>
+      </div>
+    </div>
+    <p class="landing-stats-note">
+      Same run, same 13 questions. Every answer was right, but retrieval found the
+      relevant passage for fewer than a third of them &mdash; the model was answering
+      from what it already knew, and a correctness-only eval would never have noticed.
+    </p>
+  </section>
+
+  <section>
+    <h2>The problem</h2>
+    <p>
+      A RAG system can answer a question correctly while retrieving nothing useful for
+      it. The model already knew the answer from its training data and never needed the
+      context. Existing evaluation tools check only whether the final answer is correct,
+      so they score this as a pass.
+    </p>
+    <p>
+      RAG Tester generates questions from your own corpus, records which chunk each
+      answer came from, then runs your pipeline and checks two things independently:
+      was the answer right, and was that chunk actually retrieved. Crossing the two
+      gives four outcomes instead of one.
+    </p>
+  </section>
+
+  <section>
+    <h2>The four outcomes</h2>
+    <div class="landing-matrix">
+      <div></div>
+      <div class="axis axis--col">Retrieved the right chunk</div>
+      <div class="axis axis--col">Did not</div>
+
+      <div class="axis axis--row">Correct</div>
+      <div class="landing-cell">
+        <span class="verdict">TRUE_PASS</span>
+        <span class="explain">The pipeline worked. Retrieval found the source and the model used it.</span>
+      </div>
+      <div class="landing-cell landing-cell--dominant">
+        <span class="verdict">LUCKY_PASS</span>
+        <span class="explain">The answer is right and retrieval had nothing to do with it. Every other eval calls this a pass. This is the case the tool exists to find.</span>
+      </div>
+
+      <div class="axis axis--row">Wrong</div>
+      <div class="landing-cell">
+        <span class="verdict">GENERATION_FAILURE</span>
+        <span class="explain">The right context was there and the model still got it wrong.</span>
+      </div>
+      <div class="landing-cell">
+        <span class="verdict">RETRIEVAL_FAILURE</span>
+        <span class="explain">Wrong context, wrong answer. The honest failure.</span>
+      </div>
+    </div>
+    <p style="margin-top: 1.5rem;">
+      For every LUCKY_PASS candidate, the question is re-asked with retrieval disabled
+      entirely. If the answer is still correct, the verdict is confirmed rather than
+      inferred.
+    </p>
+  </section>
+
+  <section>
+    <h2>Sample reports</h2>
+    <p>
+      Three runs from the bundled demo. The first two use an invented corpus whose facts
+      exist nowhere else, so a correct answer has to have come from retrieval. The third
+      uses facts any model knows cold.
+    </p>
+    <div class="landing-cards">
+      <a class="landing-card landing-card--lucky" href="sample-report-lucky.html">
+        <span class="title">Lucky</span>
+        <span class="desc">Well-known facts, retrieval mostly wrong, every answer correct anyway.</span>
+        <span class="number">9 of 13</span>
+        <span class="number-label">lucky passes, all confirmed by ablation</span>
+      </a>
+      <a class="landing-card landing-card--degraded" href="sample-report-degraded.html">
+        <span class="title">Degraded</span>
+        <span class="desc">Invented facts, a retriever that returns the wrong chunk 30% of the time.</span>
+        <span class="number">6 of 18</span>
+        <span class="number-label">retrieval failures, none hidden</span>
+      </a>
+      <a class="landing-card landing-card--healthy" href="sample-report-healthy.html">
+        <span class="title">Healthy</span>
+        <span class="desc">The same invented corpus with retrieval working as intended.</span>
+        <span class="number">18 of 18</span>
+        <span class="number-label">true passes</span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Install and run</h2>
+    <p>Python 3.11 or newer. Any OpenAI-compatible API works for the judge and generator.</p>
+<pre><code>pip install git+https://github.com/Aliismail293/rag-tester.git</code></pre>
+    <p>Against your own corpus and adapter:</p>
+<pre><code>ragaudit ingest ./docs
+ragaudit generate --n 100
+ragaudit run --adapter my_adapter.py
+ragaudit report --out report.html</code></pre>
+    <p>Or run the whole bundled demo, three reports included:</p>
+<pre><code>docker compose up --build</code></pre>
+    <p>
+      An adapter is one function, <code>query(question) -&gt; RAGResponse</code>, returning
+      the answer, the retrieved chunk IDs, and the contexts. Your pipeline needs to be
+      indexed against the chunks <code>ragaudit ingest</code> produced so the IDs line up;
+      the README explains why.
+    </p>
+  </section>
+
+  <section class="landing-footer">
+    Source and issues: <a href="https://github.com/Aliismail293/rag-tester">github.com/Aliismail293/rag-tester</a>.
+    MIT licensed.
+  </section>
+
+</main>
 </body>
 </html>

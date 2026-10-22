@@ -19,10 +19,13 @@ from ragaudit.ingest.versioning import CorpusDiff, sync_corpus
 from ragaudit.llm.factory import PROVIDER_ENV, CallBudget, make_client, resolve_provider
 from ragaudit.models.evaluation import EvalSummary
 from ragaudit.models.question import Split
+from ragaudit.models.tune import Trial, TuneResult
 from ragaudit.runner.evaluate import compute_config_hash, file_sha256, run_evaluation
 from ragaudit.runner.locked import evaluate_test_split
 from ragaudit.scoring.correctness import judge_correctness
 from ragaudit.storage.store import Store, StoreSchemaError
+from ragaudit.tune.loop import TuneError, run_tune
+from ragaudit.tune.search_space import SearchSpaceError, load_search_space
 
 VERIFIER_MODEL_ENV = "RAGAUDIT_VERIFIER_MODEL"
 
@@ -332,3 +335,132 @@ def run_evaluate(
         typer.echo(line)
     typer.echo(f"Saved eval run {summary.run_id} (config {config_hash[:12]}, index {index_version[:12]}) to {store_path}.")
     return summary
+
+
+# --- tune --------------------------------------------------------------------
+
+
+def _config_text(config: dict) -> str:
+    return " ".join(f"{knob}={value}" for knob, value in config.items())
+
+
+def format_tune_result(result: TuneResult) -> list[str]:
+    baseline, best = result.baseline, result.best
+    lines = [
+        f"Search stopped: {result.stopped_reason.replace('_', ' ')} after {len(result.trials)} trial(s); "
+        f"best is trial {best.index} ({best.source}).",
+        "",
+        "Final scores (pass rate, points). Test = locked split, evaluated once per config:",
+        f"  {'':10}{'dev':>8}{'test':>8}",
+        f"  {'baseline':10}{baseline.dev.score:8.1f}{result.baseline_test.score:8.1f}",
+        f"  {'best':10}{best.dev.score:8.1f}{result.best_test.score:8.1f}",
+        "",
+        f"Improvement on test: {result.best_test.score - result.baseline_test.score:+.1f} points "
+        f"({result.baseline_test.n_questions} test question(s)).",
+    ]
+    gap = result.overfit_gap
+    if result.overfit_warning:
+        lines.append(
+            f"WARNING: likely overfitting. The best config scores {gap:.1f} points higher on dev than on test "
+            f"(threshold {result.overfit_threshold:g}). Its dev score is inflated by the search; trust the test score, "
+            "and consider more dev questions or a smaller search space."
+        )
+    else:
+        lines.append(
+            f"Dev-test gap for the best config: {gap:+.1f} points (threshold {result.overfit_threshold:g}): "
+            "no sign of overfitting to the dev set."
+        )
+    lines.append(f"LLM calls (judge + proposer): {result.llm_calls}.")
+    return lines
+
+
+def write_best_config(result: TuneResult, path: Path) -> Path:
+    best = result.best
+    header = (
+        f"Best config from ragaudit tune {result.tune_id}\n"
+        f"strategy {result.strategy}, {len(result.trials)} trial(s), trial {best.index}; "
+        f"dev {best.dev.score:.1f}, locked test {result.best_test.score:.1f}\n"
+        f"Use with: ragaudit evaluate --adapter {result.adapter_path} --config {path}"
+    )
+    return yaml_io.dump(best.config, path, header=header)
+
+
+def run_tune_command(
+    adapter_path: Path,
+    search_space_path: Path,
+    corpus: Path | None,
+    strategy: str,
+    max_trials: int,
+    max_llm_calls: int | None,
+    seed: int,
+    k: int,
+    overfit_threshold: float,
+    out: Path,
+    store_path: Path,
+    llm: str | None,
+    judge_model: str | None,
+    proposer_model: str | None,
+) -> TuneResult:
+    if strategy not in ("grid", "random", "llm"):
+        _fail(f"--strategy must be grid, random or llm, got {strategy!r}")
+    provider = _resolve_provider(llm)
+    try:
+        space = load_search_space(search_space_path)
+    except SearchSpaceError as exc:
+        _fail(str(exc))
+
+    store = _open_store(store_path)
+    try:
+        index_version = sync_or_load_index(store, corpus)
+        build_adapter(adapter_path, space.baseline)
+        base_factory = load_adapter_factory(str(adapter_path))
+
+        def factory(config: dict):
+            try:
+                return base_factory(config)
+            except (ValueError, AdapterLoadError) as exc:
+                raise TuneError(f"adapter rejected config {_config_text(config)}: {exc}") from exc
+
+        judge_client = make_client(provider, judge_model, mock_model="mock-judge")
+        proposer = make_client(provider, proposer_model, mock_model="mock-proposer") if strategy == "llm" else None
+        typer.echo(
+            f"Tuning {adapter_path} over {space.size} possible config(s) with strategy {strategy}, "
+            f"up to {max_trials} trial(s), scored on the dev split only..."
+        )
+
+        def on_trial(trial: Trial, best: Trial) -> None:
+            typer.echo(
+                f"  trial {trial.index:>2} [{trial.source:<12}] dev {trial.dev.score:5.1f}  "
+                f"(best {best.dev.score:5.1f})  {_config_text(trial.config)}"
+            )
+
+        try:
+            result = run_tune(
+                store,
+                factory,
+                file_sha256(adapter_path),
+                str(adapter_path),
+                space,
+                judge_client,
+                index_version,
+                strategy=strategy,
+                proposer_client=proposer,
+                max_trials=max_trials,
+                max_llm_calls=max_llm_calls,
+                seed=seed,
+                k=k,
+                overfit_threshold=overfit_threshold,
+                on_trial=on_trial,
+            )
+        except TuneError as exc:
+            _fail(str(exc))
+        result.best_config_path = str(write_best_config(result, out))
+        store.finish_tune_run(result.tune_id, result.finished_at, result.model_dump_json())
+    finally:
+        store.close()
+
+    typer.echo("")
+    for line in format_tune_result(result):
+        typer.echo(line)
+    typer.echo(f"Best config written to {out}. Trial log saved to {store_path} (tune {result.tune_id}).")
+    return result

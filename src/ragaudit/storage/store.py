@@ -20,6 +20,7 @@ from pathlib import Path
 
 from ragaudit.models.evaluation import EvalSummary, QuestionResult
 from ragaudit.models.question import Question, QuestionStatus, QuestionType, Split
+from ragaudit.models.tune import Trial, TuneResult
 from ragaudit.storage.lock import LockedTestSetError, is_test_split_unlocked
 
 DEFAULT_STORE_PATH = Path(".ragaudit") / "store.db"
@@ -437,3 +438,42 @@ class Store:
             (config_hash, split.value),
         ).fetchone()
         return EvalSummary.model_validate_json(row[0]) if row else None
+
+    # --- tuning logs -------------------------------------------------------
+
+    def save_tune_run(self, tune_id: str, created_at: datetime, strategy: str, search_space: dict) -> None:
+        self._conn.execute(
+            "INSERT OR REPLACE INTO tune_runs (tune_id, created_at, strategy, search_space_json) VALUES (?, ?, ?, ?)",
+            (tune_id, created_at.isoformat(), strategy, json.dumps(search_space)),
+        )
+        self._conn.commit()
+
+    def save_tune_trial(self, tune_id: str, trial: Trial) -> None:
+        self._conn.execute(
+            "INSERT OR REPLACE INTO tune_trials (tune_id, trial_index, created_at, config_hash, data_json) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (tune_id, trial.index, trial.created_at.isoformat(), trial.config_hash, trial.model_dump_json()),
+        )
+        self._conn.commit()
+
+    def finish_tune_run(self, tune_id: str, finished_at: datetime, result_json: str) -> None:
+        self._conn.execute(
+            "UPDATE tune_runs SET finished_at = ?, result_json = ? WHERE tune_id = ?",
+            (finished_at.isoformat(), result_json, tune_id),
+        )
+        self._conn.commit()
+
+    def load_tune_result(self, tune_id: str | None = None) -> TuneResult | None:
+        """A finished tune run (the latest if tune_id is None), or None. Test scores in it are aggregates only."""
+        query = "SELECT result_json FROM tune_runs WHERE result_json IS NOT NULL"
+        if tune_id is None:
+            row = self._conn.execute(f"{query} ORDER BY created_at DESC LIMIT 1").fetchone()
+        else:
+            row = self._conn.execute(f"{query} AND tune_id = ?", (tune_id,)).fetchone()
+        return TuneResult.model_validate_json(row[0]) if row else None
+
+    def load_tune_trials(self, tune_id: str) -> list[Trial]:
+        rows = self._conn.execute(
+            "SELECT data_json FROM tune_trials WHERE tune_id = ? ORDER BY trial_index", (tune_id,)
+        ).fetchall()
+        return [Trial.model_validate_json(r[0]) for r in rows]

@@ -40,6 +40,7 @@ from ragaudit.scoring.groundedness import judge_groundedness
 from ragaudit.storage import db as db_module
 from ragaudit.storage import repository
 from ragaudit.storage.store import DEFAULT_STORE_PATH
+from ragaudit.tune.loop import DEFAULT_MAX_TRIALS, DEFAULT_OVERFIT_THRESHOLD
 
 app = typer.Typer(help="Audits RAG pipelines by checking whether retrieval actually did the work.")
 
@@ -229,6 +230,47 @@ def evaluate(
         judge_model=judge_model,
         ablation=ablation,
         full=full,
+    )
+
+
+@app.command()
+@_cli_safe
+def tune(
+    adapter: Path = typer.Option(..., "--adapter", help="Adapter file exposing `make_adapter(config)`."),
+    search_space: Path = typer.Option(..., "--search-space", help="YAML file of knobs and their allowed values."),
+    corpus: Optional[Path] = typer.Option(None, "--corpus", help="Current corpus (default: last recorded)."),
+    strategy: str = typer.Option("grid", "--strategy", help="grid, random (seeded) or llm."),
+    max_trials: int = typer.Option(DEFAULT_MAX_TRIALS, "--max-trials", help="Max configs to evaluate, baseline included."),
+    max_llm_calls: Optional[int] = typer.Option(
+        None, "--max-llm-calls", help="Cap on judge + proposer calls; room for the final test evaluation is reserved."
+    ),
+    seed: int = typer.Option(0, "--seed", help="Seed for the random strategy and fallbacks."),
+    k: int = typer.Option(DEFAULT_K, "--k", help="Score retrieval over the top k retrieved chunk ids."),
+    overfit_threshold: float = typer.Option(
+        DEFAULT_OVERFIT_THRESHOLD, "--overfit-threshold", help="Warn when best dev minus best test exceeds this (points)."
+    ),
+    out: Path = typer.Option(Path("best_config.yaml"), "--out", help="Where to write the best config (YAML)."),
+    store: Path = STORE_OPTION,
+    llm: Optional[str] = LLM_OPTION,
+    judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Correctness judge model."),
+    proposer_model: Optional[str] = typer.Option(None, "--proposer-model", help="Model for --strategy llm."),
+) -> None:
+    """v2: search pipeline configs on the dev split; report baseline vs best on the locked test split."""
+    cli_v2.run_tune_command(
+        adapter_path=adapter,
+        search_space_path=search_space,
+        corpus=corpus,
+        strategy=strategy,
+        max_trials=max_trials,
+        max_llm_calls=max_llm_calls,
+        seed=seed,
+        k=k,
+        overfit_threshold=overfit_threshold,
+        out=out,
+        store_path=store,
+        llm=llm,
+        judge_model=judge_model,
+        proposer_model=proposer_model,
     )
 
 

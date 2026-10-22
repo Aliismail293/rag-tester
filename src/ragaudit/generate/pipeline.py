@@ -18,7 +18,9 @@ the report can show what was thrown away and why.
 
 Generation is incremental (chunks that already have active questions, or
 were already processed at the same content hash, are skipped) and
-budgeted (--max-chunks, --max-llm-calls): when a cap is hit the current
+budgeted (--max-chunks, --max-llm-calls). Every run first syncs the corpus
+version (ingest/versioning.py), marking questions on changed or deleted
+chunks stale, so changed chunks get fresh questions. When a cap is hit the current
 chunk's partial work is discarded, everything finished so far is already
 saved, and the summary says how much is left.
 """
@@ -34,6 +36,7 @@ from pydantic import BaseModel, Field
 from ragaudit.generate import prompts
 from ragaudit.generate.text import content_tokens, has_relative_time, jaccard, lexical_overlap
 from ragaudit.ingest.corpus import chunk_hash, chunk_timestamp
+from ragaudit.ingest.versioning import sync_corpus
 from ragaudit.llm.factory import BudgetedCompleter, CallBudget, Completer, LLMBudgetExceeded
 from ragaudit.models.document import Chunk
 from ragaudit.models.question import Question, QuestionStatus, RejectReason, utc_now
@@ -354,6 +357,10 @@ def generate_questions(
         corpus_chunks=len(chunks),
         lexical_threshold=options.lexical_threshold,
     )
+
+    diff = sync_corpus(store, chunks)
+    summary.index_version = diff.index_version
+    summary.corpus_diff = diff.counts()
 
     done = store.active_source_keys()
     if not options.retry_processed:

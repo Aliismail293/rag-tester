@@ -331,3 +331,45 @@ class Store:
         else:
             row = self._conn.execute("SELECT summary_json FROM generate_runs WHERE run_id = ?", (run_id,)).fetchone()
         return row[0] if row else None
+
+    # --- corpus versions and staleness --------------------------------------
+
+    def latest_corpus_version(self) -> tuple[str, dict[str, str]] | None:
+        """(index_version, chunk_id -> chunk_hash) of the last recorded corpus, or None."""
+        row = self._conn.execute(
+            "SELECT index_version, chunk_map_json FROM corpus_versions ORDER BY seq DESC LIMIT 1"
+        ).fetchone()
+        return (row[0], json.loads(row[1])) if row else None
+
+    def record_corpus_version(self, index_version: str, chunk_map: dict[str, str]) -> None:
+        self._conn.execute(
+            "INSERT INTO corpus_versions (index_version, created_at, chunk_map_json) VALUES (?, ?, ?)",
+            (index_version, datetime.now(timezone.utc).isoformat(), json.dumps(chunk_map, sort_keys=True)),
+        )
+        self._conn.commit()
+
+    def corpus_version_count(self) -> int:
+        return self._conn.execute("SELECT COUNT(*) FROM corpus_versions").fetchone()[0]
+
+    def refresh_staleness(self, current_chunks: dict[str, str]) -> tuple[int, int]:
+        """Mark active questions stale if any source chunk changed or vanished; revive stale ones whose sources are back.
+
+        Reads only ids and hashes, never question text or answers, so it
+        runs over both splits. Returns (marked_stale, revived).
+        """
+        to_stale, to_revive = [], []
+        for question_id, ids_json, hashes_json, status in self._conn.execute(
+            "SELECT question_id, chunk_ids_json, chunk_hashes_json, status FROM questions WHERE status IN (?, ?)",
+            (QuestionStatus.ACTIVE.value, QuestionStatus.STALE.value),
+        ):
+            sources_present = all(
+                current_chunks.get(chunk_id) == chunk_hash
+                for chunk_id, chunk_hash in zip(json.loads(ids_json), json.loads(hashes_json))
+            )
+            if status == QuestionStatus.ACTIVE.value and not sources_present:
+                to_stale.append(question_id)
+            elif status == QuestionStatus.STALE.value and sources_present:
+                to_revive.append(question_id)
+        self.set_question_status(to_stale, QuestionStatus.STALE)
+        self.set_question_status(to_revive, QuestionStatus.ACTIVE)
+        return len(to_stale), len(to_revive)

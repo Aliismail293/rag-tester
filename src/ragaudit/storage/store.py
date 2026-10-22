@@ -18,6 +18,7 @@ from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
 
+from ragaudit.models.evaluation import EvalSummary, QuestionResult
 from ragaudit.models.question import Question, QuestionStatus, QuestionType, Split
 from ragaudit.storage.lock import LockedTestSetError, is_test_split_unlocked
 
@@ -373,3 +374,66 @@ class Store:
         self.set_question_status(to_stale, QuestionStatus.STALE)
         self.set_question_status(to_revive, QuestionStatus.ACTIVE)
         return len(to_stale), len(to_revive)
+
+    # --- evaluation results (the cache) ------------------------------------
+
+    def save_result(self, result: QuestionResult, config_hash: str, index_version: str) -> None:
+        """Cache one result under (question_id, config_hash, index_version)."""
+        self._conn.execute(
+            "INSERT OR REPLACE INTO eval_results "
+            "(question_id, config_hash, index_version, split, created_at, data_json) VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                result.question_id,
+                config_hash,
+                index_version,
+                result.split,
+                datetime.now(timezone.utc).isoformat(),
+                result.model_dump_json(),
+            ),
+        )
+        self._conn.commit()
+
+    def load_result(self, question_id: str, config_hash: str, index_version: str) -> QuestionResult | None:
+        """A cached result, or None. Test-split results are locked like test questions (judge rationales can echo answers)."""
+        row = self._conn.execute(
+            "SELECT split, data_json FROM eval_results WHERE question_id = ? AND config_hash = ? AND index_version = ?",
+            (question_id, config_hash, index_version),
+        ).fetchone()
+        if row is None:
+            return None
+        _require_unlocked_for({Split(row[0])}, {QuestionStatus.ACTIVE})
+        return QuestionResult.model_validate_json(row[1])
+
+    def result_question_ids(self, config_hash: str, split: Split) -> set[str]:
+        """Ids of questions with a cached result for this config at any index version. Ids only, so safe."""
+        rows = self._conn.execute(
+            "SELECT DISTINCT question_id FROM eval_results WHERE config_hash = ? AND split = ?",
+            (config_hash, split.value),
+        )
+        return {r[0] for r in rows}
+
+    def save_eval_run(self, summary: EvalSummary) -> None:
+        self._conn.execute(
+            "INSERT OR REPLACE INTO eval_runs "
+            "(run_id, created_at, config_hash, config_json, index_version, split, mode, summary_json) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                summary.run_id,
+                summary.created_at.isoformat(),
+                summary.config_hash,
+                json.dumps(summary.config, sort_keys=True),
+                summary.index_version,
+                summary.split,
+                summary.mode,
+                summary.model_dump_json(),
+            ),
+        )
+        self._conn.commit()
+
+    def last_eval_run(self, config_hash: str, split: Split) -> EvalSummary | None:
+        """The latest evaluation summary for this config and split (aggregates only, so safe for test)."""
+        row = self._conn.execute(
+            "SELECT summary_json FROM eval_runs WHERE config_hash = ? AND split = ? ORDER BY created_at DESC LIMIT 1",
+            (config_hash, split.value),
+        ).fetchone()
+        return EvalSummary.model_validate_json(row[0]) if row else None

@@ -11,9 +11,17 @@ from pathlib import Path
 
 import typer
 
-from ragaudit.generate.pipeline import GenerateOptions, GenerateSummary, generate_questions
+from ragaudit import yaml_io
+from ragaudit.adapters.base import AdapterLoadError, load_adapter_factory
+from ragaudit.generate.pipeline import GenerateOptions, GenerateSummary, generate_questions, source_key
 from ragaudit.ingest.corpus import CorpusError, load_corpus
-from ragaudit.llm.factory import CallBudget, make_client, resolve_provider
+from ragaudit.ingest.versioning import CorpusDiff, sync_corpus
+from ragaudit.llm.factory import PROVIDER_ENV, CallBudget, make_client, resolve_provider
+from ragaudit.models.evaluation import EvalSummary
+from ragaudit.models.question import Split
+from ragaudit.runner.evaluate import compute_config_hash, file_sha256, run_evaluation
+from ragaudit.runner.locked import evaluate_test_split
+from ragaudit.scoring.correctness import judge_correctness
 from ragaudit.storage.store import Store, StoreSchemaError
 
 VERIFIER_MODEL_ENV = "RAGAUDIT_VERIFIER_MODEL"
@@ -42,13 +50,20 @@ def _load_corpus_or_fail(path: Path):
     return chunks
 
 
-def _generation_clients(llm: str | None, generator_model: str | None, verifier_model: str | None):
-    """Generator and verifier clients. The verifier must be a different model from the generator."""
+def _resolve_provider(llm: str | None) -> str:
+    """Resolve --llm, and export it so the adapter under test uses the same provider for its own LLM calls."""
     try:
         provider = resolve_provider(llm)
     except ValueError as exc:
         _fail(str(exc))
+    if llm is not None:
+        os.environ[PROVIDER_ENV] = provider
+    return provider
 
+
+def _generation_clients(llm: str | None, generator_model: str | None, verifier_model: str | None):
+    """Generator and verifier clients. The verifier must be a different model from the generator."""
+    provider = _resolve_provider(llm)
     if provider == "mock":
         generator = make_client("mock", generator_model, mock_model="mock-generator")
         verifier = make_client("mock", verifier_model, mock_model="mock-verifier")
@@ -159,4 +174,161 @@ def run_generate(
     for line in format_generate_summary(summary, totals):
         typer.echo(line)
     typer.echo(f"Saved to {store_path} (generate run {summary.run_id}).")
+    return summary
+
+
+# --- evaluate ----------------------------------------------------------------
+
+
+def load_config_file(path: Path | None) -> dict:
+    """A pipeline config: a YAML mapping of knob -> value (a tune best-config file works as-is)."""
+    if path is None:
+        return {}
+    if not path.is_file():
+        _fail(f"config file not found: {path}")
+    try:
+        data = yaml_io.load(path)
+    except yaml_io.YAMLError as exc:
+        _fail(f"could not parse config file {path}: {exc}")
+    if data is None:
+        return {}
+    if not isinstance(data, dict):
+        _fail(f"config file {path} must contain a mapping of knob: value")
+    return data
+
+
+def _format_diff(diff: CorpusDiff, n_chunks: int) -> str:
+    counts = diff.counts()
+    text = (
+        f"Corpus: {n_chunks} chunk(s), index {diff.index_version[:12]}: {counts['new']} new, "
+        f"{counts['changed']} changed, {counts['deleted']} deleted, {counts['unchanged']} unchanged; "
+        f"{counts['marked_stale']} question(s) marked stale"
+    )
+    if counts["revived"]:
+        text += f", {counts['revived']} revived"
+    return text + "."
+
+
+def sync_or_load_index(store: Store, corpus: Path | None) -> str:
+    """Sync the corpus (printing the diff) and return the current index_version."""
+    if corpus is None:
+        latest = store.latest_corpus_version()
+        if latest is None:
+            _fail("no corpus version recorded in the store; pass --corpus (or run `ragaudit generate --corpus` first).")
+        typer.echo(f"Corpus: using the last recorded version, index {latest[0][:12]} (pass --corpus to check for changes).")
+        return latest[0]
+
+    chunks = _load_corpus_or_fail(corpus)
+    diff = sync_corpus(store, chunks)
+    typer.echo(_format_diff(diff, len(chunks)))
+    done = store.active_source_keys() | store.attempted_source_keys()
+    needing = sum(1 for chunk in chunks if source_key([chunk]) not in done)
+    if needing:
+        typer.echo(f"  {needing} chunk(s) have no questions yet; run `ragaudit generate --corpus {corpus}` to cover them.")
+    return diff.index_version
+
+
+def format_eval_summary(summary: EvalSummary) -> list[str]:
+    mode = {
+        "full": "full (config not evaluated before)",
+        "regression": f"regression ({summary.n_new} new + {summary.n_sampled_old} sampled old question(s))",
+        "cached": "cached (corpus and config unchanged)",
+    }[summary.mode]
+    failures = summary.failure_counts
+    verdicts = summary.verdict_counts
+    lines = [
+        f"Evaluated {summary.n_questions} of {summary.n_active_in_split} active {summary.split} question(s); "
+        f"mode {mode}; {summary.n_cached} from cache, {summary.n_run} run.",
+        f"Score (pass rate): {summary.score:.1f}  |  answer accuracy {summary.answer_accuracy:.1%}  |  "
+        f"recall@{summary.k} {summary.recall_at_k:.1%}  |  MRR {summary.mrr:.3f}",
+        f"Failure classes: pass {failures['pass']}, retrieval_miss {failures['retrieval_miss']}, "
+        f"generation_miss {failures['generation_miss']}.",
+        f"v1 verdicts: true_pass {verdicts['true_pass']}, lucky_pass {verdicts['lucky_pass']}, "
+        f"generation_failure {verdicts['generation_failure']}, retrieval_failure {verdicts['retrieval_failure']}.",
+    ]
+    if summary.lucky_pass_confirmed is not None:
+        lines.append(f"Ablation: {summary.lucky_pass_confirmed} lucky pass(es) stayed correct with retrieval off.")
+    if summary.judge_failures or summary.adapter_errors:
+        lines.append(
+            f"Warnings: {summary.judge_failures} judge parse failure(s), {summary.adapter_errors} adapter error(s); "
+            "both are scored as failures."
+        )
+    if summary.mode == "regression":
+        lines.append(
+            "Note: in regression mode the score covers new questions plus a sample of old ones, not the whole split."
+        )
+    return lines
+
+
+def build_adapter(adapter_path: Path, config: dict):
+    try:
+        return load_adapter_factory(str(adapter_path))(config)
+    except AdapterLoadError as exc:
+        _fail(str(exc))
+    except ValueError as exc:
+        _fail(f"adapter rejected the config: {exc}")
+
+
+def make_judge(provider: str, judge_model: str | None):
+    client = make_client(provider, judge_model, mock_model="mock-judge")
+
+    def judge(question: str, expected_answer: str, candidate_answer: str):
+        return judge_correctness(client, question, expected_answer, candidate_answer)
+
+    return client, judge
+
+
+def run_evaluate(
+    adapter_path: Path,
+    corpus: Path | None,
+    config_path: Path | None,
+    split: str,
+    k: int,
+    regression_sample: int,
+    seed: int,
+    store_path: Path,
+    llm: str | None,
+    judge_model: str | None,
+    ablation: bool,
+    full: bool,
+) -> EvalSummary:
+    from ragaudit.cli import NO_CONTEXT_SYSTEM_PROMPT
+
+    try:
+        split_enum = Split(split)
+    except ValueError:
+        _fail(f"--split must be dev or test, got {split!r}")
+    provider = _resolve_provider(llm)
+    config = load_config_file(config_path)
+
+    store = _open_store(store_path)
+    try:
+        index_version = sync_or_load_index(store, corpus)
+        if not store.question_ids(split_enum):
+            _fail(f"no active {split} questions in {store_path}; run `ragaudit generate --corpus <path>` first.")
+
+        adapter = build_adapter(adapter_path, config)
+        judge_client, judge = make_judge(provider, judge_model)
+        config_hash = compute_config_hash(config, file_sha256(adapter_path), judge_client.model, k)
+        kwargs = dict(
+            config=config,
+            config_hash=config_hash,
+            index_version=index_version,
+            k=k,
+            regression_sample=regression_sample,
+            seed=seed,
+            full=full,
+            no_context_query=(lambda q: judge_client.complete(NO_CONTEXT_SYSTEM_PROMPT, q)) if ablation else None,
+        )
+        typer.echo(f"Evaluating the {split} split with adapter {adapter_path}, judge {judge_client.model}...")
+        if split_enum == Split.TEST:
+            summary = evaluate_test_split(store, adapter, judge, **kwargs)
+        else:
+            summary, _ = run_evaluation(store, store.dev_questions(), Split.DEV, adapter, judge, **kwargs)
+    finally:
+        store.close()
+
+    for line in format_eval_summary(summary):
+        typer.echo(line)
+    typer.echo(f"Saved eval run {summary.run_id} (config {config_hash[:12]}, index {index_version[:12]}) to {store_path}.")
     return summary

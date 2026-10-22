@@ -32,6 +32,7 @@ from ragaudit.models.run import Run, RunConfig
 from ragaudit.models.scoring import Verdict
 from ragaudit.report.generator import generate_report
 from ragaudit.runner.ablation import run_ablation
+from ragaudit.runner.evaluate import DEFAULT_K, DEFAULT_REGRESSION_SAMPLE
 from ragaudit.runner.executor import run_test_set
 from ragaudit.runner.summary import compute_run_summary
 from ragaudit.scoring.correctness import judge_correctness
@@ -189,6 +190,45 @@ def generate(
     typer.echo(
         f"Generated {len(test_set.test_cases)} test case(s) from {len(chunks)} chunk(s). "
         f"Saved test set '{test_set.testset_id}' to {db}"
+    )
+
+
+@app.command()
+@_cli_safe
+def evaluate(
+    adapter: Path = typer.Option(..., "--adapter", help="Adapter file: `make_adapter(config)`, `adapter`, or `query`."),
+    corpus: Optional[Path] = typer.Option(
+        None, "--corpus", help="Current corpus, to detect new/changed/deleted chunks (default: last recorded)."
+    ),
+    config: Optional[Path] = typer.Option(None, "--config", help="YAML pipeline config passed to the adapter."),
+    split: str = typer.Option("dev", "--split", help="dev (default) or test. Test goes through the locked path."),
+    k: int = typer.Option(DEFAULT_K, "--k", help="Score retrieval over the top k retrieved chunk ids."),
+    regression_sample: int = typer.Option(
+        DEFAULT_REGRESSION_SAMPLE,
+        "--regression-sample",
+        help="When only the corpus changed: old questions to re-run alongside all new ones.",
+    ),
+    seed: int = typer.Option(0, "--seed", help="Seed for the regression sample."),
+    full: bool = typer.Option(False, "--full", help="Ignore regression sampling and cover every active question."),
+    ablation: bool = typer.Option(False, "--ablation", help="Re-ask lucky passes with no context (v1 ablation)."),
+    store: Path = STORE_OPTION,
+    llm: Optional[str] = LLM_OPTION,
+    judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Correctness judge model."),
+) -> None:
+    """v2: evaluate a pipeline on generated questions, with caching and regression sampling."""
+    cli_v2.run_evaluate(
+        adapter_path=adapter,
+        corpus=corpus,
+        config_path=config,
+        split=split,
+        k=k,
+        regression_sample=regression_sample,
+        seed=seed,
+        store_path=store,
+        llm=llm,
+        judge_model=judge_model,
+        ablation=ablation,
+        full=full,
     )
 
 

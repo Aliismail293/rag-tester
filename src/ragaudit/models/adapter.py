@@ -25,3 +25,15 @@ class Adapter(Protocol):
     """The interface users implement to plug their RAG pipeline in."""
 
     def query(self, question: str) -> RAGResponse: ...
+
+
+class ConfigurableAdapter(Protocol):
+    """Optional v2 extension: an adapter that can be reconfigured, e.g. by `ragaudit tune`.
+
+    Alternatively an adapter file can define `make_adapter(config: dict) -> Adapter`.
+    Plain v1 adapters keep working everywhere a config isn't needed.
+    """
+
+    def query(self, question: str) -> RAGResponse: ...
+
+    def configure(self, config: dict) -> None: ...

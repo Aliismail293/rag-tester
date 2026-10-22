@@ -1,0 +1,43 @@
+<script>
+(function () {
+  "use strict";
+  // One tooltip per chart figure. Each mark carries data-tip: the first
+  // line is the value (bold), the rest is context. textContent only.
+  Array.prototype.slice.call(document.querySelectorAll(".v2-figure")).forEach(function (figure) {
+    var tip = document.createElement("div");
+    tip.className = "v2-tooltip";
+    tip.hidden = true;
+    figure.appendChild(tip);
+
+    function show(mark, clientX, clientY) {
+      var lines = (mark.getAttribute("data-tip") || "").split("\n");
+      tip.textContent = "";
+      var head = document.createElement("strong");
+      head.textContent = lines[0];
+      tip.appendChild(head);
+      if (lines.length > 1) {
+        tip.appendChild(document.createTextNode(lines.slice(1).join("\n")));
+      }
+      tip.hidden = false;
+      var box = figure.getBoundingClientRect();
+      var x = clientX - box.left + 14;
+      var y = clientY - box.top + 14;
+      if (x + tip.offsetWidth > box.width) { x = Math.max(0, clientX - box.left - tip.offsetWidth - 14); }
+      tip.style.left = x + "px";
+      tip.style.top = y + "px";
+    }
+
+    function hide() { tip.hidden = true; }
+
+    Array.prototype.slice.call(figure.querySelectorAll("[data-tip]")).forEach(function (mark) {
+      mark.addEventListener("mousemove", function (event) { show(mark, event.clientX, event.clientY); });
+      mark.addEventListener("mouseleave", hide);
+      mark.addEventListener("focus", function () {
+        var r = mark.getBoundingClientRect();
+        show(mark, r.left + r.width / 2, r.top);
+      });
+      mark.addEventListener("blur", hide);
+    });
+  });
+})();
+</script>

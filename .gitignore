@@ -18,3 +18,5 @@ htmlcov/
 
 demo/output/*
 !demo/output/.gitkeep
+.ragaudit/
+demo/v2/output/

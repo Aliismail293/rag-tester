@@ -4,6 +4,9 @@ This module only wires together already-implemented modules (loading,
 chunking, generation, running, ablation, scoring aggregation, storage,
 and reporting) behind a Typer app. It contains no scoring or business
 logic of its own.
+
+v2 adds `generate --corpus`, `evaluate` and `tune`; their bodies live in
+cli_v2.py. Without --corpus, `generate` runs exactly the v1 code path.
 """
 
 import functools
@@ -14,7 +17,13 @@ from typing import Optional
 
 import typer
 
+from ragaudit import cli_v2
 from ragaudit.adapters.base import AdapterLoadError, load_adapter
+from ragaudit.generate.pipeline import (
+    DEFAULT_LEXICAL_THRESHOLD,
+    DEFAULT_MAX_FACTS_PER_CHUNK,
+    DEFAULT_MULTI_HOP_PAIRS,
+)
 from ragaudit.generate.testset_generator import generate_test_set
 from ragaudit.ingest import chunker
 from ragaudit.ingest.loader import load_documents as load_documents_from_disk
@@ -23,16 +32,23 @@ from ragaudit.models.run import Run, RunConfig
 from ragaudit.models.scoring import Verdict
 from ragaudit.report.generator import generate_report
 from ragaudit.runner.ablation import run_ablation
+from ragaudit.runner.evaluate import DEFAULT_K, DEFAULT_REGRESSION_SAMPLE
 from ragaudit.runner.executor import run_test_set
 from ragaudit.runner.summary import compute_run_summary
 from ragaudit.scoring.correctness import judge_correctness
 from ragaudit.scoring.groundedness import judge_groundedness
 from ragaudit.storage import db as db_module
 from ragaudit.storage import repository
+from ragaudit.storage.store import DEFAULT_STORE_PATH
+from ragaudit.tune.loop import DEFAULT_MAX_TRIALS, DEFAULT_OVERFIT_THRESHOLD
 
 app = typer.Typer(help="Audits RAG pipelines by checking whether retrieval actually did the work.")
 
 DB_OPTION = typer.Option(Path("ragaudit.db"), "--db", help="SQLite database path.")
+STORE_OPTION = typer.Option(DEFAULT_STORE_PATH, "--store", help="v2 store path.")
+LLM_OPTION = typer.Option(
+    None, "--llm", help="v2 LLM provider: openai (default, RAGAUDIT_API_*) or mock (offline). Env: RAGAUDIT_LLM."
+)
 
 NO_CONTEXT_SYSTEM_PROMPT = (
     "Answer the question using only your own internal knowledge. You have not "
@@ -101,10 +117,57 @@ def ingest(
 @app.command()
 @_cli_safe
 def generate(
-    n: int = typer.Option(1, "--n", help="Number of questions to generate per chunk."),
+    n: Optional[int] = typer.Option(
+        None,
+        "--n",
+        help="Number of questions to generate per chunk (default 1). With --corpus: max facts per chunk (default 3).",
+    ),
     db: Path = DB_OPTION,
+    corpus: Optional[Path] = typer.Option(
+        None,
+        "--corpus",
+        help="v2: build a verified, de-worded, dev/test-split question set from this .jsonl file or directory.",
+    ),
+    store: Path = STORE_OPTION,
+    llm: Optional[str] = LLM_OPTION,
+    generator_model: Optional[str] = typer.Option(None, "--generator-model", help="v2: generator model."),
+    verifier_model: Optional[str] = typer.Option(
+        None, "--verifier-model", help="v2: verifier model; must differ from the generator."
+    ),
+    max_chunks: Optional[int] = typer.Option(None, "--max-chunks", help="v2: process at most this many chunks."),
+    max_llm_calls: Optional[int] = typer.Option(None, "--max-llm-calls", help="v2: stop after this many LLM calls."),
+    multi_hop: bool = typer.Option(False, "--multi-hop", help="v2: also write questions that need two chunks."),
+    multi_hop_pairs: int = typer.Option(
+        DEFAULT_MULTI_HOP_PAIRS, "--multi-hop-pairs", help="v2: max chunk pairs for multi-hop per run."
+    ),
+    lexical_threshold: float = typer.Option(
+        DEFAULT_LEXICAL_THRESHOLD,
+        "--lexical-threshold",
+        help="v2: max share of question content words found in the chunk before a rewrite is rejected.",
+    ),
+    retry_processed: bool = typer.Option(
+        False, "--retry-processed", help="v2: re-process chunks that previously yielded no active question."
+    ),
 ) -> None:
     """Generate a test set from ingested chunks and persist it."""
+    if corpus is not None:
+        cli_v2.run_generate(
+            corpus=corpus,
+            store_path=store,
+            max_facts_per_chunk=n if n is not None else DEFAULT_MAX_FACTS_PER_CHUNK,
+            llm=llm,
+            generator_model=generator_model,
+            verifier_model=verifier_model,
+            max_chunks=max_chunks,
+            max_llm_calls=max_llm_calls,
+            multi_hop=multi_hop,
+            multi_hop_pairs=multi_hop_pairs,
+            lexical_threshold=lexical_threshold,
+            retry_processed=retry_processed,
+        )
+        return
+
+    n = 1 if n is None else n
     if not db.exists():
         _error_exit(f"database not found at {db} — run `ragaudit ingest <path>` first.")
 
@@ -128,6 +191,86 @@ def generate(
     typer.echo(
         f"Generated {len(test_set.test_cases)} test case(s) from {len(chunks)} chunk(s). "
         f"Saved test set '{test_set.testset_id}' to {db}"
+    )
+
+
+@app.command()
+@_cli_safe
+def evaluate(
+    adapter: Path = typer.Option(..., "--adapter", help="Adapter file: `make_adapter(config)`, `adapter`, or `query`."),
+    corpus: Optional[Path] = typer.Option(
+        None, "--corpus", help="Current corpus, to detect new/changed/deleted chunks (default: last recorded)."
+    ),
+    config: Optional[Path] = typer.Option(None, "--config", help="YAML pipeline config passed to the adapter."),
+    split: str = typer.Option("dev", "--split", help="dev (default) or test. Test goes through the locked path."),
+    k: int = typer.Option(DEFAULT_K, "--k", help="Score retrieval over the top k retrieved chunk ids."),
+    regression_sample: int = typer.Option(
+        DEFAULT_REGRESSION_SAMPLE,
+        "--regression-sample",
+        help="When only the corpus changed: old questions to re-run alongside all new ones.",
+    ),
+    seed: int = typer.Option(0, "--seed", help="Seed for the regression sample."),
+    full: bool = typer.Option(False, "--full", help="Ignore regression sampling and cover every active question."),
+    ablation: bool = typer.Option(False, "--ablation", help="Re-ask lucky passes with no context (v1 ablation)."),
+    store: Path = STORE_OPTION,
+    llm: Optional[str] = LLM_OPTION,
+    judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Correctness judge model."),
+) -> None:
+    """v2: evaluate a pipeline on generated questions, with caching and regression sampling."""
+    cli_v2.run_evaluate(
+        adapter_path=adapter,
+        corpus=corpus,
+        config_path=config,
+        split=split,
+        k=k,
+        regression_sample=regression_sample,
+        seed=seed,
+        store_path=store,
+        llm=llm,
+        judge_model=judge_model,
+        ablation=ablation,
+        full=full,
+    )
+
+
+@app.command()
+@_cli_safe
+def tune(
+    adapter: Path = typer.Option(..., "--adapter", help="Adapter file exposing `make_adapter(config)`."),
+    search_space: Path = typer.Option(..., "--search-space", help="YAML file of knobs and their allowed values."),
+    corpus: Optional[Path] = typer.Option(None, "--corpus", help="Current corpus (default: last recorded)."),
+    strategy: str = typer.Option("grid", "--strategy", help="grid, random (seeded) or llm."),
+    max_trials: int = typer.Option(DEFAULT_MAX_TRIALS, "--max-trials", help="Max configs to evaluate, baseline included."),
+    max_llm_calls: Optional[int] = typer.Option(
+        None, "--max-llm-calls", help="Cap on judge + proposer calls; room for the final test evaluation is reserved."
+    ),
+    seed: int = typer.Option(0, "--seed", help="Seed for the random strategy and fallbacks."),
+    k: int = typer.Option(DEFAULT_K, "--k", help="Score retrieval over the top k retrieved chunk ids."),
+    overfit_threshold: float = typer.Option(
+        DEFAULT_OVERFIT_THRESHOLD, "--overfit-threshold", help="Warn when best dev minus best test exceeds this (points)."
+    ),
+    out: Path = typer.Option(Path("best_config.yaml"), "--out", help="Where to write the best config (YAML)."),
+    store: Path = STORE_OPTION,
+    llm: Optional[str] = LLM_OPTION,
+    judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Correctness judge model."),
+    proposer_model: Optional[str] = typer.Option(None, "--proposer-model", help="Model for --strategy llm."),
+) -> None:
+    """v2: search pipeline configs on the dev split; report baseline vs best on the locked test split."""
+    cli_v2.run_tune_command(
+        adapter_path=adapter,
+        search_space_path=search_space,
+        corpus=corpus,
+        strategy=strategy,
+        max_trials=max_trials,
+        max_llm_calls=max_llm_calls,
+        seed=seed,
+        k=k,
+        overfit_threshold=overfit_threshold,
+        out=out,
+        store_path=store,
+        llm=llm,
+        judge_model=judge_model,
+        proposer_model=proposer_model,
     )
 
 
@@ -218,13 +361,26 @@ def run_cmd(
 @app.command()
 @_cli_safe
 def report(
-    out: Path = typer.Option(Path("report.html"), "--out", help="Output HTML file path."),
+    out: Optional[Path] = typer.Option(
+        None, "--out", help="Output HTML file path (default report.html; generate-report.html / tune-report.html for v2 kinds)."
+    ),
     db: Path = DB_OPTION,
     run_id: Optional[str] = typer.Option(
-        None, "--run-id", help="Run id to report on (defaults to the most recently run)."
+        None, "--run-id", help="Run id to report on (defaults to the most recently run). For v2 kinds, the generate run or tune id."
     ),
+    kind: str = typer.Option(
+        "run", "--kind", help="run (v1 run report, the default), generate (v2 generate run) or tune (v2 tune run)."
+    ),
+    store: Path = STORE_OPTION,
 ) -> None:
-    """Render the latest (or specified) Run into a static HTML report."""
+    """Render the latest (or specified) Run into a static HTML report. v2: --kind generate|tune."""
+    if kind in ("generate", "tune"):
+        output_path = cli_v2.run_report(kind, store, out or Path(f"{kind}-report.html"), run_id)
+        typer.echo(f"Report written to {output_path}")
+        return
+    if kind != "run":
+        _error_exit(f"--kind must be run, generate or tune, got {kind!r}")
+    out = out or Path("report.html")
     if not db.exists():
         _error_exit(f"database not found at {db} — run `ragaudit ingest`, `generate`, and `run` first.")
 

@@ -12,6 +12,12 @@ FACTS_SYSTEM_PROMPT = (
     "on its own, naming its subject instead of using pronouns. Never invent or infer anything that is "
     "not written in the passage.\n"
     "\n"
+    "Each fact is a full sentence, and its answer is copied word for word from that sentence. When the "
+    "passage gives several values for the same thing (two months, a list of names), keep them together in "
+    "one fact whose answer is the whole list, so every question has exactly one correct answer.\n"
+    "\n"
+    'Example: {"fact": "The Zentrix vault in Pellow opens every Thursday.", "answer": "every Thursday"}\n'
+    "\n"
     "Respond with strict JSON only, no prose, no markdown fences, in the form: "
     '{"facts": [{"fact": str, "answer": str}, ...]}'
 )
@@ -40,15 +46,21 @@ DEWORD_SYSTEM_PROMPT = (
 )
 
 VERIFY_SYSTEM_PROMPT = (
-    "You are an independent verifier for a retrieval test set. Given source passage(s), a fact, a "
-    "question and a gold answer, check three things strictly:\n"
+    "You are an independent verifier for a retrieval test set. Most generated questions have at least one "
+    "problem; your job is to find it. Given source passage(s), a fact, a question and a gold answer, check "
+    "three things strictly:\n"
     "1. supported: the fact AND the gold answer are explicitly supported by the passage(s).\n"
-    "2. answerable: the question can be answered from the passage(s), and the gold answer answers it.\n"
+    "2. answerable: the question can be answered from the passage(s), and the gold answer is the complete "
+    "answer to it.\n"
     "3. unambiguous: the question has exactly one correct answer and names its subject clearly enough "
-    "that a reader without the passage knows what is being asked.\n"
+    "that a reader without the passage knows what is being asked. It is NOT unambiguous if the passage(s) "
+    "give more than one value that fits (for example two months, two dates or a list) and the gold answer "
+    "names only one, if it points at \"the passage\" or \"the text\" instead of naming its subject, or if "
+    "it is not written entirely in the passage's language.\n"
     "\n"
-    "Respond with strict JSON only, no prose, no markdown fences, in the form: "
-    '{"supported": bool, "answerable": bool, "unambiguous": bool, "reason": str}'
+    "First explain your checks in \"reason\", then give the verdicts. Respond with strict JSON only, no "
+    "prose, no markdown fences, in the form: "
+    '{"reason": str, "supported": bool, "answerable": bool, "unambiguous": bool}'
 )
 
 MULTI_HOP_SYSTEM_PROMPT = (

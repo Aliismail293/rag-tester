@@ -133,8 +133,8 @@ def test_question_prompt_forbids_relative_time_and_asks_for_absolute_time():
 
 
 def test_parsers_tolerate_fences_and_reject_bad_shapes():
-    assert parse_facts_response('```json\n{"facts": [{"fact": "f", "answer": "a"}]}\n```') == [
-        {"fact": "f", "answer": "a"}
+    assert parse_facts_response('```json\n{"facts": [{"fact": "The vault opens on Thursday.", "answer": "Thursday"}]}\n```') == [
+        {"fact": "The vault opens on Thursday.", "answer": "Thursday"}
     ]
     assert parse_facts_response("nope") is None
     assert parse_question_response('{"question": "Q?"}') == "Q?"

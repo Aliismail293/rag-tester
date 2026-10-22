@@ -29,8 +29,8 @@ chunk's partial work is discarded, everything finished so far is already
 saved, and the summary says how much is left.
 """
 
-import json
 import re
+import unicodedata
 import uuid
 from collections import Counter, defaultdict
 from datetime import datetime
@@ -42,6 +42,7 @@ from ragaudit.generate.text import content_tokens, has_relative_time, jaccard, l
 from ragaudit.ingest.corpus import chunk_hash, chunk_timestamp
 from ragaudit.ingest.versioning import sync_corpus
 from ragaudit.llm.factory import BudgetedCompleter, CallBudget, Completer, LLMBudgetExceeded
+from ragaudit.llm.json_output import parse_json_object
 from ragaudit.models.document import Chunk
 from ragaudit.models.question import Question, QuestionStatus, RejectReason, split_for_chunks, utc_now
 from ragaudit.storage.store import Store
@@ -97,29 +98,75 @@ class GenerateSummary(BaseModel):
 # --- response parsing ------------------------------------------------------
 
 
-def _parse_json_object(raw: str) -> dict | None:
-    text = raw.strip()
-    fenced = re.match(r"^```(?:json)?\s*(.*?)\s*```$", text, re.DOTALL)
-    if fenced:
-        text = fenced.group(1)
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
+_parse_json_object = parse_json_object
+
+MIN_FACT_WORDS = 3
+SOURCE_REFERENCE_RE = re.compile(
+    r"\b(?:according to|based on|in|from|per)\s+(?:the|this|that|given|above|provided)"
+    r"(?:\s+(?:given|above|provided))?\s+(?:passage|text|document|context|article|excerpt|paragraph)s?\b"
+    r"|\b(?:the|this|that|given|above|provided)\s+(?:passage|excerpt)s?\b",
+    re.IGNORECASE,
+)
+"""A question that points at "the passage" can't be asked of a retrieval system, which has no passage yet."""
+
+
+def _normalize(text: str) -> str:
+    return " ".join(text.lower().split()).strip(" .,;:!?\"'")
+
+
+def _answer_value(value) -> str | None:
+    """Answers may come back as JSON numbers; a bool or anything else is malformed."""
+    if isinstance(value, bool):
         return None
-    return data if isinstance(data, dict) else None
+    if isinstance(value, (int, float)):
+        return str(value)
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def is_usable_fact(fact: str, answer: str) -> bool:
+    """A real fact: a statement of a few words that contains its answer, not a bare value or a fragment."""
+    fact_norm, answer_norm = _normalize(fact), _normalize(answer)
+    return (
+        bool(answer_norm)
+        and len(fact_norm.split()) >= MIN_FACT_WORDS
+        and fact_norm != answer_norm
+        and re.search(rf"(?<![a-z0-9]){re.escape(answer_norm)}(?![a-z0-9])", fact_norm) is not None
+    )
+
+
+def _scripts(text: str) -> set[str]:
+    """Writing systems of the letters in text (LATIN, CJK, CYRILLIC, ...)."""
+    scripts = set()
+    for char in text:
+        if unicodedata.category(char).startswith("L"):
+            name = unicodedata.name(char, "")
+            scripts.add(name.split(" ")[0] if name else "UNKNOWN")
+    return scripts
+
+
+def question_problem(question: str, source_text: str) -> str | None:
+    """Why a generated question can't be used as is, or None. Cheap checks run on every draft and rewrite."""
+    if "\n" in question.strip():
+        return "spans several lines (e.g. multiple-choice options)"
+    if SOURCE_REFERENCE_RE.search(question):
+        return "refers to the passage instead of naming its subject"
+    foreign = _scripts(question) - _scripts(source_text)
+    if foreign:
+        return f"uses a writing system the passage doesn't ({', '.join(sorted(foreign))})"
+    return None
 
 
 def parse_facts_response(raw: str) -> list[dict[str, str]] | None:
-    """Parse {"facts": [{"fact", "answer"}]}. None if malformed; malformed entries are dropped."""
+    """Parse {"facts": [{"fact", "answer"}]}. None if malformed; malformed or unusable entries are dropped."""
     data = _parse_json_object(raw)
     if data is None or not isinstance(data.get("facts"), list):
         return None
     facts = []
     for item in data["facts"]:
         if isinstance(item, dict):
-            fact, answer = item.get("fact"), item.get("answer")
-            if isinstance(fact, str) and isinstance(answer, str) and fact.strip() and answer.strip():
-                facts.append({"fact": fact.strip(), "answer": answer.strip()})
+            fact, answer = item.get("fact"), _answer_value(item.get("answer"))
+            if isinstance(fact, str) and answer is not None and is_usable_fact(fact, answer):
+                facts.append({"fact": fact.strip(), "answer": answer})
     return facts
 
 
@@ -162,16 +209,24 @@ def extract_facts(client: Completer, chunk: Chunk, max_facts: int) -> list[dict[
     return facts[:max_facts] if facts is not None else None
 
 
+def _usable_question(question: str | None, chunks: list[Chunk]) -> str | None:
+    if question is None or question_problem(question, "\n\n".join(_passages(chunks))) is not None:
+        return None
+    return question
+
+
 def write_question(client: Completer, fact: str, answer: str, chunks: list[Chunk]) -> str | None:
+    """The generator's question for a fact, or None if it is unparseable or fails `question_problem`."""
     raw = client.complete(
         prompts.QUESTION_SYSTEM_PROMPT, prompts.build_question_prompt(fact, answer, _passages(chunks), _captured(chunks))
     )
-    return parse_question_response(raw)
+    return _usable_question(parse_question_response(raw), chunks)
 
 
 def deword_question(client: Completer, question: str, chunks: list[Chunk], previous: str | None = None) -> str | None:
+    """A rewrite of the question, or None (the caller keeps the draft) if it is unparseable or fails `question_problem`."""
     raw = client.complete(prompts.DEWORD_SYSTEM_PROMPT, prompts.build_deword_prompt(question, _passages(chunks), previous))
-    return parse_question_response(raw)
+    return _usable_question(parse_question_response(raw), chunks)
 
 
 def verify_question(verifier: Completer, fact: str, question: str, answer: str, chunks: list[Chunk]) -> str | None:
@@ -270,7 +325,11 @@ def _questions_for_pair(
         prompts.MULTI_HOP_SYSTEM_PROMPT, prompts.build_multi_hop_prompt(_passages(pair), _captured(pair))
     )
     data = _parse_json_object(raw)
+    if data is not None:
+        data["answer"] = _answer_value(data.get("answer")) or ""
     if data is None or not all(isinstance(data.get(k), str) and data[k].strip() for k in ("fact", "question", "answer")):
+        return None
+    if _usable_question(data["question"].strip(), pair) is None:
         return None
     return [
         build_checked_question(

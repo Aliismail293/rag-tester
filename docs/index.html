@@ -251,7 +251,7 @@ ragaudit report --out report.html</code></pre>
         <div class="ln-step">
           <span class="k">01 &middot; generate</span>
           <strong>Questions that resist keyword search</strong>
-          <p>Facts are extracted per chunk, questions are reworded away from the passage, and a second model verifies each one. Each question is assigned to dev or test once, by hash.</p>
+          <p>Facts are extracted per chunk, questions are reworded away from the passage, and a second model verifies each one. Each chunk is assigned to dev or test by hash, and its questions inherit that split, so no chunk feeds both.</p>
         </div>
         <div class="ln-step">
           <span class="k">02 &middot; evaluate</span>

@@ -13,6 +13,10 @@ each chunk:
 5. a *different* verifier model checks the fact and answer are supported
    by the chunk and the question is answerable and unambiguous.
 
+Each question inherits its chunk's dev/test split (models/question.py).
+Multi-hop questions are only drawn from chunk pairs in the same split; one
+whose chunks span both splits is rejected `cross_split`.
+
 Rejected questions are stored too (status `rejected` plus a reason), so
 the report can show what was thrown away and why.
 
@@ -39,7 +43,7 @@ from ragaudit.ingest.corpus import chunk_hash, chunk_timestamp
 from ragaudit.ingest.versioning import sync_corpus
 from ragaudit.llm.factory import BudgetedCompleter, CallBudget, Completer, LLMBudgetExceeded
 from ragaudit.models.document import Chunk
-from ragaudit.models.question import Question, QuestionStatus, RejectReason, utc_now
+from ragaudit.models.question import Question, QuestionStatus, RejectReason, split_for_chunks, utc_now
 from ragaudit.storage.store import Store
 
 DEFAULT_MAX_FACTS_PER_CHUNK = 3
@@ -201,14 +205,21 @@ def build_checked_question(
     Returns the Question (active or rejected) and its final lexical overlap.
     """
     source_text = "\n\n".join(_passages(chunks))
-    question = deword_question(generator, draft, chunks) or draft
-    overlap = lexical_overlap(question, source_text)
-    if overlap > lexical_threshold:
-        retry = deword_question(generator, draft, chunks, previous=question)
-        if retry:
-            question, overlap = retry, lexical_overlap(retry, source_text)
+    cross_split = split_for_chunks([c.chunk_id for c in chunks]) is None
+    if cross_split:
+        # Chunks from both splits can never become an active question, so skip the paid checks.
+        question, overlap = draft, lexical_overlap(draft, source_text)
+    else:
+        question = deword_question(generator, draft, chunks) or draft
+        overlap = lexical_overlap(question, source_text)
+        if overlap > lexical_threshold:
+            retry = deword_question(generator, draft, chunks, previous=question)
+            if retry:
+                question, overlap = retry, lexical_overlap(retry, source_text)
 
-    if overlap > lexical_threshold:
+    if cross_split:
+        reject_reason = RejectReason.CROSS_SPLIT.value
+    elif overlap > lexical_threshold:
         reject_reason = RejectReason.TOO_LEXICAL.value
     elif has_relative_time(question):
         reject_reason = RejectReason.RELATIVE_TIME.value
@@ -283,7 +294,11 @@ def source_key(chunks: list[Chunk]) -> str:
 
 
 def candidate_pairs(chunks: list[Chunk]) -> list[list[Chunk]]:
-    """Chunk pairs for multi-hop questions: adjacent chunks of a document, then similar chunks across documents."""
+    """Chunk pairs for multi-hop questions: adjacent chunks of a document, then similar chunks across documents.
+
+    Only pairs whose chunks share a split: a cross-split pair could only
+    ever yield a cross_split reject, so it isn't worth an LLM call.
+    """
     scored: dict[tuple[str, str], tuple[float, list[Chunk]]] = {}
 
     by_doc: dict[str, list[Chunk]] = defaultdict(list)
@@ -306,7 +321,7 @@ def candidate_pairs(chunks: list[Chunk]) -> list[list[Chunk]]:
                     scored[(a.chunk_id, b.chunk_id)] = (similarity, [a, b])
 
     ranked = sorted(scored.items(), key=lambda item: (-item[1][0], item[0]))
-    return [pair for _, (_, pair) in ranked]
+    return [pair for _, (_, pair) in ranked if split_for_chunks([c.chunk_id for c in pair]) is not None]
 
 
 def _record(store: Store, summary: GenerateSummary, results: list[tuple[Question, float]], multi_hop: bool) -> None:

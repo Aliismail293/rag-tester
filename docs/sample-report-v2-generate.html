@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ragaudit generate report — e107e6f3-cd84-4b1b-bcb9-f7b99e45be1a</title>
+<title>ragaudit generate report — f03de452-e437-461b-8f7c-347846248e53</title>
 <style>
 /* Shared stylesheet for the ragaudit HTML report and the docs/ landing page.
    Dark theme, system font stack, no external fonts or frameworks. */
@@ -1187,11 +1187,11 @@ details.v2-data summary {
   <header class="report-header">
     <h1>ragaudit generate report<span class="v2-badge-mock">built with the mock LLM</span></h1>
     <div class="meta">
-      Run <code>e107e6f3-cd84-4b1b-bcb9-f7b99e45be1a</code> ·
+      Run <code>f03de452-e437-461b-8f7c-347846248e53</code> ·
       generator <code>mock-generator</code> ·
       verifier <code>mock-verifier</code> ·
       index <code>1c27dc762394</code> ·
-      started 2026-10-22 06:23:37.164212+00:00
+      started 2026-10-22 17:57:52.989490+00:00
     </div>
   </header>
 
@@ -1212,7 +1212,7 @@ details.v2-data summary {
     <div class="stats-grid">
       <div class="stat"><span class="value">59</span><span class="label">Questions saved this run</span></div>
       <div class="stat"><span class="value">43</span><span class="label">Rejected this run</span></div>
-      <div class="stat"><span class="value">42 / 17</span><span class="label">New dev / new test</span></div>
+      <div class="stat"><span class="value">43 / 16</span><span class="label">New dev / new test</span></div>
       <div class="stat"><span class="value">6</span><span class="label">Multi-hop saved</span></div>
     </div>
     
@@ -1220,7 +1220,7 @@ details.v2-data summary {
 
   <section>
     <h2>What's in the store now</h2>
-    <p>Every question is assigned to a split once, from a hash of its id, so it never moves. <code>tune</code> only ever sees the dev split; the test split stays locked until the final score.</p>
+    <p>Every chunk is assigned to dev or test once, from a hash of its id, and its questions inherit that split, so no chunk feeds both. Editing a chunk never moves it. <code>tune</code> only ever sees the dev split; the test split stays locked until the final score.</p>
     <div class="v2-table-wrap">
       <table class="v2-table">
         <thead><tr><th>Split</th><th class="num">Active</th><th class="num">Stale</th><th class="num">Rejected</th></tr></thead>
@@ -1228,17 +1228,18 @@ details.v2-data summary {
           
           <tr>
             <td>dev</td>
-            <td class="num">49</td>
+            <td class="num">52</td>
             <td class="num">6</td>
-            <td class="num">30</td>
+            <td class="num">37</td>
           </tr>
           
           <tr>
             <td>test (locked)</td>
-            <td class="num">21</td>
+            <td class="num">16</td>
             <td class="num">1</td>
-            <td class="num">19</td>
+            <td class="num">13</td>
           </tr>
+          
           
         </tbody>
       </table>
@@ -1292,8 +1293,8 @@ Relative time: used words like &quot;recently&quot; or &quot;last quarter&quot;"
     </p>
     
     <figure class="v2-figure"><svg class="v2-chart" viewBox="0 0 720 272" role="img" aria-label="Histogram of lexical overlap" preserveAspectRatio="xMidYMid meet"><line class="v2-grid" x1="44" x2="704" y1="230.0" y2="230.0"></line><text class="v2-tick" x="36" y="234.0" text-anchor="end">0</text><line class="v2-grid" x1="44" x2="704" y1="162.7" y2="162.7"></line><text class="v2-tick" x="36" y="166.7" text-anchor="end">20</text><line class="v2-grid" x1="44" x2="704" y1="95.3" y2="95.3"></line><text class="v2-tick" x="36" y="99.3" text-anchor="end">40</text><line class="v2-grid" x1="44" x2="704" y1="28.0" y2="28.0"></line><text class="v2-tick" x="36" y="32.0" text-anchor="end">60</text><path class="v2-mark v2-fill-accent" d="M177.0,230.0 V228.3 Q177.0,226.6 178.7,226.6 H239.3 Q241.0,226.6 241.0,228.3 V230.0 Z" data-tip="1 question(s)
-overlap (0.2, 0.3], kept" tabindex="0"></path><path class="v2-mark v2-fill-accent" d="M243.0,230.0 V173.4 Q243.0,169.4 247.0,169.4 H303.0 Q307.0,169.4 307.0,173.4 V230.0 Z" data-tip="18 question(s)
-overlap (0.3, 0.4], kept" tabindex="0"></path><path class="v2-mark v2-fill-accent" d="M309.0,230.0 V69.0 Q309.0,65.0 313.0,65.0 H369.0 Q373.0,65.0 373.0,69.0 V230.0 Z" data-tip="49 question(s)
+overlap (0.2, 0.3], kept" tabindex="0"></path><path class="v2-mark v2-fill-accent" d="M243.0,230.0 V170.0 Q243.0,166.0 247.0,166.0 H303.0 Q307.0,166.0 307.0,170.0 V230.0 Z" data-tip="19 question(s)
+overlap (0.3, 0.4], kept" tabindex="0"></path><path class="v2-mark v2-fill-accent" d="M309.0,230.0 V72.4 Q309.0,68.4 313.0,68.4 H369.0 Q373.0,68.4 373.0,72.4 V230.0 Z" data-tip="48 question(s)
 overlap (0.4, 0.5], kept" tabindex="0"></path><path class="v2-mark v2-fill-muted" d="M375.0,230.0 V183.5 Q375.0,179.5 379.0,179.5 H435.0 Q439.0,179.5 439.0,183.5 V230.0 Z" data-tip="15 question(s)
 overlap (0.5, 0.6], above threshold: rejected as too_lexical" tabindex="0"></path><path class="v2-mark v2-fill-muted" d="M441.0,230.0 V207.1 Q441.0,203.1 445.0,203.1 H501.0 Q505.0,203.1 505.0,207.1 V230.0 Z" data-tip="8 question(s)
 overlap (0.6, 0.7], above threshold: rejected as too_lexical" tabindex="0"></path><path class="v2-mark v2-fill-muted" d="M507.0,230.0 V213.8 Q507.0,209.8 511.0,209.8 H567.0 Q571.0,209.8 571.0,213.8 V230.0 Z" data-tip="6 question(s)
@@ -1316,9 +1317,9 @@ overlap (0.9, 1.0], above threshold: rejected as too_lexical" tabindex="0"></pat
           
           <tr><td>(0.2, 0.3]</td><td class="num">1</td><td>kept</td></tr>
           
-          <tr><td>(0.3, 0.4]</td><td class="num">18</td><td>kept</td></tr>
+          <tr><td>(0.3, 0.4]</td><td class="num">19</td><td>kept</td></tr>
           
-          <tr><td>(0.4, 0.5]</td><td class="num">49</td><td>kept</td></tr>
+          <tr><td>(0.4, 0.5]</td><td class="num">48</td><td>kept</td></tr>
           
           <tr><td>(0.5, 0.6]</td><td class="num">15</td><td>rejected</td></tr>
           
@@ -1338,7 +1339,7 @@ overlap (0.9, 1.0], above threshold: rejected as too_lexical" tabindex="0"></pat
 
   <section>
     <h2>Example questions (dev split)</h2>
-    <p>A sample of saved questions. Only dev-split questions are shown so the report never leaks the locked test set.</p>
+    <p>A sample of saved questions. Only dev-split questions are shown, so the report never leaks the locked test set.</p>
     
     <div class="v2-q">
       <div><span class="v2-tag">multi_hop</span><span class="v2-tag">overlap 0.38</span></div>
@@ -1355,31 +1356,24 @@ overlap (0.9, 1.0], above threshold: rejected as too_lexical" tabindex="0"></pat
     </div>
     
     <div class="v2-q">
-      <div><span class="v2-tag">multi_hop</span><span class="v2-tag">overlap 0.50</span></div>
-      <div class="q">Anyone know: HVTA how often each safety, and anyone know: Tram wheels how in length each?</div>
-      <div class="a">Answer: 7 days; 80,000 kilometres</div>
-      <div class="src">Fact: Every HVTA tram receives a safety inspection every 7 days and a full overhaul every 600,000 kilometres. Tram wheels are reprofiled every 80,000 kilometres. · from <code>maintenance-01, maintenance-02</code></div>
-    </div>
-    
-    <div class="v2-q">
-      <div><span class="v2-tag">multi_hop</span><span class="v2-tag">overlap 0.45</span></div>
-      <div class="q">Anyone know: Quarry Line how often each trams each, and remind me, Line 2 what is name traffic due?</div>
-      <div class="a">Answer: 8 minutes; Ostley High Street</div>
-      <div class="src">Fact: Quarry Line trams run every 8 minutes at peak and every 15 minutes off-peak. Most delays on Line 2 are caused by road traffic at the Ostley High Street crossing. · from <code>line2-02, line2-03</code></div>
-    </div>
-    
-    <div class="v2-q">
       <div><span class="v2-tag">multi_hop</span><span class="v2-tag">overlap 0.33</span></div>
-      <div class="q">Remind me, Line 2 what is name traffic due, and quick q: Line 2 what is name looked after?</div>
-      <div class="a">Answer: Ostley High Street; Saltmarsh Depot</div>
-      <div class="src">Fact: Most delays on Line 2 are caused by road traffic at the Ostley High Street crossing. Line 2 is maintained from Saltmarsh Depot. · from <code>line2-03, line2-04</code></div>
+      <div class="q">Remind me, Riverside Line how often each trams, and quick q: Riverside Line which year got new signals using?</div>
+      <div class="a">Answer: 6 minutes; 2023</div>
+      <div class="src">Fact: Riverside Line trams run every 6 minutes at peak times and every 12 minutes off-peak. The Riverside Line was resignalled in 2023 using the Corvane CBX-2 signalling system, which allowed peak headways to drop from 8 minutes to 6 minutes. · from <code>line1-02, line1-03</code></div>
     </div>
     
     <div class="v2-q">
-      <div><span class="v2-tag">single</span><span class="v2-tag">overlap 0.43</span></div>
-      <div class="q">Anyone know: Millbrook Exchange how long goes carrow?</div>
-      <div class="a">Answer: 14.6 kilometres</div>
-      <div class="src">Fact: It runs 14.6 kilometres from Carrow Bridge Quay to Millbrook Exchange along the north bank of the Harrow River. · from <code>line1-01</code></div>
+      <div><span class="v2-tag">multi_hop</span><span class="v2-tag">overlap 0.46</span></div>
+      <div class="q">Trying to recall: Strada Feed what number called, and quick q: Line 3 what is name looked after hvta&#39;s?</div>
+      <div class="a">Answer: 2.1; Oriel Yard</div>
+      <div class="src">Fact: The Ashby Crosstown Line was built with a ground-level power supply called Strada Feed on its 2.1-kilometre heritage section through Ashby Old Town, so no overhead wires are visible there. Line 3 is maintained from Oriel Yard, the smallest of HVTA&#39;s three depots. · from <code>line3-03, line3-04</code></div>
+    </div>
+    
+    <div class="v2-q">
+      <div><span class="v2-tag">multi_hop</span><span class="v2-tag">overlap 0.40</span></div>
+      <div class="q">Trying to recall: Harrow Express what time minutes each, and quick q: Harrow Express what number operated?</div>
+      <div class="a">Answer: 6:00; 14</div>
+      <div class="src">Fact: Harrow Express buses run every 12 minutes from 6:00 to 20:00 on weekdays. Route X1 is operated with 14 Kestrel K12 electric buses painted in a dark green Harrow Express livery. · from <code>x1-02, x1-03</code></div>
     </div>
     
     <div class="v2-q">
@@ -1394,6 +1388,13 @@ overlap (0.9, 1.0], above threshold: rejected as too_lexical" tabindex="0"></pat
       <div class="q">Quick q: Riverside Line which year got new signals using?</div>
       <div class="a">Answer: 2023</div>
       <div class="src">Fact: The Riverside Line was resignalled in 2023 using the Corvane CBX-2 signalling system, which allowed peak headways to drop from 8 minutes to 6 minutes. · from <code>line1-03</code></div>
+    </div>
+    
+    <div class="v2-q">
+      <div><span class="v2-tag">single</span><span class="v2-tag">overlap 0.38</span></div>
+      <div class="q">Quick q: Millbrook Exchange which year started running line?</div>
+      <div class="a">Answer: 2004</div>
+      <div class="src">Fact: Line 2, the Quarry Line, opened in 2004 and connects Ostley Quarry Gate to Millbrook Exchange. · from <code>line2-01</code></div>
     </div>
     
     <div class="v2-q">
@@ -1415,17 +1416,10 @@ overlap (0.9, 1.0], above threshold: rejected as too_lexical" tabindex="0"></pat
   
   <section>
     <h2>Example rejections</h2>
-    <p>Up to three per reason. Rejected questions are never scored, so they're shown from either split.</p>
+    <p>Up to three per reason, from the dev split only, so the report never shows text from a test chunk.</p>
     
     <details>
       <summary><code>unsupported</code> (3 shown)</summary>
-      
-      <div class="v2-q">
-        <div class="q">Remind me, Talia Brenninger which year since head?</div>
-        <div class="a">First draft: The authority is governed by a nine-member board whose chair since what has been Talia Brenninger, a former civil engineer?</div>
-        <div class="a">Answer: 2022 · overlap 0.50</div>
-        <div class="src">Fact: The authority is governed by a nine-member board whose chair since 2022 has been Talia Brenninger, a former civil engineer. · from <code>overview-02</code></div>
-      </div>
       
       <div class="v2-q">
         <div class="q">Quick q: Tram lines what percentage moved trips?</div>
@@ -1439,6 +1433,13 @@ overlap (0.9, 1.0], above threshold: rejected as too_lexical" tabindex="0"></pat
         <div class="a">First draft: The HVTA monthly pass, called the ValleyCard Month, costs what for adults?</div>
         <div class="a">Answer: 69 euros · overlap 0.50</div>
         <div class="src">Fact: The HVTA monthly pass, called the ValleyCard Month, costs 69 euros for adults. · from <code>fares-02</code></div>
+      </div>
+      
+      <div class="v2-q">
+        <div class="q">Trying to recall: order worth what date arrive?</div>
+        <div class="a">First draft: The order is worth 47 million euros and the first of the new trams is due to arrive in when?</div>
+        <div class="a">Answer: May 2028 · overlap 0.50</div>
+        <div class="src">Fact: The order is worth 47 million euros and the first of the new trams is due to arrive in May 2028. · from <code>fleet-04</code></div>
       </div>
       
     </details>
@@ -1489,25 +1490,6 @@ overlap (0.9, 1.0], above threshold: rejected as too_lexical" tabindex="0"></pat
         <div class="a">First draft: The Carrow Bridge interchange redesign will merge the tram and bus stops at what into a single covered hall?</div>
         <div class="a">Answer: Carrow Bridge Quay · overlap 0.50</div>
         <div class="src">Fact: The Carrow Bridge interchange redesign will merge the tram and bus stops at Carrow Bridge Quay into a single covered hall. · from <code>projects-03</code></div>
-      </div>
-      
-    </details>
-    
-    <details>
-      <summary><code>unanswerable</code> (2 shown)</summary>
-      
-      <div class="v2-q">
-        <div class="q">Remind me, HVTA Assist how in length least reserve, and remind me, help dogs what is name free ride ride?</div>
-        <div class="a">First draft: Remind me, HVTA Assist how long least reserve, and remind me, Assistance dogs what is the name free ride ride?</div>
-        <div class="a">Answer: 2 hours; HVTA · overlap 0.45</div>
-        <div class="src">Fact: Passengers who need assistance can book the HVTA Assist service at least 2 hours before travel. Assistance dogs travel free on all HVTA services, and other dogs travel free if they are on a lead. · from <code>accessibility-02, accessibility-03</code></div>
-      </div>
-      
-      <div class="v2-q">
-        <div class="q">Remind me, help dogs what is name free ride ride, and anyone know: HVTA&#39;s ride what is name called?</div>
-        <div class="a">First draft: Remind me, Assistance dogs what is the name free ride ride, and anyone know: HVTA&#39;s journey what is the name called?</div>
-        <div class="a">Answer: HVTA; ValleyGo · overlap 0.40</div>
-        <div class="src">Fact: Assistance dogs travel free on all HVTA services, and other dogs travel free if they are on a lead. HVTA&#39;s journey planner app, called ValleyGo, includes a step-free routing option that avoids stops with lift outages. · from <code>accessibility-03, accessibility-04</code></div>
       </div>
       
     </details>

@@ -125,7 +125,7 @@ def format_generate_summary(summary: GenerateSummary, totals: dict) -> list[str]
         "Store totals: "
         f"dev {by_split['dev']['active']} active / test {by_split['test']['active']} active, "
         f"{by_split['dev']['stale'] + by_split['test']['stale']} stale, "
-        f"{by_split['dev']['rejected'] + by_split['test']['rejected']} rejected."
+        f"{by_split['dev']['rejected'] + by_split['test']['rejected'] + by_split['none']['rejected']} rejected."
     )
 
     if summary.stopped_reason == "max_chunks":

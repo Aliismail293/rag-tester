@@ -36,7 +36,7 @@ extract_generate_run_id() {
 # The toy adapter indexes whichever corpus this points at.
 export RAGAUDIT_DEMO_CORPUS="$DEMO/corpus.jsonl"
 
-echo "== 1. generate: verified, de-worded questions, split once into dev/test =="
+echo "== 1. generate: verified, de-worded questions; each chunk (and its questions) goes to dev or test =="
 GEN_OUTPUT=$($RAGAUDIT generate --corpus "$DEMO/corpus.jsonl" --multi-hop --store "$STORE" --llm "$LLM")
 echo "$GEN_OUTPUT"
 FIRST_GENERATE_RUN=$(echo "$GEN_OUTPUT" | extract_generate_run_id)

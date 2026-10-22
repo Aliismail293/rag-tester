@@ -3,7 +3,8 @@
 A separate SQLite file from v1's `ragaudit.db` (default `.ragaudit/store.db`)
 so v1 tables and behaviour are never touched. Uses the stdlib `sqlite3`
 module only, with a one-row `schema_version` table so a future schema
-change can tell old stores apart from new ones.
+change can tell old stores apart from new ones. Opening a schema-1 store
+migrates it (see `_migrate_v1_to_v2`).
 
 Every read that could return test-split questions or results goes through
 a guard: unless the final evaluation path in `ragaudit.runner.locked` has
@@ -19,18 +20,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ragaudit.models.evaluation import EvalSummary, QuestionResult
-from ragaudit.models.question import Question, QuestionStatus, QuestionType, Split
+from ragaudit.models.question import Question, QuestionStatus, QuestionType, RejectReason, Split, split_for_chunks
 from ragaudit.models.tune import Trial, TuneResult
 from ragaudit.storage.lock import LockedTestSetError, is_test_split_unlocked
 
 DEFAULT_STORE_PATH = Path(".ragaudit") / "store.db"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+"""2: splits are per chunk, and `questions.split` is NULL for cross-split rejects."""
 
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS schema_version (
-    version INTEGER NOT NULL
-);
-
+_QUESTIONS_TABLE = """
 CREATE TABLE IF NOT EXISTS questions (
     question_id TEXT PRIMARY KEY,
     chunk_ids_json TEXT NOT NULL,
@@ -39,7 +37,7 @@ CREATE TABLE IF NOT EXISTS questions (
     question TEXT NOT NULL,
     gold_answer TEXT NOT NULL,
     question_type TEXT NOT NULL,
-    split TEXT NOT NULL,
+    split TEXT,
     status TEXT NOT NULL,
     reject_reason TEXT,
     created_at TEXT NOT NULL,
@@ -49,8 +47,17 @@ CREATE TABLE IF NOT EXISTS questions (
     lexical_overlap REAL,
     metadata_json TEXT NOT NULL
 );
+"""
 
-CREATE INDEX IF NOT EXISTS idx_questions_split_status ON questions (split, status);
+_QUESTIONS_INDEX = "CREATE INDEX IF NOT EXISTS idx_questions_split_status ON questions (split, status)"
+
+SCHEMA = f"""
+CREATE TABLE IF NOT EXISTS schema_version (
+    version INTEGER NOT NULL
+);
+
+{_QUESTIONS_TABLE.strip()}
+{_QUESTIONS_INDEX};
 
 CREATE TABLE IF NOT EXISTS corpus_versions (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,7 +148,7 @@ def _question_to_row(q: Question) -> tuple:
         q.question,
         q.gold_answer,
         q.question_type.value,
-        q.split.value,
+        q.split.value if q.split is not None else None,
         q.status.value,
         q.reject_reason,
         q.created_at.isoformat(),
@@ -162,7 +169,7 @@ def _row_to_question(r: tuple) -> Question:
         question=r[4],
         gold_answer=r[5],
         question_type=QuestionType(r[6]),
-        split=Split(r[7]),
+        split=Split(r[7]) if r[7] is not None else None,
         status=QuestionStatus(r[8]),
         reject_reason=r[9],
         created_at=datetime.fromisoformat(r[10]),
@@ -190,11 +197,56 @@ class Store:
         row = self._conn.execute("SELECT version FROM schema_version").fetchone()
         if row is None:
             self._conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
+        elif row[0] == 1:
+            self._migrate_v1_to_v2()
         elif row[0] > SCHEMA_VERSION:
             raise StoreSchemaError(
                 f"store {self.path} has schema version {row[0]}, but this ragaudit only understands "
                 f"up to {SCHEMA_VERSION}. Upgrade ragaudit."
             )
+
+    def _migrate_v1_to_v2(self) -> None:
+        """Re-split a schema-1 store per chunk.
+
+        Schema 1 split per question, so one chunk's questions could sit in
+        both splits. This recomputes every question's split from its chunk
+        ids; a multi-hop question whose chunks now disagree becomes a
+        cross_split reject with no split. The questions table is rebuilt to
+        allow that NULL. Cached results of questions whose split changed are
+        dropped (they're recomputed on the next evaluate); past eval and tune
+        run summaries are kept as history.
+        """
+        conn = self._conn
+        conn.commit()
+        isolation_level = conn.isolation_level
+        conn.isolation_level = None  # manage the transaction by hand so the table rebuild is all-or-nothing
+        try:
+            conn.execute("BEGIN")
+            rows = conn.execute(f"SELECT {_QUESTION_COLUMNS} FROM questions").fetchall()
+            conn.execute("DROP INDEX IF EXISTS idx_questions_split_status")
+            conn.execute("ALTER TABLE questions RENAME TO questions_v1")
+            conn.execute(_QUESTIONS_TABLE)
+            conn.execute(_QUESTIONS_INDEX)
+            moved = []
+            for row in rows:
+                row = list(row)
+                split = split_for_chunks(json.loads(row[1]))
+                if split is None:
+                    row[8], row[9] = QuestionStatus.REJECTED.value, RejectReason.CROSS_SPLIT.value
+                new_split = split.value if split is not None else None
+                if new_split != row[7]:
+                    moved.append(row[0])
+                row[7] = new_split
+                conn.execute(f"INSERT INTO questions ({_QUESTION_COLUMNS}) VALUES ({', '.join('?' * 16)})", row)
+            conn.execute("DROP TABLE questions_v1")
+            conn.executemany("DELETE FROM eval_results WHERE question_id = ?", [(qid,) for qid in moved])
+            conn.execute("UPDATE schema_version SET version = ?", (SCHEMA_VERSION,))
+            conn.execute("COMMIT")
+        except BaseException:
+            conn.execute("ROLLBACK")
+            raise
+        finally:
+            conn.isolation_level = isolation_level
 
     @property
     def schema_version(self) -> int:
@@ -265,12 +317,17 @@ class Store:
         return [r[0] for r in rows]
 
     def question_counts(self) -> dict:
-        """Counts by split/status and by reject reason. No question text, so safe for either split."""
-        by_split_status: dict[str, dict[str, int]] = {s.value: {st.value: 0 for st in QuestionStatus} for s in Split}
+        """Counts by split/status and by reject reason. No question text, so safe for either split.
+
+        Split "none" holds cross_split rejects, which belong to neither split.
+        """
+        by_split_status: dict[str, dict[str, int]] = {
+            key: {st.value: 0 for st in QuestionStatus} for key in [s.value for s in Split] + ["none"]
+        }
         for split, status, count in self._conn.execute(
             "SELECT split, status, COUNT(*) FROM questions GROUP BY split, status"
         ):
-            by_split_status[split][status] = count
+            by_split_status[split or "none"][status] = count
         reasons = Counter(
             {
                 reason: count

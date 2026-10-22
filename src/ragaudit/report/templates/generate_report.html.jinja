@@ -52,7 +52,7 @@
 
   <section>
     <h2>What's in the store now</h2>
-    <p>Every question is assigned to a split once, from a hash of its id, so it never moves. <code>tune</code> only ever sees the dev split; the test split stays locked until the final score.</p>
+    <p>Every chunk is assigned to dev or test once, from a hash of its id, and its questions inherit that split, so no chunk feeds both. Editing a chunk never moves it. <code>tune</code> only ever sees the dev split; the test split stays locked until the final score.</p>
     <div class="v2-table-wrap">
       <table class="v2-table">
         <thead><tr><th>Split</th><th class="num">Active</th><th class="num">Stale</th><th class="num">Rejected</th></tr></thead>
@@ -65,6 +65,14 @@
             <td class="num">{{ totals[split]["rejected"] }}</td>
           </tr>
           {% endfor %}
+          {% set unsplit = totals.get("none", {}).get("rejected", 0) %}{% if unsplit %}
+          <tr>
+            <td>neither (cross-split multi-hop)</td>
+            <td class="num">0</td>
+            <td class="num">0</td>
+            <td class="num">{{ unsplit }}</td>
+          </tr>
+          {% endif %}
         </tbody>
       </table>
     </div>
@@ -128,7 +136,7 @@
 
   <section>
     <h2>Example questions (dev split)</h2>
-    <p>A sample of saved questions. Only dev-split questions are shown so the report never leaks the locked test set.</p>
+    <p>A sample of saved questions. Only dev-split questions are shown, so the report never leaks the locked test set.</p>
     {% for q in accepted %}
     <div class="v2-q">
       <div><span class="v2-tag">{{ q.type }}</span><span class="v2-tag">overlap {{ q.overlap }}</span></div>
@@ -144,7 +152,7 @@
   {% if rejected_by_reason %}
   <section>
     <h2>Example rejections</h2>
-    <p>Up to three per reason. Rejected questions are never scored, so they're shown from either split.</p>
+    <p>Up to three per reason, from the dev split only, so the report never shows text from a test chunk.</p>
     {% for reason, rows in rejected_by_reason.items() %}
     <details>
       <summary><code>{{ reason }}</code> ({{ rows | length }} shown)</summary>

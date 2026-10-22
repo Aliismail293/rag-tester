@@ -4,13 +4,13 @@ import hashlib
 from datetime import datetime, timezone
 from enum import StrEnum
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 DEV_FRACTION_PERCENT = 70
-"""Share of questions assigned to the dev split; the rest go to the locked test split."""
+"""Share of chunks assigned to the dev split; the rest go to the locked test split."""
 
-SPLIT_SALT = "ragaudit-split-v1"
-"""Never change this: doing so would reshuffle every existing question between splits."""
+SPLIT_SALT = "ragaudit-chunk-split-v1"
+"""Never change this: doing so would reshuffle every chunk (and its questions) between splits."""
 
 
 class QuestionType(StrEnum):
@@ -38,27 +38,37 @@ class RejectReason(StrEnum):
     UNANSWERABLE = "unanswerable"
     AMBIGUOUS = "ambiguous"
     VERIFIER_UNPARSEABLE = "verifier_unparseable"
+    CROSS_SPLIT = "cross_split"
+    """A multi-hop question whose source chunks are not all in the same split."""
 
 
 def compute_question_id(chunk_hashes: list[str], fact: str) -> str:
     """Stable id: hash of the source chunk hash(es) plus the fact text.
 
     The same fact extracted from the same chunk content always gets the
-    same id, so re-running generation is idempotent and the split (which
-    is derived from this id) never changes.
+    same id, so re-running generation is idempotent.
     """
     payload = "|".join(chunk_hashes) + "\n" + fact.strip()
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def assign_split(question_id: str) -> Split:
-    """Deterministically assign dev (70%) or test (30%) from the question_id alone.
+def assign_split(chunk_id: str) -> Split:
+    """Deterministically assign a chunk to dev (70%) or test (30%) from its chunk_id alone.
 
-    Depends on nothing but the id, so adding new questions later can never
-    move an old question between splits and leak test items into tuning.
+    The split is per chunk, not per question: if questions from one chunk
+    could land on both sides, tuning on the dev ones would teach the
+    pipeline that chunk's content and inflate the test score. It hashes
+    the chunk *id*, not its content, so editing a chunk never moves it
+    between splits, and adding chunks never moves old ones.
     """
-    digest = hashlib.sha256(f"{SPLIT_SALT}:{question_id}".encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(f"{SPLIT_SALT}:{chunk_id}".encode("utf-8")).hexdigest()
     return Split.DEV if int(digest[:8], 16) % 100 < DEV_FRACTION_PERCENT else Split.TEST
+
+
+def split_for_chunks(chunk_ids: list[str]) -> Split | None:
+    """The split shared by every source chunk, or None when they disagree (a cross-split multi-hop question)."""
+    splits = {assign_split(chunk_id) for chunk_id in chunk_ids}
+    return splits.pop() if len(splits) == 1 else None
 
 
 def utc_now() -> datetime:
@@ -77,7 +87,8 @@ class Question(BaseModel):
     question: str
     gold_answer: str
     question_type: QuestionType = QuestionType.SINGLE
-    split: Split
+    split: Split | None
+    """Its source chunks' split. None only for questions rejected as cross_split, which belong to neither."""
     status: QuestionStatus = QuestionStatus.ACTIVE
     reject_reason: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
@@ -99,6 +110,12 @@ class Question(BaseModel):
             return value.replace(tzinfo=timezone.utc)
         return value.astimezone(timezone.utc)
 
+    @model_validator(mode="after")
+    def _split_required_unless_rejected(self) -> "Question":
+        if self.split is None and self.status != QuestionStatus.REJECTED:
+            raise ValueError("only rejected questions may have no split")
+        return self
+
     @classmethod
     def create(
         cls,
@@ -110,8 +127,16 @@ class Question(BaseModel):
         generator_model: str,
         **kwargs,
     ) -> "Question":
-        """Build a Question with its id and split derived the one canonical way."""
+        """Build a Question with its id and split derived the one canonical way.
+
+        A question whose source chunks span both splits is always rejected
+        as cross_split, whatever status the caller asked for.
+        """
         question_id = compute_question_id(chunk_hashes, fact)
+        split = split_for_chunks(chunk_ids)
+        if split is None:
+            kwargs["status"] = QuestionStatus.REJECTED
+            kwargs["reject_reason"] = RejectReason.CROSS_SPLIT.value
         question_type = QuestionType.MULTI_HOP if len(chunk_ids) > 1 else QuestionType.SINGLE
         return cls(
             question_id=question_id,
@@ -121,7 +146,7 @@ class Question(BaseModel):
             question=question,
             gold_answer=gold_answer,
             question_type=kwargs.pop("question_type", question_type),
-            split=assign_split(question_id),
+            split=split,
             generator_model=generator_model,
             **kwargs,
         )

@@ -178,8 +178,13 @@ test split it never tunes on.
   Keyword search alone can't ace the set.
 - **A second model verifies every question.** The verifier must be a
   different model from the generator.
-- **The split is fixed by hash.** Each question goes to dev (70%) or test
-  (30%) from a salted hash of its id, once, and never moves.
+- **The split is per chunk, fixed by hash.** Each chunk goes to dev (70% of
+  chunks) or test (30%) from a salted hash of its chunk id, and every
+  question from that chunk inherits its split, so no chunk feeds both
+  sides. Tuning on dev can't teach the pipeline a test chunk. Hashing the
+  id, not the content, means editing a chunk never moves it. A multi-hop
+  question is only kept when all its chunks share a split; otherwise it's
+  rejected as `cross_split` (and `generate` only pairs same-split chunks).
 - **Tuning can't see the test split.** Reading test questions raises an
   error unless one function, used only for the final score, unlocks it. A
   test also parses the tuning code and fails if it imports the lock or the

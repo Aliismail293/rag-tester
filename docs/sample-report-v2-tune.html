@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ragaudit tune report — cccbada5-388c-4443-b462-7e0b6d80ac36</title>
+<title>ragaudit tune report — bce01313-edd3-4717-ae77-5a28b2e43c60</title>
 <style>
 /* Shared stylesheet for the ragaudit HTML report and the docs/ landing page.
    Dark theme, system font stack, no external fonts or frameworks. */
@@ -1187,13 +1187,13 @@ details.v2-data summary {
   <header class="report-header">
     <h1>ragaudit tune report<span class="v2-badge-mock">built with the mock LLM</span></h1>
     <div class="meta">
-      Tune <code>cccbada5-388c-4443-b462-7e0b6d80ac36</code> ·
+      Tune <code>bce01313-edd3-4717-ae77-5a28b2e43c60</code> ·
       strategy <code>llm</code> ·
       adapter <code>demo/v2/toy_adapter.py</code> ·
       judge <code>mock-judge</code> ·
       k=5 ·
       index <code>c627d276b24e</code> ·
-      started 2026-10-22 06:23:38.319264+00:00
+      started 2026-10-22 17:57:54.147424+00:00
     </div>
   </header>
 
@@ -1202,38 +1202,38 @@ details.v2-data summary {
     <p class="headline-sentence">
       
       Tuning moved the honest score, measured once on the locked test set, from
-      <strong>38.1</strong> to <strong>61.9</strong>
-      (+23.8 points) after 20 trial(s).
-      The search only ever saw the dev set, where the same change was +38.8 points.
+      <strong>31.2</strong> to <strong>62.5</strong>
+      (+31.2 points) after 20 trial(s).
+      The search only ever saw the dev set, where the same change was +34.6 points.
       
     </p>
     
     <div class="v2-callout warn">Built with ragaudit's offline mock LLM as both judge and proposer. The numbers show how the loop behaves, not how good any real pipeline is.</div>
     
     <div class="stats-grid">
-      <div class="stat"><span class="value">38.1</span><span class="label">Baseline, test</span></div>
-      <div class="stat"><span class="value">61.9</span><span class="label">Best, test</span></div>
-      <div class="stat"><span class="value">65.3</span><span class="label">Best, dev</span></div>
-      <div class="stat"><span class="value">+3.4</span><span class="label">Dev minus test (best)</span></div>
+      <div class="stat"><span class="value">31.2</span><span class="label">Baseline, test</span></div>
+      <div class="stat"><span class="value">62.5</span><span class="label">Best, test</span></div>
+      <div class="stat"><span class="value">65.4</span><span class="label">Best, dev</span></div>
+      <div class="stat"><span class="value">+2.9</span><span class="label">Dev minus test (best)</span></div>
     </div>
     <p class="meta">Score = share of questions where the gold passage was in the top 5 <em>and</em> the answer was judged correct, ×100.
-      Dev: 49 questions. Test: 21 questions.</p>
+      Dev: 52 questions. Test: 16 questions.</p>
   </section>
 
   <section>
     <h2>Overfitting check</h2>
     
     <div class="v2-callout ok">
-      <strong>No sign of overfitting.</strong> The best config's dev score (65.3) is within
-      10.0 points of its locked test score (61.9);
-      the gap is +3.4.
+      <strong>No sign of overfitting.</strong> The best config's dev score (65.4) is within
+      10.0 points of its locked test score (62.5);
+      the gap is +2.9.
     </div>
     
-    <figure class="v2-figure"><svg class="v2-chart" viewBox="0 0 720 232" role="img" aria-label="Dev and test score, baseline and best" preserveAspectRatio="xMidYMid meet"><line class="v2-grid" x1="44" x2="704" y1="210.0" y2="210.0"></line><text class="v2-tick" x="36" y="214.0" text-anchor="end">0</text><line class="v2-grid" x1="44" x2="704" y1="164.5" y2="164.5"></line><text class="v2-tick" x="36" y="168.5" text-anchor="end">25</text><line class="v2-grid" x1="44" x2="704" y1="119.0" y2="119.0"></line><text class="v2-tick" x="36" y="123.0" text-anchor="end">50</text><line class="v2-grid" x1="44" x2="704" y1="73.5" y2="73.5"></line><text class="v2-tick" x="36" y="77.5" text-anchor="end">75</text><line class="v2-grid" x1="44" x2="704" y1="28.0" y2="28.0"></line><text class="v2-tick" x="36" y="32.0" text-anchor="end">100</text><path class="v2-mark v2-fill-dev" d="M177.0,210.0 V165.7 Q177.0,161.7 181.0,161.7 H197.0 Q201.0,161.7 201.0,165.7 V210.0 Z" data-tip="26.5 dev
-baseline config" tabindex="0"></path><text class="v2-value" x="189.0" y="155.7" text-anchor="middle">26.5</text><path class="v2-mark v2-fill-test" d="M217.0,210.0 V144.7 Q217.0,140.7 221.0,140.7 H237.0 Q241.0,140.7 241.0,144.7 V210.0 Z" data-tip="38.1 locked test
-baseline config" tabindex="0"></path><text class="v2-value" x="229.0" y="134.7" text-anchor="middle">38.1</text><text class="v2-label" x="209.0" y="230" text-anchor="middle">Baseline</text><path class="v2-mark v2-fill-dev" d="M507.0,210.0 V95.1 Q507.0,91.1 511.0,91.1 H527.0 Q531.0,91.1 531.0,95.1 V210.0 Z" data-tip="65.3 dev
-best config" tabindex="0"></path><text class="v2-value" x="519.0" y="85.1" text-anchor="middle">65.3</text><path class="v2-mark v2-fill-test" d="M547.0,210.0 V101.3 Q547.0,97.3 551.0,97.3 H567.0 Q571.0,97.3 571.0,101.3 V210.0 Z" data-tip="61.9 locked test
-best config" tabindex="0"></path><text class="v2-value" x="559.0" y="91.3" text-anchor="middle">61.9</text><text class="v2-label" x="539.0" y="230" text-anchor="middle">Best</text></svg></figure>
+    <figure class="v2-figure"><svg class="v2-chart" viewBox="0 0 720 232" role="img" aria-label="Dev and test score, baseline and best" preserveAspectRatio="xMidYMid meet"><line class="v2-grid" x1="44" x2="704" y1="210.0" y2="210.0"></line><text class="v2-tick" x="36" y="214.0" text-anchor="end">0</text><line class="v2-grid" x1="44" x2="704" y1="164.5" y2="164.5"></line><text class="v2-tick" x="36" y="168.5" text-anchor="end">25</text><line class="v2-grid" x1="44" x2="704" y1="119.0" y2="119.0"></line><text class="v2-tick" x="36" y="123.0" text-anchor="end">50</text><line class="v2-grid" x1="44" x2="704" y1="73.5" y2="73.5"></line><text class="v2-tick" x="36" y="77.5" text-anchor="end">75</text><line class="v2-grid" x1="44" x2="704" y1="28.0" y2="28.0"></line><text class="v2-tick" x="36" y="32.0" text-anchor="end">100</text><path class="v2-mark v2-fill-dev" d="M177.0,210.0 V158.0 Q177.0,154.0 181.0,154.0 H197.0 Q201.0,154.0 201.0,158.0 V210.0 Z" data-tip="30.8 dev
+baseline config" tabindex="0"></path><text class="v2-value" x="189.0" y="148.0" text-anchor="middle">30.8</text><path class="v2-mark v2-fill-test" d="M217.0,210.0 V157.1 Q217.0,153.1 221.0,153.1 H237.0 Q241.0,153.1 241.0,157.1 V210.0 Z" data-tip="31.2 locked test
+baseline config" tabindex="0"></path><text class="v2-value" x="229.0" y="147.1" text-anchor="middle">31.2</text><text class="v2-label" x="209.0" y="230" text-anchor="middle">Baseline</text><path class="v2-mark v2-fill-dev" d="M507.0,210.0 V95.0 Q507.0,91.0 511.0,91.0 H527.0 Q531.0,91.0 531.0,95.0 V210.0 Z" data-tip="65.4 dev
+best config" tabindex="0"></path><text class="v2-value" x="519.0" y="85.0" text-anchor="middle">65.4</text><path class="v2-mark v2-fill-test" d="M547.0,210.0 V100.2 Q547.0,96.2 551.0,96.2 H567.0 Q571.0,96.2 571.0,100.2 V210.0 Z" data-tip="62.5 locked test
+best config" tabindex="0"></path><text class="v2-value" x="559.0" y="90.2" text-anchor="middle">62.5</text><text class="v2-label" x="539.0" y="230" text-anchor="middle">Best</text></svg></figure>
     <ul class="v2-legend">
       <li><span class="v2-swatch" style="background: var(--v2-dev)"></span>Dev (searched on)</li>
       <li><span class="v2-swatch" style="background: var(--v2-test)"></span>Locked test (scored once at the end)</li>
@@ -1244,48 +1244,48 @@ best config" tabindex="0"></path><text class="v2-value" x="559.0" y="91.3" text-
     <h2>Dev score per trial</h2>
     <p>Each dot is one config evaluated on the dev set. The dashed line is the best dev score so far; the white dot is the config that was kept.
       Trials by source: 1 baseline, 19 llm.
-      Stopped because: <code>max_trials</code>. LLM calls used: 1041.</p>
-    <figure class="v2-figure"><svg class="v2-chart" viewBox="0 0 720 272" role="img" aria-label="Dev score per trial" preserveAspectRatio="xMidYMid meet"><line class="v2-grid" x1="44" x2="696" y1="230.0" y2="230.0"></line><text class="v2-tick" x="36" y="234.0" text-anchor="end">0</text><line class="v2-grid" x1="44" x2="696" y1="178.5" y2="178.5"></line><text class="v2-tick" x="36" y="182.5" text-anchor="end">25</text><line class="v2-grid" x1="44" x2="696" y1="127.0" y2="127.0"></line><text class="v2-tick" x="36" y="131.0" text-anchor="end">50</text><line class="v2-grid" x1="44" x2="696" y1="75.5" y2="75.5"></line><text class="v2-tick" x="36" y="79.5" text-anchor="end">75</text><line class="v2-grid" x1="44" x2="696" y1="24.0" y2="24.0"></line><text class="v2-tick" x="36" y="28.0" text-anchor="end">100</text><polyline class="v2-line-ref" points="56.0,175.3 89.1,175.3 89.1,175.3 122.1,175.3 122.1,116.5 155.2,116.5 155.2,103.9 188.2,103.9 188.2,103.9 221.3,103.9 221.3,103.9 254.3,103.9 254.3,99.7 287.4,99.7 287.4,99.7 320.4,99.7 320.4,99.7 353.5,99.7 353.5,99.7 386.5,99.7 386.5,95.5 419.6,95.5 419.6,95.5 452.6,95.5 452.6,95.5 485.7,95.5 485.7,95.5 518.7,95.5 518.7,95.5 551.8,95.5 551.8,95.5 584.8,95.5 584.8,95.5 617.9,95.5 617.9,95.5 650.9,95.5 650.9,95.5 684.0,95.5 684.0,95.5"></polyline><circle class="v2-dot" cx="56.0" cy="175.3" r="5"></circle><circle class="v2-hit" cx="56.0" cy="175.3" r="12" data-tip="26.5 dev
+      Stopped because: <code>max_trials</code>. LLM calls used: 1091.</p>
+    <figure class="v2-figure"><svg class="v2-chart" viewBox="0 0 720 272" role="img" aria-label="Dev score per trial" preserveAspectRatio="xMidYMid meet"><line class="v2-grid" x1="44" x2="696" y1="230.0" y2="230.0"></line><text class="v2-tick" x="36" y="234.0" text-anchor="end">0</text><line class="v2-grid" x1="44" x2="696" y1="178.5" y2="178.5"></line><text class="v2-tick" x="36" y="182.5" text-anchor="end">25</text><line class="v2-grid" x1="44" x2="696" y1="127.0" y2="127.0"></line><text class="v2-tick" x="36" y="131.0" text-anchor="end">50</text><line class="v2-grid" x1="44" x2="696" y1="75.5" y2="75.5"></line><text class="v2-tick" x="36" y="79.5" text-anchor="end">75</text><line class="v2-grid" x1="44" x2="696" y1="24.0" y2="24.0"></line><text class="v2-tick" x="36" y="28.0" text-anchor="end">100</text><polyline class="v2-line-ref" points="56.0,166.6 89.1,166.6 89.1,166.6 122.1,166.6 122.1,107.2 155.2,107.2 155.2,99.3 188.2,99.3 188.2,95.3 221.3,95.3 221.3,95.3 254.3,95.3 254.3,95.3 287.4,95.3 287.4,95.3 320.4,95.3 320.4,95.3 353.5,95.3 353.5,95.3 386.5,95.3 386.5,95.3 419.6,95.3 419.6,95.3 452.6,95.3 452.6,95.3 485.7,95.3 485.7,95.3 518.7,95.3 518.7,95.3 551.8,95.3 551.8,95.3 584.8,95.3 584.8,95.3 617.9,95.3 617.9,95.3 650.9,95.3 650.9,95.3 684.0,95.3 684.0,95.3"></polyline><circle class="v2-dot" cx="56.0" cy="166.6" r="5"></circle><circle class="v2-hit" cx="56.0" cy="166.6" r="12" data-tip="30.8 dev
 trial 0 (baseline)
-baseline config" tabindex="0"></circle><circle class="v2-dot" cx="89.1" cy="175.3" r="5"></circle><circle class="v2-hit" cx="89.1" cy="175.3" r="12" data-tip="26.5 dev
+baseline config" tabindex="0"></circle><circle class="v2-dot" cx="89.1" cy="166.6" r="5"></circle><circle class="v2-hit" cx="89.1" cy="166.6" r="12" data-tip="30.8 dev
 trial 1 (llm)
-top_k=3" tabindex="0"></circle><circle class="v2-dot" cx="122.1" cy="116.5" r="5"></circle><circle class="v2-hit" cx="122.1" cy="116.5" r="12" data-tip="55.1 dev
+top_k=3" tabindex="0"></circle><circle class="v2-dot" cx="122.1" cy="107.2" r="5"></circle><circle class="v2-hit" cx="122.1" cy="107.2" r="12" data-tip="59.6 dev
 trial 2 (llm)
-prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="155.2" cy="103.9" r="5"></circle><circle class="v2-hit" cx="155.2" cy="103.9" r="12" data-tip="61.2 dev
+prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="155.2" cy="99.3" r="5"></circle><circle class="v2-hit" cx="155.2" cy="99.3" r="12" data-tip="63.5 dev
 trial 3 (llm)
-top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="188.2" cy="103.9" r="5"></circle><circle class="v2-hit" cx="188.2" cy="103.9" r="12" data-tip="61.2 dev
+top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot v2-dot-best" cx="188.2" cy="95.3" r="5"></circle><circle class="v2-hit" cx="188.2" cy="95.3" r="12" data-tip="65.4 dev
 trial 4 (llm)
-chunk_size=80, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="221.3" cy="133.3" r="5"></circle><circle class="v2-hit" cx="221.3" cy="133.3" r="12" data-tip="46.9 dev
+chunk_size=80, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="221.3" cy="162.7" r="5"></circle><circle class="v2-hit" cx="221.3" cy="162.7" r="12" data-tip="32.7 dev
 trial 5 (llm)
-chunk_size=20, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="254.3" cy="99.7" r="5"></circle><circle class="v2-hit" cx="254.3" cy="99.7" r="12" data-tip="63.3 dev
+chunk_size=80, top_k=3" tabindex="0"></circle><circle class="v2-dot" cx="254.3" cy="127.0" r="5"></circle><circle class="v2-hit" cx="254.3" cy="127.0" r="12" data-tip="50.0 dev
 trial 6 (llm)
-chunk_overlap=10, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="287.4" cy="166.9" r="5"></circle><circle class="v2-hit" cx="287.4" cy="166.9" r="12" data-tip="30.6 dev
+chunk_size=20, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="287.4" cy="95.3" r="5"></circle><circle class="v2-hit" cx="287.4" cy="95.3" r="12" data-tip="65.4 dev
 trial 7 (llm)
-chunk_overlap=10, top_k=3" tabindex="0"></circle><circle class="v2-dot" cx="320.4" cy="103.9" r="5"></circle><circle class="v2-hit" cx="320.4" cy="103.9" r="12" data-tip="61.2 dev
+chunk_size=80, chunk_overlap=10, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="320.4" cy="95.3" r="5"></circle><circle class="v2-hit" cx="320.4" cy="95.3" r="12" data-tip="65.4 dev
 trial 8 (llm)
-chunk_size=80, chunk_overlap=10, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="353.5" cy="116.5" r="5"></circle><circle class="v2-hit" cx="353.5" cy="116.5" r="12" data-tip="55.1 dev
+chunk_size=80, top_k=5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="353.5" cy="107.2" r="5"></circle><circle class="v2-hit" cx="353.5" cy="107.2" r="12" data-tip="59.6 dev
 trial 9 (llm)
-chunk_size=20, chunk_overlap=10, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot v2-dot-best" cx="386.5" cy="95.5" r="5"></circle><circle class="v2-hit" cx="386.5" cy="95.5" r="12" data-tip="65.3 dev
+chunk_size=80, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="386.5" cy="95.3" r="5"></circle><circle class="v2-hit" cx="386.5" cy="95.3" r="12" data-tip="65.4 dev
 trial 10 (llm)
-chunk_overlap=10, top_k=5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="419.6" cy="166.9" r="5"></circle><circle class="v2-hit" cx="419.6" cy="166.9" r="12" data-tip="30.6 dev
+chunk_size=80, top_k=3, hybrid_weight=0.5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="419.6" cy="95.3" r="5"></circle><circle class="v2-hit" cx="419.6" cy="95.3" r="12" data-tip="65.4 dev
 trial 11 (llm)
-chunk_overlap=10, top_k=5" tabindex="0"></circle><circle class="v2-dot" cx="452.6" cy="99.7" r="5"></circle><circle class="v2-hit" cx="452.6" cy="99.7" r="12" data-tip="63.3 dev
+chunk_size=80, top_k=3, reranker=overlap, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="452.6" cy="99.3" r="5"></circle><circle class="v2-hit" cx="452.6" cy="99.3" r="12" data-tip="63.5 dev
 trial 12 (llm)
-chunk_size=80, chunk_overlap=10, top_k=5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="485.7" cy="116.5" r="5"></circle><circle class="v2-hit" cx="485.7" cy="116.5" r="12" data-tip="55.1 dev
+chunk_size=80, top_k=3, hybrid_weight=1.0, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="485.7" cy="150.8" r="5"></circle><circle class="v2-hit" cx="485.7" cy="150.8" r="12" data-tip="38.5 dev
 trial 13 (llm)
-chunk_size=20, chunk_overlap=10, top_k=5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="518.7" cy="99.7" r="5"></circle><circle class="v2-hit" cx="518.7" cy="99.7" r="12" data-tip="63.3 dev
+chunk_size=20" tabindex="0"></circle><circle class="v2-dot" cx="518.7" cy="127.0" r="5"></circle><circle class="v2-hit" cx="518.7" cy="127.0" r="12" data-tip="50.0 dev
 trial 14 (llm)
-top_k=5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="551.8" cy="112.3" r="5"></circle><circle class="v2-hit" cx="551.8" cy="112.3" r="12" data-tip="57.1 dev
+chunk_size=20, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="551.8" cy="146.8" r="5"></circle><circle class="v2-hit" cx="551.8" cy="146.8" r="12" data-tip="40.4 dev
 trial 15 (llm)
-chunk_overlap=10, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="584.8" cy="95.5" r="5"></circle><circle class="v2-hit" cx="584.8" cy="95.5" r="12" data-tip="65.3 dev
+chunk_size=20, reranker=overlap" tabindex="0"></circle><circle class="v2-dot" cx="584.8" cy="123.0" r="5"></circle><circle class="v2-hit" cx="584.8" cy="123.0" r="12" data-tip="51.9 dev
 trial 16 (llm)
-chunk_overlap=10, top_k=5, hybrid_weight=0.5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="617.9" cy="95.5" r="5"></circle><circle class="v2-hit" cx="617.9" cy="95.5" r="12" data-tip="65.3 dev
+chunk_size=20, reranker=overlap, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="617.9" cy="146.8" r="5"></circle><circle class="v2-hit" cx="617.9" cy="146.8" r="12" data-tip="40.4 dev
 trial 17 (llm)
-chunk_overlap=10, top_k=5, reranker=overlap, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="650.9" cy="99.7" r="5"></circle><circle class="v2-hit" cx="650.9" cy="99.7" r="12" data-tip="63.3 dev
+chunk_size=20, hybrid_weight=0.5" tabindex="0"></circle><circle class="v2-dot" cx="650.9" cy="123.0" r="5"></circle><circle class="v2-hit" cx="650.9" cy="123.0" r="12" data-tip="51.9 dev
 trial 18 (llm)
-chunk_overlap=10, top_k=5, hybrid_weight=1.0, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="684.0" cy="145.9" r="5"></circle><circle class="v2-hit" cx="684.0" cy="145.9" r="12" data-tip="40.8 dev
+chunk_size=20, hybrid_weight=0.5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="684.0" cy="142.8" r="5"></circle><circle class="v2-hit" cx="684.0" cy="142.8" r="12" data-tip="42.3 dev
 trial 19 (llm)
-chunk_size=20" tabindex="0"></circle><text class="v2-label" x="66.0" y="165.3" text-anchor="start">baseline 26.5</text><text class="v2-label" x="376.5" y="85.5" text-anchor="end">best 65.3</text><text class="v2-tick" x="56.0" y="248" text-anchor="middle">0</text><text class="v2-tick" x="122.1" y="248" text-anchor="middle">2</text><text class="v2-tick" x="188.2" y="248" text-anchor="middle">4</text><text class="v2-tick" x="254.3" y="248" text-anchor="middle">6</text><text class="v2-tick" x="320.4" y="248" text-anchor="middle">8</text><text class="v2-tick" x="386.5" y="248" text-anchor="middle">10</text><text class="v2-tick" x="452.6" y="248" text-anchor="middle">12</text><text class="v2-tick" x="518.7" y="248" text-anchor="middle">14</text><text class="v2-tick" x="584.8" y="248" text-anchor="middle">16</text><text class="v2-tick" x="650.9" y="248" text-anchor="middle">18</text><text class="v2-axis-title" x="370.0" y="266" text-anchor="middle">trial</text></svg></figure>
+chunk_size=20, hybrid_weight=0.5, reranker=overlap" tabindex="0"></circle><text class="v2-label" x="66.0" y="156.6" text-anchor="start">baseline 30.8</text><text class="v2-label" x="198.2" y="85.3" text-anchor="start">best 65.4</text><text class="v2-tick" x="56.0" y="248" text-anchor="middle">0</text><text class="v2-tick" x="122.1" y="248" text-anchor="middle">2</text><text class="v2-tick" x="188.2" y="248" text-anchor="middle">4</text><text class="v2-tick" x="254.3" y="248" text-anchor="middle">6</text><text class="v2-tick" x="320.4" y="248" text-anchor="middle">8</text><text class="v2-tick" x="386.5" y="248" text-anchor="middle">10</text><text class="v2-tick" x="452.6" y="248" text-anchor="middle">12</text><text class="v2-tick" x="518.7" y="248" text-anchor="middle">14</text><text class="v2-tick" x="584.8" y="248" text-anchor="middle">16</text><text class="v2-tick" x="650.9" y="248" text-anchor="middle">18</text><text class="v2-axis-title" x="370.0" y="266" text-anchor="middle">trial</text></svg></figure>
     <ul class="v2-legend">
       <li><span class="v2-swatch dot" style="background: var(--v2-dev)"></span>Trial dev score</li>
       <li><span class="v2-swatch dot" style="background: var(--text)"></span>Best (kept)</li>
@@ -1301,10 +1301,10 @@ chunk_size=20" tabindex="0"></circle><text class="v2-label" x="66.0" y="165.3" t
             <tr>
               <td class="num">0</td>
               <td>baseline</td>
-              <td class="num">26.5</td>
-              <td class="num">13</td>
-              <td class="num">14</td>
-              <td class="num">22</td>
+              <td class="num">30.8</td>
+              <td class="num">16</td>
+              <td class="num">16</td>
+              <td class="num">20</td>
               <td><code>(baseline)</code></td>
               <td></td>
             </tr>
@@ -1312,8 +1312,8 @@ chunk_size=20" tabindex="0"></circle><text class="v2-label" x="66.0" y="165.3" t
             <tr>
               <td class="num">1</td>
               <td>llm</td>
-              <td class="num">26.5</td>
-              <td class="num">13</td>
+              <td class="num">30.8</td>
+              <td class="num">16</td>
               <td class="num">28</td>
               <td class="num">8</td>
               <td><code>top_k=3</code></td>
@@ -1323,10 +1323,10 @@ chunk_size=20" tabindex="0"></circle><text class="v2-label" x="66.0" y="165.3" t
             <tr>
               <td class="num">2</td>
               <td>llm</td>
-              <td class="num">55.1</td>
-              <td class="num">27</td>
-              <td class="num">0</td>
-              <td class="num">22</td>
+              <td class="num">59.6</td>
+              <td class="num">31</td>
+              <td class="num">1</td>
+              <td class="num">20</td>
               <td><code>prompt_variant=extractive</code></td>
               <td>generation misses dominate, so try prompt_variant=extractive</td>
             </tr>
@@ -1334,20 +1334,20 @@ chunk_size=20" tabindex="0"></circle><text class="v2-label" x="66.0" y="165.3" t
             <tr>
               <td class="num">3</td>
               <td>llm</td>
-              <td class="num">61.2</td>
-              <td class="num">30</td>
+              <td class="num">63.5</td>
+              <td class="num">33</td>
               <td class="num">11</td>
               <td class="num">8</td>
               <td><code>top_k=3, prompt_variant=extractive</code></td>
               <td>retrieval misses dominate, so try top_k=3</td>
             </tr>
             
-            <tr>
+            <tr class="is-best">
               <td class="num">4</td>
-              <td>llm</td>
-              <td class="num">61.2</td>
-              <td class="num">30</td>
-              <td class="num">11</td>
+              <td>llm (best)</td>
+              <td class="num">65.4</td>
+              <td class="num">34</td>
+              <td class="num">10</td>
               <td class="num">8</td>
               <td><code>chunk_size=80, top_k=3, prompt_variant=extractive</code></td>
               <td>generation misses dominate, so try chunk_size=80</td>
@@ -1356,8 +1356,19 @@ chunk_size=20" tabindex="0"></circle><text class="v2-label" x="66.0" y="165.3" t
             <tr>
               <td class="num">5</td>
               <td>llm</td>
-              <td class="num">46.9</td>
-              <td class="num">23</td>
+              <td class="num">32.7</td>
+              <td class="num">17</td>
+              <td class="num">27</td>
+              <td class="num">8</td>
+              <td><code>chunk_size=80, top_k=3</code></td>
+              <td>generation misses dominate, so try prompt_variant=lead</td>
+            </tr>
+            
+            <tr>
+              <td class="num">6</td>
+              <td>llm</td>
+              <td class="num">50.0</td>
+              <td class="num">26</td>
               <td class="num">19</td>
               <td class="num">7</td>
               <td><code>chunk_size=20, top_k=3, prompt_variant=extractive</code></td>
@@ -1365,156 +1376,145 @@ chunk_size=20" tabindex="0"></circle><text class="v2-label" x="66.0" y="165.3" t
             </tr>
             
             <tr>
-              <td class="num">6</td>
+              <td class="num">7</td>
               <td>llm</td>
-              <td class="num">63.3</td>
-              <td class="num">31</td>
+              <td class="num">65.4</td>
+              <td class="num">34</td>
               <td class="num">10</td>
               <td class="num">8</td>
-              <td><code>chunk_overlap=10, top_k=3, prompt_variant=extractive</code></td>
+              <td><code>chunk_size=80, chunk_overlap=10, top_k=3, prompt_variant=extractive</code></td>
               <td>generation misses dominate, so try chunk_overlap=10</td>
             </tr>
             
             <tr>
-              <td class="num">7</td>
-              <td>llm</td>
-              <td class="num">30.6</td>
-              <td class="num">15</td>
-              <td class="num">26</td>
-              <td class="num">8</td>
-              <td><code>chunk_overlap=10, top_k=3</code></td>
-              <td>generation misses dominate, so try prompt_variant=lead</td>
-            </tr>
-            
-            <tr>
               <td class="num">8</td>
               <td>llm</td>
-              <td class="num">61.2</td>
-              <td class="num">30</td>
-              <td class="num">11</td>
-              <td class="num">8</td>
-              <td><code>chunk_size=80, chunk_overlap=10, top_k=3, prompt_variant=extractive</code></td>
-              <td>generation misses dominate, so try chunk_size=80</td>
+              <td class="num">65.4</td>
+              <td class="num">34</td>
+              <td class="num">16</td>
+              <td class="num">2</td>
+              <td><code>chunk_size=80, top_k=5, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try top_k=5</td>
             </tr>
             
             <tr>
               <td class="num">9</td>
               <td>llm</td>
-              <td class="num">55.1</td>
-              <td class="num">27</td>
-              <td class="num">16</td>
-              <td class="num">6</td>
-              <td><code>chunk_size=20, chunk_overlap=10, top_k=3, prompt_variant=extractive</code></td>
-              <td>generation misses dominate, so try chunk_size=20</td>
+              <td class="num">59.6</td>
+              <td class="num">31</td>
+              <td class="num">1</td>
+              <td class="num">20</td>
+              <td><code>chunk_size=80, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try top_k=1</td>
             </tr>
             
-            <tr class="is-best">
+            <tr>
               <td class="num">10</td>
-              <td>llm (best)</td>
-              <td class="num">65.3</td>
-              <td class="num">32</td>
-              <td class="num">16</td>
-              <td class="num">1</td>
-              <td><code>chunk_overlap=10, top_k=5, prompt_variant=extractive</code></td>
-              <td>generation misses dominate, so try top_k=5</td>
+              <td>llm</td>
+              <td class="num">65.4</td>
+              <td class="num">34</td>
+              <td class="num">11</td>
+              <td class="num">7</td>
+              <td><code>chunk_size=80, top_k=3, hybrid_weight=0.5, prompt_variant=extractive</code></td>
+              <td>retrieval misses dominate, so try hybrid_weight=0.5</td>
             </tr>
             
             <tr>
               <td class="num">11</td>
               <td>llm</td>
-              <td class="num">30.6</td>
-              <td class="num">15</td>
-              <td class="num">33</td>
-              <td class="num">1</td>
-              <td><code>chunk_overlap=10, top_k=5</code></td>
-              <td>generation misses dominate, so try prompt_variant=lead</td>
+              <td class="num">65.4</td>
+              <td class="num">34</td>
+              <td class="num">13</td>
+              <td class="num">5</td>
+              <td><code>chunk_size=80, top_k=3, reranker=overlap, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try reranker=overlap</td>
             </tr>
             
             <tr>
               <td class="num">12</td>
               <td>llm</td>
-              <td class="num">63.3</td>
-              <td class="num">31</td>
-              <td class="num">17</td>
-              <td class="num">1</td>
-              <td><code>chunk_size=80, chunk_overlap=10, top_k=5, prompt_variant=extractive</code></td>
-              <td>generation misses dominate, so try chunk_size=80</td>
+              <td class="num">63.5</td>
+              <td class="num">33</td>
+              <td class="num">9</td>
+              <td class="num">10</td>
+              <td><code>chunk_size=80, top_k=3, hybrid_weight=1.0, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try hybrid_weight=1.0</td>
             </tr>
             
             <tr>
               <td class="num">13</td>
               <td>llm</td>
-              <td class="num">55.1</td>
-              <td class="num">27</td>
-              <td class="num">18</td>
-              <td class="num">4</td>
-              <td><code>chunk_size=20, chunk_overlap=10, top_k=5, prompt_variant=extractive</code></td>
-              <td>generation misses dominate, so try chunk_size=20</td>
+              <td class="num">38.5</td>
+              <td class="num">20</td>
+              <td class="num">13</td>
+              <td class="num">19</td>
+              <td><code>chunk_size=20</code></td>
+              <td>every single-knob change was tried; next untried config</td>
             </tr>
             
             <tr>
               <td class="num">14</td>
               <td>llm</td>
-              <td class="num">63.3</td>
-              <td class="num">31</td>
-              <td class="num">17</td>
-              <td class="num">1</td>
-              <td><code>top_k=5, prompt_variant=extractive</code></td>
-              <td>generation misses dominate, so try chunk_overlap=0</td>
+              <td class="num">50.0</td>
+              <td class="num">26</td>
+              <td class="num">7</td>
+              <td class="num">19</td>
+              <td><code>chunk_size=20, prompt_variant=extractive</code></td>
+              <td>every single-knob change was tried; next untried config</td>
             </tr>
             
             <tr>
               <td class="num">15</td>
               <td>llm</td>
-              <td class="num">57.1</td>
-              <td class="num">28</td>
-              <td class="num">0</td>
+              <td class="num">40.4</td>
               <td class="num">21</td>
-              <td><code>chunk_overlap=10, prompt_variant=extractive</code></td>
-              <td>generation misses dominate, so try top_k=1</td>
+              <td class="num">13</td>
+              <td class="num">18</td>
+              <td><code>chunk_size=20, reranker=overlap</code></td>
+              <td>every single-knob change was tried; next untried config</td>
             </tr>
             
             <tr>
               <td class="num">16</td>
               <td>llm</td>
-              <td class="num">65.3</td>
-              <td class="num">32</td>
-              <td class="num">16</td>
-              <td class="num">1</td>
-              <td><code>chunk_overlap=10, top_k=5, hybrid_weight=0.5, prompt_variant=extractive</code></td>
-              <td>retrieval misses dominate, so try hybrid_weight=0.5</td>
+              <td class="num">51.9</td>
+              <td class="num">27</td>
+              <td class="num">7</td>
+              <td class="num">18</td>
+              <td><code>chunk_size=20, reranker=overlap, prompt_variant=extractive</code></td>
+              <td>every single-knob change was tried; next untried config</td>
             </tr>
             
             <tr>
               <td class="num">17</td>
               <td>llm</td>
-              <td class="num">65.3</td>
-              <td class="num">32</td>
-              <td class="num">17</td>
-              <td class="num">0</td>
-              <td><code>chunk_overlap=10, top_k=5, reranker=overlap, prompt_variant=extractive</code></td>
-              <td>generation misses dominate, so try reranker=overlap</td>
+              <td class="num">40.4</td>
+              <td class="num">21</td>
+              <td class="num">13</td>
+              <td class="num">18</td>
+              <td><code>chunk_size=20, hybrid_weight=0.5</code></td>
+              <td>every single-knob change was tried; next untried config</td>
             </tr>
             
             <tr>
               <td class="num">18</td>
               <td>llm</td>
-              <td class="num">63.3</td>
-              <td class="num">31</td>
-              <td class="num">14</td>
-              <td class="num">4</td>
-              <td><code>chunk_overlap=10, top_k=5, hybrid_weight=1.0, prompt_variant=extractive</code></td>
-              <td>generation misses dominate, so try hybrid_weight=1.0</td>
+              <td class="num">51.9</td>
+              <td class="num">27</td>
+              <td class="num">7</td>
+              <td class="num">18</td>
+              <td><code>chunk_size=20, hybrid_weight=0.5, prompt_variant=extractive</code></td>
+              <td>every single-knob change was tried; next untried config</td>
             </tr>
             
             <tr>
               <td class="num">19</td>
               <td>llm</td>
-              <td class="num">40.8</td>
-              <td class="num">20</td>
-              <td class="num">9</td>
-              <td class="num">20</td>
-              <td><code>chunk_size=20</code></td>
+              <td class="num">42.3</td>
+              <td class="num">22</td>
+              <td class="num">13</td>
+              <td class="num">17</td>
+              <td><code>chunk_size=20, hybrid_weight=0.5, reranker=overlap</code></td>
               <td>every single-knob change was tried; next untried config</td>
             </tr>
             
@@ -1528,19 +1528,19 @@ chunk_size=20" tabindex="0"></circle><text class="v2-label" x="66.0" y="165.3" t
     <h2>Failure classes before and after</h2>
     <p><strong>Retrieval miss</strong>: the gold passage wasn't in the top 5 (a correct answer without it counts here too, since it was luck).
       <strong>Generation miss</strong>: the passage was retrieved but the answer was still wrong.</p>
-    <figure class="v2-figure"><svg class="v2-chart" viewBox="0 0 720 166" role="img" aria-label="Failure classes before and after tuning" preserveAspectRatio="xMidYMid meet"><text class="v2-label" x="120" y="23" text-anchor="end">Baseline, dev</text><path class="v2-mark v2-fill-pass" d="M130.0,8.0 H280.3 V32.0 H130.0 Z" data-tip="13 (27%)
-Pass, Baseline, dev" tabindex="0"></path><text class="v2-inside" x="205.1" y="24" text-anchor="middle">13</text><path class="v2-mark v2-fill-gen" d="M282.3,8.0 H444.3 V32.0 H282.3 Z" data-tip="14 (29%)
-Generation miss, Baseline, dev" tabindex="0"></path><text class="v2-inside" x="363.3" y="24" text-anchor="middle">14</text><path class="v2-mark v2-fill-ret" d="M446.3,8.0 H700.0 Q704.0,8.0 704.0,12.0 V28.0 Q704.0,32.0 700.0,32.0 H446.3 Z" data-tip="22 (45%)
-Retrieval miss, Baseline, dev" tabindex="0"></path><text class="v2-inside" x="575.1" y="24" text-anchor="middle">22</text><text class="v2-label" x="120" y="63" text-anchor="end">Best, dev</text><path class="v2-mark v2-fill-pass" d="M130.0,48.0 H502.9 V72.0 H130.0 Z" data-tip="32 (65%)
-Pass, Best, dev" tabindex="0"></path><text class="v2-inside" x="316.4" y="64" text-anchor="middle">32</text><path class="v2-mark v2-fill-gen" d="M504.9,48.0 H690.3 V72.0 H504.9 Z" data-tip="16 (33%)
-Generation miss, Best, dev" tabindex="0"></path><text class="v2-inside" x="597.6" y="64" text-anchor="middle">16</text><path class="v2-mark v2-fill-ret" d="M692.3,48.0 H700.0 Q704.0,48.0 704.0,52.0 V68.0 Q704.0,72.0 700.0,72.0 H692.3 Z" data-tip="1 (2%)
-Retrieval miss, Best, dev" tabindex="0"></path><text class="v2-label" x="120" y="103" text-anchor="end">Baseline, test</text><path class="v2-mark v2-fill-pass" d="M130.0,88.0 H346.7 V112.0 H130.0 Z" data-tip="8 (38%)
-Pass, Baseline, test" tabindex="0"></path><text class="v2-inside" x="238.3" y="104" text-anchor="middle">8</text><path class="v2-mark v2-fill-gen" d="M348.7,88.0 H538.0 V112.0 H348.7 Z" data-tip="7 (33%)
-Generation miss, Baseline, test" tabindex="0"></path><text class="v2-inside" x="443.3" y="104" text-anchor="middle">7</text><path class="v2-mark v2-fill-ret" d="M540.0,88.0 H700.0 Q704.0,88.0 704.0,92.0 V108.0 Q704.0,112.0 700.0,112.0 H540.0 Z" data-tip="6 (29%)
-Retrieval miss, Baseline, test" tabindex="0"></path><text class="v2-inside" x="622.0" y="104" text-anchor="middle">6</text><text class="v2-label" x="120" y="143" text-anchor="end">Best, test</text><path class="v2-mark v2-fill-pass" d="M130.0,128.0 H483.3 V152.0 H130.0 Z" data-tip="13 (62%)
-Pass, Best, test" tabindex="0"></path><text class="v2-inside" x="306.7" y="144" text-anchor="middle">13</text><path class="v2-mark v2-fill-gen" d="M485.3,128.0 H674.7 V152.0 H485.3 Z" data-tip="7 (33%)
-Generation miss, Best, test" tabindex="0"></path><text class="v2-inside" x="580.0" y="144" text-anchor="middle">7</text><path class="v2-mark v2-fill-ret" d="M676.7,128.0 H700.0 Q704.0,128.0 704.0,132.0 V148.0 Q704.0,152.0 700.0,152.0 H676.7 Z" data-tip="1 (5%)
-Retrieval miss, Best, test" tabindex="0"></path><text class="v2-inside" x="690.3" y="144" text-anchor="middle">1</text></svg></figure>
+    <figure class="v2-figure"><svg class="v2-chart" viewBox="0 0 720 166" role="img" aria-label="Failure classes before and after tuning" preserveAspectRatio="xMidYMid meet"><text class="v2-label" x="120" y="23" text-anchor="end">Baseline, dev</text><path class="v2-mark v2-fill-pass" d="M130.0,8.0 H304.6 V32.0 H130.0 Z" data-tip="16 (31%)
+Pass, Baseline, dev" tabindex="0"></path><text class="v2-inside" x="217.3" y="24" text-anchor="middle">16</text><path class="v2-mark v2-fill-gen" d="M306.6,8.0 H481.2 V32.0 H306.6 Z" data-tip="16 (31%)
+Generation miss, Baseline, dev" tabindex="0"></path><text class="v2-inside" x="393.9" y="24" text-anchor="middle">16</text><path class="v2-mark v2-fill-ret" d="M483.2,8.0 H700.0 Q704.0,8.0 704.0,12.0 V28.0 Q704.0,32.0 700.0,32.0 H483.2 Z" data-tip="20 (38%)
+Retrieval miss, Baseline, dev" tabindex="0"></path><text class="v2-inside" x="593.6" y="24" text-anchor="middle">20</text><text class="v2-label" x="120" y="63" text-anchor="end">Best, dev</text><path class="v2-mark v2-fill-pass" d="M130.0,48.0 H503.3 V72.0 H130.0 Z" data-tip="34 (65%)
+Pass, Best, dev" tabindex="0"></path><text class="v2-inside" x="316.7" y="64" text-anchor="middle">34</text><path class="v2-mark v2-fill-gen" d="M505.3,48.0 H613.7 V72.0 H505.3 Z" data-tip="10 (19%)
+Generation miss, Best, dev" tabindex="0"></path><text class="v2-inside" x="559.5" y="64" text-anchor="middle">10</text><path class="v2-mark v2-fill-ret" d="M615.7,48.0 H700.0 Q704.0,48.0 704.0,52.0 V68.0 Q704.0,72.0 700.0,72.0 H615.7 Z" data-tip="8 (15%)
+Retrieval miss, Best, dev" tabindex="0"></path><text class="v2-inside" x="659.8" y="64" text-anchor="middle">8</text><text class="v2-label" x="120" y="103" text-anchor="end">Baseline, test</text><path class="v2-mark v2-fill-pass" d="M130.0,88.0 H307.4 V112.0 H130.0 Z" data-tip="5 (31%)
+Pass, Baseline, test" tabindex="0"></path><text class="v2-inside" x="218.7" y="104" text-anchor="middle">5</text><path class="v2-mark v2-fill-gen" d="M309.4,88.0 H486.8 V112.0 H309.4 Z" data-tip="5 (31%)
+Generation miss, Baseline, test" tabindex="0"></path><text class="v2-inside" x="398.1" y="104" text-anchor="middle">5</text><path class="v2-mark v2-fill-ret" d="M488.8,88.0 H700.0 Q704.0,88.0 704.0,92.0 V108.0 Q704.0,112.0 700.0,112.0 H488.8 Z" data-tip="6 (38%)
+Retrieval miss, Baseline, test" tabindex="0"></path><text class="v2-inside" x="596.4" y="104" text-anchor="middle">6</text><text class="v2-label" x="120" y="143" text-anchor="end">Best, test</text><path class="v2-mark v2-fill-pass" d="M130.0,128.0 H486.8 V152.0 H130.0 Z" data-tip="10 (62%)
+Pass, Best, test" tabindex="0"></path><text class="v2-inside" x="308.4" y="144" text-anchor="middle">10</text><path class="v2-mark v2-fill-gen" d="M488.8,128.0 H558.5 V152.0 H488.8 Z" data-tip="2 (12%)
+Generation miss, Best, test" tabindex="0"></path><text class="v2-inside" x="523.6" y="144" text-anchor="middle">2</text><path class="v2-mark v2-fill-ret" d="M560.5,128.0 H700.0 Q704.0,128.0 704.0,132.0 V148.0 Q704.0,152.0 700.0,152.0 H560.5 Z" data-tip="4 (25%)
+Retrieval miss, Best, test" tabindex="0"></path><text class="v2-inside" x="632.2" y="144" text-anchor="middle">4</text></svg></figure>
     <ul class="v2-legend">
       
       <li><span class="v2-swatch" style="background: var(--true-pass)"></span>Pass</li>
@@ -1556,13 +1556,13 @@ Retrieval miss, Best, test" tabindex="0"></path><text class="v2-inside" x="690.3
         <thead><tr><th>Config, split</th><th class="num">Pass</th><th class="num">Generation miss</th><th class="num">Retrieval miss</th></tr></thead>
         <tbody>
           
-          <tr><td>Baseline, dev</td><td class="num">13</td><td class="num">14</td><td class="num">22</td></tr>
+          <tr><td>Baseline, dev</td><td class="num">16</td><td class="num">16</td><td class="num">20</td></tr>
           
-          <tr><td>Best, dev</td><td class="num">32</td><td class="num">16</td><td class="num">1</td></tr>
+          <tr><td>Best, dev</td><td class="num">34</td><td class="num">10</td><td class="num">8</td></tr>
           
-          <tr><td>Baseline, test</td><td class="num">8</td><td class="num">7</td><td class="num">6</td></tr>
+          <tr><td>Baseline, test</td><td class="num">5</td><td class="num">5</td><td class="num">6</td></tr>
           
-          <tr><td>Best, test</td><td class="num">13</td><td class="num">7</td><td class="num">1</td></tr>
+          <tr><td>Best, test</td><td class="num">10</td><td class="num">2</td><td class="num">4</td></tr>
           
         </tbody>
       </table>
@@ -1580,21 +1580,21 @@ Retrieval miss, Best, test" tabindex="0"></path><text class="v2-inside" x="690.3
           <tr>
             <td><code>chunk_size</code></td>
             <td>40</td>
-            <td class="v2-unchanged">40</td>
+            <td class="v2-changed">80 (changed)</td>
             <td class="v2-unchanged">20, 40, 80</td>
           </tr>
           
           <tr>
             <td><code>chunk_overlap</code></td>
             <td>0</td>
-            <td class="v2-changed">10 (changed)</td>
+            <td class="v2-unchanged">0</td>
             <td class="v2-unchanged">0, 10</td>
           </tr>
           
           <tr>
             <td><code>top_k</code></td>
             <td>1</td>
-            <td class="v2-changed">5 (changed)</td>
+            <td class="v2-changed">3 (changed)</td>
             <td class="v2-unchanged">1, 3, 5</td>
           </tr>
           

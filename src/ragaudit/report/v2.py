@@ -18,7 +18,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from ragaudit.generate.pipeline import GenerateSummary
-from ragaudit.models.question import Question, QuestionStatus
+from ragaudit.models.question import Question, QuestionStatus, Split
 from ragaudit.models.tune import TuneResult
 from ragaudit.report.generator import TEMPLATES_DIR, _load_style_css
 
@@ -29,6 +29,7 @@ REJECT_REASON_LABELS = {
     "unanswerable": "Unanswerable: the question can't be answered from the passage, or gives the answer away",
     "ambiguous": "Ambiguous: more than one answer, or unclear what is asked",
     "verifier_unparseable": "Verifier output unparseable: rejected to be safe",
+    "cross_split": "Cross-split: a multi-hop question whose chunks are in different splits",
 }
 FAILURE_CLASSES = [
     ("pass", "Pass", "v2-fill-pass"),
@@ -277,7 +278,7 @@ def generate_generate_report(
     output_path: str | Path,
 ) -> Path:
     """Render a generate run. Accepted examples must be dev-split only; the caller guarantees it."""
-    if any(q.split.value != "dev" for q in accepted_examples):
+    if any(q.split != Split.DEV for q in [*accepted_examples, *rejected_examples]):
         raise ValueError("generate report examples must come from the dev split only")
     histogram, histogram_rows = overlap_histogram(summary.lexical_overlaps, summary.lexical_threshold)
     reasons = sorted(summary.reject_reasons.items(), key=lambda item: (-item[1], item[0]))
@@ -353,12 +354,15 @@ def generate_tune_report(result: TuneResult, output_path: str | Path) -> Path:
 
 
 def select_generate_examples(store, summary: GenerateSummary, limit: int = 10) -> tuple[list[Question], list[Question]]:
-    """Accepted examples from the dev split only, and rejected examples (never scored, so any split)."""
+    """Accepted and rejected examples, both from the dev split only.
+
+    Splits are per chunk, so even a rejected test-split question would show
+    text from a test chunk; the report never does.
+    """
     accepted = [q for q in store.dev_questions() if q.created_at >= summary.created_at] or store.dev_questions()
     rejected_all = [
         q
-        for split in ("dev", "test")
-        for q in store.load_questions(split=_split(split), statuses=[QuestionStatus.REJECTED])
+        for q in store.load_questions(split=Split.DEV, statuses=[QuestionStatus.REJECTED])
         if q.created_at >= summary.created_at
     ]
     by_reason: dict[str, list[Question]] = {}
@@ -374,8 +378,3 @@ def select_generate_examples(store, summary: GenerateSummary, limit: int = 10) -
             unique.append(q)
     return unique[:limit], rejected
 
-
-def _split(name: str):
-    from ragaudit.models.question import Split
-
-    return Split(name)

@@ -55,10 +55,10 @@ def test_question_type_follows_number_of_chunks():
     assert multi.question_type == QuestionType.MULTI_HOP
 
 
-def test_split_is_deterministic_and_roughly_70_30():
-    ids = [compute_question_id([f"h{i}"], "f") for i in range(10_000)]
-    splits = [assign_split(qid) for qid in ids]
-    assert splits == [assign_split(qid) for qid in ids]
+def test_split_is_deterministic_and_roughly_70_30_by_chunk():
+    chunk_ids = [f"doc-{i}#0" for i in range(10_000)]
+    splits = [assign_split(chunk_id) for chunk_id in chunk_ids]
+    assert splits == [assign_split(chunk_id) for chunk_id in chunk_ids]
     dev_share = splits.count(Split.DEV) / len(splits)
     assert 0.68 < dev_share < 0.72
 

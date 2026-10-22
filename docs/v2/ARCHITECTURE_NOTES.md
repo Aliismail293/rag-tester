@@ -65,7 +65,7 @@ to existing CLI commands.
 
 | File | Phase | Purpose |
 |---|---|---|
-| `src/ragaudit/models/question.py` | 1 | `Question` model, `QuestionType`/`Split`/`QuestionStatus` enums, `compute_question_id`, `assign_split` (70/30 by hash of `question_id`). |
+| `src/ragaudit/models/question.py` | 1 | `Question` model, `QuestionType`/`Split`/`QuestionStatus` enums, `compute_question_id`, `assign_split` / `split_for_chunks` (70/30 per chunk, by hash of `chunk_id`; questions inherit their chunks' split). |
 | `src/ragaudit/models/evaluation.py` | 4 | `QuestionResult`, `FailureClass`, `EvalSummary`. |
 | `src/ragaudit/models/tune.py` | 5 | `Trial`, `TuneResult`. |
 | `src/ragaudit/storage/store.py` | 1, 3, 4, 5 | v2 store: schema-version table, questions, corpus versions, eval-result cache, eval runs, generate runs, tune runs/trials. Test-split reads are refused unless the locked evaluation path has unlocked them. |

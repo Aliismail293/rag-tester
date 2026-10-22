@@ -12,9 +12,12 @@ works as before; v1 commands, flags, outputs and reports are unchanged.
   verification by a second model. Rejected questions keep a reason.
   Optional multi-hop questions (`--multi-hop`). Budgets: `--max-chunks`,
   `--max-llm-calls`. Re-runs skip chunks that already have questions.
-- A v2 store (`.ragaudit/store.db`) with questions assigned once to a dev
-  (70%) or test (30%) split by hash. The test split is locked: reading it
-  raises unless the single final-evaluation path unlocks it.
+- A v2 store (`.ragaudit/store.db`) with a per-chunk dev (70% of chunks) /
+  test (30%) split: each chunk's split comes from a hash of its id, and
+  all its questions inherit it, so no chunk feeds both splits. Multi-hop
+  questions spanning both splits are rejected as `cross_split`. The test
+  split is locked: reading it raises unless the single final-evaluation
+  path unlocks it.
 - Corpus versioning: each corpus is fingerprinted, and edited or deleted
   chunks mark their questions stale (reverting an edit revives them).
 - `ragaudit evaluate`: scores a pipeline on the dev split (or, explicitly,

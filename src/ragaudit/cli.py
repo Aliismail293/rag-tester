@@ -361,13 +361,26 @@ def run_cmd(
 @app.command()
 @_cli_safe
 def report(
-    out: Path = typer.Option(Path("report.html"), "--out", help="Output HTML file path."),
+    out: Optional[Path] = typer.Option(
+        None, "--out", help="Output HTML file path (default report.html; generate-report.html / tune-report.html for v2 kinds)."
+    ),
     db: Path = DB_OPTION,
     run_id: Optional[str] = typer.Option(
-        None, "--run-id", help="Run id to report on (defaults to the most recently run)."
+        None, "--run-id", help="Run id to report on (defaults to the most recently run). For v2 kinds, the generate run or tune id."
     ),
+    kind: str = typer.Option(
+        "run", "--kind", help="run (v1 run report, the default), generate (v2 generate run) or tune (v2 tune run)."
+    ),
+    store: Path = STORE_OPTION,
 ) -> None:
-    """Render the latest (or specified) Run into a static HTML report."""
+    """Render the latest (or specified) Run into a static HTML report. v2: --kind generate|tune."""
+    if kind in ("generate", "tune"):
+        output_path = cli_v2.run_report(kind, store, out or Path(f"{kind}-report.html"), run_id)
+        typer.echo(f"Report written to {output_path}")
+        return
+    if kind != "run":
+        _error_exit(f"--kind must be run, generate or tune, got {kind!r}")
+    out = out or Path("report.html")
     if not db.exists():
         _error_exit(f"database not found at {db} — run `ragaudit ingest`, `generate`, and `run` first.")
 

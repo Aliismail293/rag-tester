@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ragaudit tune report — {{ result.tune_id }}</title>
+<style>
+{{ style_css | safe }}
+{{ v2_css | safe }}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="report-header">
+    <h1>ragaudit tune report{% if is_mock %}<span class="v2-badge-mock">built with the mock LLM</span>{% endif %}</h1>
+    <div class="meta">
+      Tune <code>{{ result.tune_id }}</code> ·
+      strategy <code>{{ result.strategy }}</code> ·
+      adapter <code>{{ result.adapter_path }}</code> ·
+      judge <code>{{ result.judge_model }}</code> ·
+      k={{ result.k }} ·
+      index <code>{{ result.index_version[:12] }}</code> ·
+      started {{ result.created_at }}
+    </div>
+  </header>
+
+  <section class="headline">
+    <h2>The headline finding</h2>
+    <p class="headline-sentence">
+      {% if best.index == baseline.index %}
+      No config beat the baseline on the dev set in {{ result.trials | length }} trial(s), so the baseline stays.
+      Its score on the locked test set is <strong>{{ "%.1f" | format(result.baseline_test.score) }}</strong>.
+      {% else %}
+      Tuning moved the honest score, measured once on the locked test set, from
+      <strong>{{ "%.1f" | format(result.baseline_test.score) }}</strong> to <strong>{{ "%.1f" | format(result.best_test.score) }}</strong>
+      ({{ "%+.1f" | format(improvement) }} points) after {{ result.trials | length }} trial(s).
+      The search only ever saw the dev set, where the same change was {{ "%+.1f" | format(dev_improvement) }} points.
+      {% endif %}
+    </p>
+    {% if is_mock %}
+    <div class="v2-callout warn">Built with ragaudit's offline mock LLM as both judge{% if result.strategy == "llm" %} and proposer{% endif %}. The numbers show how the loop behaves, not how good any real pipeline is.</div>
+    {% endif %}
+    <div class="stats-grid">
+      <div class="stat"><span class="value">{{ "%.1f" | format(result.baseline_test.score) }}</span><span class="label">Baseline, test</span></div>
+      <div class="stat"><span class="value">{{ "%.1f" | format(result.best_test.score) }}</span><span class="label">Best, test</span></div>
+      <div class="stat"><span class="value">{{ "%.1f" | format(best.dev.score) }}</span><span class="label">Best, dev</span></div>
+      <div class="stat"><span class="value">{{ "%+.1f" | format(result.overfit_gap) }}</span><span class="label">Dev minus test (best)</span></div>
+    </div>
+    <p class="meta">Score = share of questions where the gold passage was in the top {{ result.k }} <em>and</em> the answer was judged correct, ×100.
+      Dev: {{ best.dev.n_questions }} questions. Test: {{ result.best_test.n_questions }} questions.</p>
+  </section>
+
+  <section>
+    <h2>Overfitting check</h2>
+    {% if result.overfit_warning %}
+    <div class="v2-callout warn">
+      <strong>Likely overfit to the dev set.</strong> The best config scores {{ "%.1f" | format(best.dev.score) }} on dev but
+      {{ "%.1f" | format(result.best_test.score) }} on the locked test set, a gap of {{ "%.1f" | format(result.overfit_gap) }} points,
+      more than the {{ "%.1f" | format(result.overfit_threshold) }}-point threshold. Treat the dev score as optimistic,
+      and consider generating more questions before trusting this config.
+    </div>
+    {% else %}
+    <div class="v2-callout ok">
+      <strong>No sign of overfitting.</strong> The best config's dev score ({{ "%.1f" | format(best.dev.score) }}) is within
+      {{ "%.1f" | format(result.overfit_threshold) }} points of its locked test score ({{ "%.1f" | format(result.best_test.score) }});
+      the gap is {{ "%+.1f" | format(result.overfit_gap) }}.
+    </div>
+    {% endif %}
+    <figure class="v2-figure">{{ dev_test_chart | safe }}</figure>
+    <ul class="v2-legend">
+      <li><span class="v2-swatch" style="background: var(--v2-dev)"></span>Dev (searched on)</li>
+      <li><span class="v2-swatch" style="background: var(--v2-test)"></span>Locked test (scored once at the end)</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Dev score per trial</h2>
+    <p>Each dot is one config evaluated on the dev set. The dashed line is the best dev score so far; the white dot is the config that was kept.
+      Trials by source: {% for source, count in sources.items() %}{{ count }} {{ source }}{% if not loop.last %}, {% endif %}{% endfor %}.
+      Stopped because: <code>{{ result.stopped_reason }}</code>. LLM calls used: {{ result.llm_calls }}.</p>
+    <figure class="v2-figure">{{ trial_chart | safe }}</figure>
+    <ul class="v2-legend">
+      <li><span class="v2-swatch dot" style="background: var(--v2-dev)"></span>Trial dev score</li>
+      <li><span class="v2-swatch dot" style="background: var(--text)"></span>Best (kept)</li>
+      <li><span class="v2-swatch line"></span>Best so far</li>
+    </ul>
+    <details class="v2-data">
+      <summary>Show every trial as a table</summary>
+      <div class="v2-table-wrap">
+        <table class="v2-table">
+          <thead><tr><th class="num">#</th><th>Source</th><th class="num">Dev score</th><th class="num">Pass</th><th class="num">Gen miss</th><th class="num">Ret miss</th><th>Changed from baseline</th><th>Rationale</th></tr></thead>
+          <tbody>
+            {% for t in trial_rows %}
+            <tr{% if t.is_best %} class="is-best"{% endif %}>
+              <td class="num">{{ t.index }}</td>
+              <td>{{ t.source }}{% if t.is_best %} (best){% endif %}</td>
+              <td class="num">{{ "%.1f" | format(t.score) }}</td>
+              <td class="num">{{ t.counts.get("pass", 0) }}</td>
+              <td class="num">{{ t.counts.get("generation_miss", 0) }}</td>
+              <td class="num">{{ t.counts.get("retrieval_miss", 0) }}</td>
+              <td><code>{{ t.changed }}</code></td>
+              <td>{{ t.rationale }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2>Failure classes before and after</h2>
+    <p><strong>Retrieval miss</strong>: the gold passage wasn't in the top {{ result.k }} (a correct answer without it counts here too, since it was luck).
+      <strong>Generation miss</strong>: the passage was retrieved but the answer was still wrong.</p>
+    <figure class="v2-figure">{{ failure_chart | safe }}</figure>
+    <ul class="v2-legend">
+      {% for key, name, cls in failure_classes %}
+      <li><span class="v2-swatch" style="background: var(--{{ {'pass': 'true-pass', 'generation_miss': 'generation-failure', 'retrieval_miss': 'retrieval-failure'}[key] }})"></span>{{ name }}</li>
+      {% endfor %}
+    </ul>
+    <details class="v2-data">
+      <summary>Show as a table</summary>
+      <table class="v2-table">
+        <thead><tr><th>Config, split</th>{% for key, name, cls in failure_classes %}<th class="num">{{ name }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for label, counts in stack_rows %}
+          <tr><td>{{ label }}</td>{% for key, name, cls in failure_classes %}<td class="num">{{ counts.get(key, 0) }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+  <section>
+    <h2>Best config</h2>
+    {% if result.best_config_path %}<p>Written to <code>{{ result.best_config_path }}</code>.</p>{% endif %}
+    <div class="v2-table-wrap">
+      <table class="v2-table">
+        <thead><tr><th>Knob</th><th>Baseline</th><th>Best</th><th>Searched over</th></tr></thead>
+        <tbody>
+          {% for k in knobs %}
+          <tr>
+            <td><code>{{ k.knob }}</code></td>
+            <td>{{ k.baseline }}</td>
+            <td class="{{ 'v2-changed' if k.changed else 'v2-unchanged' }}">{{ k.best }}{% if k.changed %} (changed){% endif %}</td>
+            <td class="v2-unchanged">{{ result.search_space[k.knob] | join(", ") }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+{% include "_v2_tooltip.jinja" %}
+</body>
+</html>

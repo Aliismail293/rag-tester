@@ -464,3 +464,26 @@ def run_tune_command(
         typer.echo(line)
     typer.echo(f"Best config written to {out}. Trial log saved to {store_path} (tune {result.tune_id}).")
     return result
+
+
+def run_report(kind: str, store_path: Path, out: Path, run_id: str | None) -> Path:
+    """Render a v2 report: `generate` (a generate run) or `tune` (a tune run). The latest run unless run_id is given."""
+    from ragaudit.report.v2 import generate_generate_report, generate_tune_report, select_generate_examples
+
+    if not store_path.exists():
+        _fail(f"v2 store not found at {store_path}; run `ragaudit generate --corpus <path>` first.")
+    store = _open_store(store_path)
+    try:
+        if kind == "generate":
+            raw = store.load_generate_run(run_id)
+            if raw is None:
+                _fail(f"generate run '{run_id}' not found." if run_id else "no generate run found; run `ragaudit generate --corpus <path>` first.")
+            summary = GenerateSummary.model_validate_json(raw)
+            accepted, rejected = select_generate_examples(store, summary)
+            return generate_generate_report(summary, store.question_counts(), accepted, rejected, out)
+        result = store.load_tune_result(run_id)
+        if result is None:
+            _fail(f"tune run '{run_id}' not found." if run_id else "no finished tune run found; run `ragaudit tune` first.")
+        return generate_tune_report(result, out)
+    finally:
+        store.close()

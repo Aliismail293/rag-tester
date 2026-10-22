@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ragaudit generate report — {{ summary.run_id }}</title>
+<style>
+{{ style_css | safe }}
+{{ v2_css | safe }}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="report-header">
+    <h1>ragaudit generate report{% if is_mock %}<span class="v2-badge-mock">built with the mock LLM</span>{% endif %}</h1>
+    <div class="meta">
+      Run <code>{{ summary.run_id }}</code> ·
+      generator <code>{{ summary.generator_model }}</code> ·
+      verifier <code>{{ summary.verifier_model }}</code> ·
+      index <code>{{ (summary.index_version or "n/a")[:12] }}</code> ·
+      started {{ summary.created_at }}
+    </div>
+  </header>
+
+  <section class="headline">
+    <h2>The headline finding</h2>
+    <p class="headline-sentence">
+      {% if checked == 0 %}
+      Nothing new to generate in this run: every chunk already had questions or had been tried before.
+      {% else %}
+      Of the <strong>{{ checked }}</strong> candidate questions checked this run, <strong>{{ summary.generated }} ({{ pass_pct }}%)</strong>
+      passed every check and were saved.
+      {% if top_reason %}
+      The most common reason a question was thrown out was <strong>{{ top_reason[0] }}</strong> ({{ top_reason[1] }} of {{ summary.rejected }} rejected).
+      {% endif %}
+      {% endif %}
+    </p>
+    {% if is_mock %}
+    <div class="v2-callout warn">These questions were written and checked by ragaudit's offline mock LLM, which is deterministic and deliberately flawed so every rejection path gets exercised. Real runs use a real generator and a different verifier model.</div>
+    {% endif %}
+    <div class="stats-grid">
+      <div class="stat"><span class="value">{{ summary.generated }}</span><span class="label">Questions saved this run</span></div>
+      <div class="stat"><span class="value">{{ summary.rejected }}</span><span class="label">Rejected this run</span></div>
+      <div class="stat"><span class="value">{{ summary.split_counts.get("dev", 0) }} / {{ summary.split_counts.get("test", 0) }}</span><span class="label">New dev / new test</span></div>
+      <div class="stat"><span class="value">{{ summary.multi_hop_generated }}</span><span class="label">Multi-hop saved</span></div>
+    </div>
+    {% if summary.stopped_reason %}
+    <div class="v2-callout warn">Stopped early ({{ summary.stopped_reason }}): {{ summary.chunks_remaining }} chunk(s) and {{ summary.pairs_remaining }} chunk pair(s) are still pending. Run <code>ragaudit generate</code> again to continue where it stopped.</div>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2>What's in the store now</h2>
+    <p>Every question is assigned to a split once, from a hash of its id, so it never moves. <code>tune</code> only ever sees the dev split; the test split stays locked until the final score.</p>
+    <div class="v2-table-wrap">
+      <table class="v2-table">
+        <thead><tr><th>Split</th><th class="num">Active</th><th class="num">Stale</th><th class="num">Rejected</th></tr></thead>
+        <tbody>
+          {% for split in ["dev", "test"] %}
+          <tr>
+            <td>{{ split }}{% if split == "test" %} (locked){% endif %}</td>
+            <td class="num">{{ totals[split]["active"] }}</td>
+            <td class="num">{{ totals[split]["stale"] }}</td>
+            <td class="num">{{ totals[split]["rejected"] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if summary.corpus_diff %}
+    <p class="meta">Corpus this run: {{ summary.corpus_chunks }} chunks
+      ({% for key, value in summary.corpus_diff.items() %}{{ value }} {{ key }}{% if not loop.last %}, {% endif %}{% endfor %}).
+      Processed {{ summary.chunks_processed }} chunk(s), skipped {{ summary.chunks_skipped }} that already had questions,
+      {{ summary.pairs_processed }} multi-hop pair(s); {{ summary.duplicates }} duplicate(s); {{ summary.llm_calls }} LLM call(s).</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2>Why questions were rejected</h2>
+    {% if reasons %}
+    <figure class="v2-figure">{{ reason_chart | safe }}</figure>
+    <div class="v2-table-wrap">
+      <table class="v2-table">
+        <thead><tr><th>Reason</th><th class="num">Rejected</th><th>Meaning</th></tr></thead>
+        <tbody>
+          {% for r in reasons %}
+          <tr><td><code>{{ r.reason }}</code></td><td class="num">{{ r.count }}</td><td>{{ r.label }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p>No questions were rejected this run.</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2>Lexical overlap</h2>
+    <p>
+      A question that copies its source passage's wording can be answered by keyword search alone, which makes
+      a retriever look better than it is. Each question is rewritten once; if more than
+      <strong>{{ (summary.lexical_threshold * 100) | round(0) | int }}%</strong> of its content words still appear in
+      the passage, it gets one more rewrite and is then rejected as <code>too_lexical</code>.
+      {% if overlap_median is not none %}Median overlap this run: <strong>{{ "%.2f" | format(overlap_median) }}</strong>.{% endif %}
+    </p>
+    {% if summary.lexical_overlaps %}
+    <figure class="v2-figure">{{ histogram | safe }}</figure>
+    <ul class="v2-legend">
+      <li><span class="v2-swatch" style="background: var(--accent)"></span>At or under the threshold: kept for verification</li>
+      <li><span class="v2-swatch" style="background: var(--v2-muted-mark)"></span>Over the threshold: rejected</li>
+    </ul>
+    <details class="v2-data">
+      <summary>Show as a table</summary>
+      <table class="v2-table">
+        <thead><tr><th>Overlap</th><th class="num">Questions</th><th>Outcome</th></tr></thead>
+        <tbody>
+          {% for row in histogram_rows %}
+          <tr><td>{{ row.range }}</td><td class="num">{{ row.count }}</td><td>{{ "kept" if row.kept else "rejected" }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </details>
+    {% else %}
+    <p>No questions reached the overlap check this run.</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2>Example questions (dev split)</h2>
+    <p>A sample of saved questions. Only dev-split questions are shown so the report never leaks the locked test set.</p>
+    {% for q in accepted %}
+    <div class="v2-q">
+      <div><span class="v2-tag">{{ q.type }}</span><span class="v2-tag">overlap {{ q.overlap }}</span></div>
+      <div class="q">{{ q.question }}</div>
+      <div class="a">Answer: {{ q.answer }}</div>
+      <div class="src">Fact: {{ q.fact }} · from <code>{{ q.chunks }}</code></div>
+    </div>
+    {% else %}
+    <p>No dev-split questions yet.</p>
+    {% endfor %}
+  </section>
+
+  {% if rejected_by_reason %}
+  <section>
+    <h2>Example rejections</h2>
+    <p>Up to three per reason. Rejected questions are never scored, so they're shown from either split.</p>
+    {% for reason, rows in rejected_by_reason.items() %}
+    <details>
+      <summary><code>{{ reason }}</code> ({{ rows | length }} shown)</summary>
+      {% for q in rows %}
+      <div class="v2-q">
+        <div class="q">{{ q.question }}</div>
+        {% if q.draft and q.draft != q.question %}<div class="a">First draft: {{ q.draft }}</div>{% endif %}
+        <div class="a">Answer: {{ q.answer }} · overlap {{ q.overlap }}</div>
+        <div class="src">Fact: {{ q.fact }} · from <code>{{ q.chunks }}</code></div>
+      </div>
+      {% endfor %}
+    </details>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+</div>
+{% include "_v2_tooltip.jinja" %}
+</body>
+</html>

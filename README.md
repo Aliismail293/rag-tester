@@ -257,6 +257,12 @@ deliberate flaws, for demos and tests; its numbers say nothing about a
 real pipeline. Without `--corpus`, `generate` is the unchanged v1 command,
 and `report` defaults to the v1 run report.
 
+### Known limitations
+
+- The real-LLM path was smoke-tested on `generate` with local Ollama models
+  (qwen2.5:7b generator, llama3.1:8b verifier) and its bugs were fixed, but
+  a full real-LLM `evaluate`/`tune` run is still pending.
+
 ## License
 
 MIT

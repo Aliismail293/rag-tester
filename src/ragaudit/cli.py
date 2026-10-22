@@ -4,6 +4,9 @@ This module only wires together already-implemented modules (loading,
 chunking, generation, running, ablation, scoring aggregation, storage,
 and reporting) behind a Typer app. It contains no scoring or business
 logic of its own.
+
+v2 adds `generate --corpus`, `evaluate` and `tune`; their bodies live in
+cli_v2.py. Without --corpus, `generate` runs exactly the v1 code path.
 """
 
 import functools
@@ -14,7 +17,13 @@ from typing import Optional
 
 import typer
 
+from ragaudit import cli_v2
 from ragaudit.adapters.base import AdapterLoadError, load_adapter
+from ragaudit.generate.pipeline import (
+    DEFAULT_LEXICAL_THRESHOLD,
+    DEFAULT_MAX_FACTS_PER_CHUNK,
+    DEFAULT_MULTI_HOP_PAIRS,
+)
 from ragaudit.generate.testset_generator import generate_test_set
 from ragaudit.ingest import chunker
 from ragaudit.ingest.loader import load_documents as load_documents_from_disk
@@ -29,10 +38,15 @@ from ragaudit.scoring.correctness import judge_correctness
 from ragaudit.scoring.groundedness import judge_groundedness
 from ragaudit.storage import db as db_module
 from ragaudit.storage import repository
+from ragaudit.storage.store import DEFAULT_STORE_PATH
 
 app = typer.Typer(help="Audits RAG pipelines by checking whether retrieval actually did the work.")
 
 DB_OPTION = typer.Option(Path("ragaudit.db"), "--db", help="SQLite database path.")
+STORE_OPTION = typer.Option(DEFAULT_STORE_PATH, "--store", help="v2 store path.")
+LLM_OPTION = typer.Option(
+    None, "--llm", help="v2 LLM provider: openai (default, RAGAUDIT_API_*) or mock (offline). Env: RAGAUDIT_LLM."
+)
 
 NO_CONTEXT_SYSTEM_PROMPT = (
     "Answer the question using only your own internal knowledge. You have not "
@@ -101,10 +115,57 @@ def ingest(
 @app.command()
 @_cli_safe
 def generate(
-    n: int = typer.Option(1, "--n", help="Number of questions to generate per chunk."),
+    n: Optional[int] = typer.Option(
+        None,
+        "--n",
+        help="Number of questions to generate per chunk (default 1). With --corpus: max facts per chunk (default 3).",
+    ),
     db: Path = DB_OPTION,
+    corpus: Optional[Path] = typer.Option(
+        None,
+        "--corpus",
+        help="v2: build a verified, de-worded, dev/test-split question set from this .jsonl file or directory.",
+    ),
+    store: Path = STORE_OPTION,
+    llm: Optional[str] = LLM_OPTION,
+    generator_model: Optional[str] = typer.Option(None, "--generator-model", help="v2: generator model."),
+    verifier_model: Optional[str] = typer.Option(
+        None, "--verifier-model", help="v2: verifier model; must differ from the generator."
+    ),
+    max_chunks: Optional[int] = typer.Option(None, "--max-chunks", help="v2: process at most this many chunks."),
+    max_llm_calls: Optional[int] = typer.Option(None, "--max-llm-calls", help="v2: stop after this many LLM calls."),
+    multi_hop: bool = typer.Option(False, "--multi-hop", help="v2: also write questions that need two chunks."),
+    multi_hop_pairs: int = typer.Option(
+        DEFAULT_MULTI_HOP_PAIRS, "--multi-hop-pairs", help="v2: max chunk pairs for multi-hop per run."
+    ),
+    lexical_threshold: float = typer.Option(
+        DEFAULT_LEXICAL_THRESHOLD,
+        "--lexical-threshold",
+        help="v2: max share of question content words found in the chunk before a rewrite is rejected.",
+    ),
+    retry_processed: bool = typer.Option(
+        False, "--retry-processed", help="v2: re-process chunks that previously yielded no active question."
+    ),
 ) -> None:
     """Generate a test set from ingested chunks and persist it."""
+    if corpus is not None:
+        cli_v2.run_generate(
+            corpus=corpus,
+            store_path=store,
+            max_facts_per_chunk=n if n is not None else DEFAULT_MAX_FACTS_PER_CHUNK,
+            llm=llm,
+            generator_model=generator_model,
+            verifier_model=verifier_model,
+            max_chunks=max_chunks,
+            max_llm_calls=max_llm_calls,
+            multi_hop=multi_hop,
+            multi_hop_pairs=multi_hop_pairs,
+            lexical_threshold=lexical_threshold,
+            retry_processed=retry_processed,
+        )
+        return
+
+    n = 1 if n is None else n
     if not db.exists():
         _error_exit(f"database not found at {db} — run `ragaudit ingest <path>` first.")
 

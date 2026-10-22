@@ -15,7 +15,7 @@ import json
 import sqlite3
 from collections import Counter
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from ragaudit.models.question import Question, QuestionStatus, QuestionType, Split
@@ -293,3 +293,41 @@ class Store:
             changed += cursor.rowcount
         self._conn.commit()
         return changed
+
+    def active_source_keys(self) -> set[str]:
+        """Generation source keys ("chunk_id@hash" joined by "+") that already have active questions."""
+        keys = set()
+        for ids_json, hashes_json in self._conn.execute(
+            "SELECT chunk_ids_json, chunk_hashes_json FROM questions WHERE status = ?",
+            (QuestionStatus.ACTIVE.value,),
+        ):
+            pairs = zip(json.loads(ids_json), json.loads(hashes_json))
+            keys.add("+".join(sorted(f"{chunk_id}@{chunk_hash}" for chunk_id, chunk_hash in pairs)))
+        return keys
+
+    # --- generation bookkeeping ---------------------------------------------
+
+    def attempted_source_keys(self) -> set[str]:
+        return {r[0] for r in self._conn.execute("SELECT source_key FROM generation_attempts")}
+
+    def record_generation_attempt(self, source_key: str, outcome: str) -> None:
+        self._conn.execute(
+            "INSERT OR REPLACE INTO generation_attempts (source_key, created_at, outcome) VALUES (?, ?, ?)",
+            (source_key, datetime.now(timezone.utc).isoformat(), outcome),
+        )
+        self._conn.commit()
+
+    def save_generate_run(self, run_id: str, created_at: datetime, summary_json: str) -> None:
+        self._conn.execute(
+            "INSERT OR REPLACE INTO generate_runs (run_id, created_at, summary_json) VALUES (?, ?, ?)",
+            (run_id, created_at.isoformat(), summary_json),
+        )
+        self._conn.commit()
+
+    def load_generate_run(self, run_id: str | None = None) -> str | None:
+        """Summary JSON of a generate run (the latest if run_id is None), or None."""
+        if run_id is None:
+            row = self._conn.execute("SELECT summary_json FROM generate_runs ORDER BY created_at DESC LIMIT 1").fetchone()
+        else:
+            row = self._conn.execute("SELECT summary_json FROM generate_runs WHERE run_id = ?", (run_id,)).fetchone()
+        return row[0] if row else None

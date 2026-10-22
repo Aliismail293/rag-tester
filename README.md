@@ -74,6 +74,10 @@ Functional end to end: ingestion, test-set generation, running, scoring
 (including ablation), storage, reporting, and the CLI are all implemented.
 See `demo/` for a working example.
 
+v2 (0.2.0) adds question generation with verification, cached and
+regression evaluation, and config tuning with a locked test split; see
+[v2: generate, evaluate, tune](#v2-generate-evaluate-tune).
+
 ## How it works
 
 1. Ingest a corpus of documents; ragaudit assigns stable chunk IDs.
@@ -139,6 +143,114 @@ ragaudit report --out report.html       # render the latest run as a static HTML
 
 Every command takes `--db` (default `./ragaudit.db`) to point at a
 specific database file.
+
+## v2: generate, evaluate, tune
+
+v1 audits one run. v2 adds a loop for improving a pipeline without fooling
+yourself: build a question set that can't be gamed, evaluate cheaply as the
+corpus changes, and let ragaudit search pipeline configs while keeping a
+test split it never tunes on.
+
+### What it does
+
+- **`generate --corpus`** extracts facts from each chunk, writes a question
+  per fact, rewrites it away from the passage's wording, and has a second
+  model verify it is answerable, unambiguous and supported. Questions that
+  still copy the passage, use relative time ("recently", "last quarter"),
+  or fail verification are rejected with a reason. `--multi-hop` adds
+  questions that need two chunks.
+- **`evaluate`** runs your pipeline on the dev split. Results are cached per
+  (question, config, corpus version), so an unchanged config re-scores
+  instantly. When the corpus changes, questions on edited or deleted chunks
+  go stale, and only new questions plus a seeded sample of old ones are
+  re-run.
+- **`tune`** searches a declared space of pipeline knobs (grid, seeded
+  random, or an LLM that reads dev failures and proposes the next config),
+  then scores the baseline and the best config once each on the locked test
+  split.
+- **`report --kind generate|tune`** renders both as self-contained HTML.
+
+### Why the scores are honest
+
+- **Questions don't share wording with their passage.** If over half of a
+  question's content words appear in its source chunk (configurable with
+  `--lexical-threshold`), it gets one more rewrite and is then rejected.
+  Keyword search alone can't ace the set.
+- **A second model verifies every question.** The verifier must be a
+  different model from the generator.
+- **The split is fixed by hash.** Each question goes to dev (70%) or test
+  (30%) from a salted hash of its id, once, and never moves.
+- **Tuning can't see the test split.** Reading test questions raises an
+  error unless one function, used only for the final score, unlocks it. A
+  test also parses the tuning code and fails if it imports the lock or the
+  database directly. The LLM proposer only ever sees dev data.
+- **A pass needs retrieval and a correct answer.** The score is the share of
+  questions where the gold chunk was in the top k *and* the answer was
+  judged correct. A correct answer without the gold chunk counts as a
+  retrieval miss, so tuning can't reward a model answering from memory.
+- **Overfitting is flagged.** If the best config's dev score beats its test
+  score by more than `--overfit-threshold` points (default 10), the run says
+  so.
+
+### Quickstart
+
+Offline, with the bundled demo and the deterministic mock LLM:
+
+```bash
+pip install -e .
+sh demo/v2/run_demo.sh      # reports in demo/v2/output/
+```
+
+Against your own corpus and pipeline, with a real model:
+
+```bash
+export RAGAUDIT_API_KEY=sk-... RAGAUDIT_MODEL=gpt-4o-mini
+ragaudit generate --corpus corpus.jsonl --verifier-model gpt-4o
+ragaudit evaluate --adapter my_pipeline.py --corpus corpus.jsonl
+ragaudit tune --adapter my_pipeline.py --search-space space.yaml --strategy llm
+ragaudit report --kind tune --out tune-report.html
+```
+
+A corpus is a `.jsonl` file, one chunk per line:
+`{"chunk_id": "...", "text": "...", "timestamp": "2026-01-12", "doc_id": "...", "position": 0}`
+(only `chunk_id` and `text` are required), or a directory of `.txt`/`.md`
+files, which get ids like `guide.md#3`. Chunk ids must stay stable across
+edits so ragaudit can tell an edited chunk from a new one.
+
+For `tune`, the adapter exposes `make_adapter(config) -> adapter` (see
+`demo/v2/toy_adapter.py`); plain v1 adapters still work with `evaluate`.
+The search space is YAML:
+
+```yaml
+knobs:
+  chunk_size: [200, 400, 800]
+  top_k: [3, 5, 10]
+  hybrid_weight: {min: 0.0, max: 1.0, step: 0.25}
+  reranker: [none, cross_encoder]
+baseline:            # optional; defaults to each knob's first value
+  chunk_size: 400
+```
+
+`tune` writes the best config to `best_config.yaml`, which `evaluate
+--config` accepts directly. Reading YAML uses PyYAML if installed
+(`pip install "ragaudit[yaml]"`) and a built-in parser for simple files
+otherwise.
+
+### CLI reference
+
+| Command | Key options |
+|---|---|
+| `ragaudit generate --corpus PATH` | `--n` (max facts per chunk, default 3), `--multi-hop`, `--multi-hop-pairs 10`, `--lexical-threshold 0.5`, `--max-chunks`, `--max-llm-calls`, `--generator-model`, `--verifier-model`, `--retry-processed` |
+| `ragaudit evaluate --adapter FILE` | `--config YAML`, `--corpus PATH`, `--split dev\|test`, `--k 5`, `--regression-sample 50`, `--seed`, `--full`, `--ablation`, `--judge-model` |
+| `ragaudit tune --adapter FILE --search-space YAML` | `--strategy grid\|random\|llm`, `--max-trials 20`, `--max-llm-calls`, `--seed`, `--k 5`, `--overfit-threshold 10`, `--out best_config.yaml`, `--judge-model`, `--proposer-model` |
+| `ragaudit report --kind generate\|tune` | `--run-id` (generate run or tune id; default latest), `--out` |
+
+Every v2 command takes `--store` (default `.ragaudit/store.db`, separate
+from v1's `ragaudit.db`) and `--llm openai|mock` (or `RAGAUDIT_LLM`).
+`--llm mock` runs everything offline with a deterministic mock that has
+deliberate flaws, for demos and tests; its numbers say nothing about a
+real pipeline. Without `--corpus`, `generate` is the unchanged v1 command,
+and `report` defaults to the v1 run report.
 
 ## License
 

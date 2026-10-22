@@ -17,6 +17,7 @@
       <li><a href="#how">How it works</a></li>
       <li><a href="#reports">Reports</a></li>
       <li><a href="#install">Install</a></li>
+      <li><a href="#v2">Generate &amp; tune</a></li>
       <li><a class="ln-nav-gh" href="https://github.com/Aliismail293/rag-tester">GitHub</a></li>
     </ul>
   </div>
@@ -239,6 +240,66 @@ ragaudit report --out report.html</code></pre>
     </div>
   </section>
 
+  <section id="v2" class="ln-band ln-band--alt">
+    <div class="ln-col">
+      <h2>v2: honest scores while you tune</h2>
+      <p class="ln-lead">
+        Generate a question set that can't be gamed, then let ragaudit tune your pipeline
+        against it, with the final score measured once on questions the search never saw.
+      </p>
+      <div class="ln-steps">
+        <div class="ln-step">
+          <span class="k">01 &middot; generate</span>
+          <strong>Questions that resist keyword search</strong>
+          <p>Facts are extracted per chunk, questions are reworded away from the passage, and a second model verifies each one. Each question is assigned to dev or test once, by hash.</p>
+        </div>
+        <div class="ln-step">
+          <span class="k">02 &middot; evaluate</span>
+          <strong>Only re-run what changed</strong>
+          <p>Results are cached by question, config and corpus version. Edited chunks retire their questions; a corpus change re-runs new questions plus a sample of old ones.</p>
+        </div>
+        <div class="ln-step">
+          <span class="k">03 &middot; tune</span>
+          <strong>Search on dev only</strong>
+          <p>Grid, random, or an LLM reading dev failures proposes configs. The tuning code can't read the test split; a runtime lock and a static check enforce it.</p>
+        </div>
+        <div class="ln-step">
+          <span class="k">04 &middot; report</span>
+          <strong>Score once on the locked test set</strong>
+          <p>Baseline and best are scored once each on test. A large dev-over-test gap is flagged as overfitting.</p>
+        </div>
+      </div>
+
+      <p class="ln-viewer-desc" id="v2-viewer-desc" style="margin-top: 2.5rem">The toy pipeline tuned on the demo corpus: dev score per trial, baseline vs best on the locked test split, failure classes before and after. Built with the offline mock LLM.</p>
+
+      <div class="ln-tabs" role="tablist" aria-label="Sample v2 report">
+        <button type="button" class="ln-tab" role="tab" aria-selected="true"
+          data-src="sample-report-v2-tune.html"
+          data-desc="The toy pipeline tuned on the demo corpus: dev score per trial, baseline vs best on the locked test split, failure classes before and after. Built with the offline mock LLM.">Tune</button>
+        <button type="button" class="ln-tab" role="tab" aria-selected="false"
+          data-src="sample-report-v2-generate.html"
+          data-desc="One generate run on the demo corpus: what was kept, why the rest was rejected, and how far questions drifted from their passage's wording. Built with the offline mock LLM.">Generate</button>
+      </div>
+
+      <iframe class="ln-frame" id="v2-report-frame" src="sample-report-v2-tune.html"
+        title="Sample v2 report" loading="lazy"></iframe>
+
+      <p style="margin-top: 2rem">Run the v2 demo offline, no API key needed:</p>
+      <div class="ln-code">
+<pre><code>sh demo/v2/run_demo.sh</code></pre>
+        <button type="button" class="ln-copy" aria-label="Copy demo command">Copy</button>
+      </div>
+      <p>Against your own corpus and pipeline:</p>
+      <div class="ln-code">
+<pre><code>ragaudit generate --corpus corpus.jsonl --verifier-model gpt-4o
+ragaudit evaluate --adapter my_pipeline.py
+ragaudit tune --adapter my_pipeline.py --search-space space.yaml
+ragaudit report --kind tune --out tune-report.html</code></pre>
+        <button type="button" class="ln-copy" aria-label="Copy v2 CLI commands">Copy</button>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <footer class="ln-footer">
@@ -271,26 +332,31 @@ ragaudit report --out report.html</code></pre>
     });
   });
 
-  // Report viewer: tabs swap the iframe src and the one-line description.
-  var tabs = Array.prototype.slice.call(document.querySelectorAll(".ln-tab"));
-  var frame = document.getElementById("report-frame");
-  var desc = document.getElementById("viewer-desc");
+  // Report viewers: tabs swap the iframe src and the one-line description.
+  function setUpViewer(sectionSelector, frameId, descId) {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll(sectionSelector + " .ln-tab"));
+    var frame = document.getElementById(frameId);
+    var desc = document.getElementById(descId);
 
-  function selectTab(tab) {
-    tabs.forEach(function (t) {
-      t.setAttribute("aria-selected", t === tab ? "true" : "false");
-    });
-    var src = tab.getAttribute("data-src");
-    if (frame.getAttribute("src") !== src) {
-      frame.setAttribute("src", src);
+    function selectTab(tab) {
+      tabs.forEach(function (t) {
+        t.setAttribute("aria-selected", t === tab ? "true" : "false");
+      });
+      var src = tab.getAttribute("data-src");
+      if (frame.getAttribute("src") !== src) {
+        frame.setAttribute("src", src);
+      }
+      desc.textContent = tab.getAttribute("data-desc");
     }
-    desc.textContent = tab.getAttribute("data-desc");
+
+    tabs.forEach(function (t) {
+      t.addEventListener("click", function () { selectTab(t); });
+    });
+    selectTab(tabs[0]);
   }
 
-  tabs.forEach(function (t) {
-    t.addEventListener("click", function () { selectTab(t); });
-  });
-  selectTab(tabs[0]);
+  setUpViewer("#reports", "report-frame", "viewer-desc");
+  setUpViewer("#v2", "v2-report-frame", "v2-viewer-desc");
 
   // Copy buttons.
   function fallbackCopy(text) {

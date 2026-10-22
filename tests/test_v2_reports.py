@@ -160,3 +160,22 @@ def test_v1_report_command_output_is_unchanged(tmp_path):
     assert result.exit_code == 0, result.output
     assert (tmp_path / "cli.html").read_bytes() == expected
     assert b"v2-" not in expected  # no v2 styles leak into v1 reports
+
+
+def test_v2_demo_script_runs_end_to_end_offline(tmp_path):
+    import os
+    import subprocess
+    import sys
+
+    env = dict(os.environ)
+    env.update(
+        RAGAUDIT_LLM="mock",
+        RAGAUDIT_STORE=str(tmp_path / "store.db"),
+        RAGAUDIT_DEMO_OUT=str(tmp_path / "out"),
+        PATH=f"{Path(sys.executable).parent}{os.pathsep}{env.get('PATH', '')}",
+    )
+    result = subprocess.run(["sh", str(DEMO_DIR / "run_demo.sh")], env=env, capture_output=True, text=True, timeout=300)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "mode regression" in result.stdout and "mode cached" in result.stdout
+    for name in ("generate-report.html", "tune-report.html", "best_config.yaml"):
+        assert (tmp_path / "out" / name).is_file()

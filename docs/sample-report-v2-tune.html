@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ragaudit tune report — cccbada5-388c-4443-b462-7e0b6d80ac36</title>
+<style>
+/* Shared stylesheet for the ragaudit HTML report and the docs/ landing page.
+   Dark theme, system font stack, no external fonts or frameworks. */
+
+:root {
+  --bg: #0f1115;
+  --surface: #171a21;
+  --surface-raised: #1f232c;
+  --border: #2a2f3a;
+  --text: #e6e6e6;
+  --text-muted: #9aa0a6;
+  --accent: #5b9dff;
+
+  --true-pass: #2ecc71;
+  --lucky-pass: #f5a623;
+  --generation-failure: #e74c3c;
+  --retrieval-failure: #8a94a6;
+
+  --true-pass-bg: rgba(46, 204, 113, 0.12);
+  --lucky-pass-bg: rgba(245, 166, 35, 0.16);
+  --generation-failure-bg: rgba(231, 76, 60, 0.12);
+  --retrieval-failure-bg: rgba(138, 148, 166, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+header.report-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+header.report-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+}
+
+.meta {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.meta code {
+  background: var(--surface);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+section h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+.headline-sentence {
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.stat {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.stat .value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  display: block;
+}
+
+.stat .label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+table.matrix-table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: center;
+}
+
+table.matrix-table th,
+table.matrix-table td {
+  border: 1px solid var(--border);
+  padding: 1rem;
+}
+
+table.matrix-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+table.matrix-table td {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.cell-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.cell-true-pass {
+  background: var(--true-pass-bg);
+  color: var(--true-pass);
+}
+
+.cell-lucky-pass {
+  background: var(--lucky-pass-bg);
+  color: var(--lucky-pass);
+}
+
+.cell-generation-failure {
+  background: var(--generation-failure-bg);
+  color: var(--generation-failure);
+}
+
+.cell-retrieval-failure {
+  background: var(--retrieval-failure-bg);
+  color: var(--retrieval-failure);
+}
+
+.warning {
+  color: var(--lucky-pass);
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filter-btn {
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  border-color: var(--accent);
+}
+
+.filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #061021;
+  font-weight: 600;
+}
+
+table#case-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table#case-table th,
+table#case-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+table#case-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+  user-select: none;
+}
+
+table#case-table th[data-sort]::after {
+  content: " \2195";
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-true_pass {
+  background: var(--true-pass-bg);
+  color: var(--true-pass);
+}
+
+.badge-lucky_pass {
+  background: var(--lucky-pass-bg);
+  color: var(--lucky-pass);
+}
+
+.badge-generation_failure {
+  background: var(--generation-failure-bg);
+  color: var(--generation-failure);
+}
+
+.badge-retrieval_failure {
+  background: var(--retrieval-failure-bg);
+  color: var(--retrieval-failure);
+}
+
+details summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+details dl {
+  margin: 0.75rem 0 0;
+}
+
+details dt {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+details dd {
+  margin: 0.2rem 0 0;
+  white-space: pre-wrap;
+}
+
+details ol {
+  margin: 0.2rem 0 0;
+  padding-left: 1.2rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* --- Code blocks (shared) --- */
+
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+code {
+  font-size: 0.9em;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 0;
+  overflow-x: auto;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+pre code {
+  font-size: inherit;
+}
+
+/* --- Landing page (docs/index.html) ---
+   Everything below is scoped under html.ln / body.ln-page so the report
+   styles above are untouched. The page uses full-width bands with the
+   text held in an 1100px column. */
+
+:root {
+  --accent-hover: #78afff;
+  --accent-ink: #061021;
+  --nav-h: 60px;
+}
+
+html.ln {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--nav-h) + 16px);
+}
+
+body.ln-page {
+  line-height: 1.6;
+}
+
+.ln-col {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Nav */
+
+.ln-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-h);
+  z-index: 10;
+  background: rgba(15, 17, 21, 0.78);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.ln-nav .ln-col {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ln-brand {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ln-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ln-nav-links a {
+  display: inline-block;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  transition: color 150ms, background-color 150ms;
+}
+
+.ln-nav-links a:hover {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+.ln-nav-links a.ln-nav-gh {
+  color: var(--text);
+  border: 1px solid var(--border);
+  margin-left: 0.5rem;
+}
+
+.ln-nav-links a.ln-nav-gh:hover {
+  border-color: var(--accent);
+}
+
+/* Focus, shared by every interactive element on the page */
+
+.ln-page a:focus-visible,
+.ln-page button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Bands */
+
+.ln-band {
+  padding: 6rem 0;
+}
+
+.ln-band--alt {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.ln-band--alt pre {
+  background: var(--surface-raised);
+}
+
+.ln-band h2 {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.75rem;
+}
+
+.ln-band .ln-lead {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  max-width: 64ch;
+  margin: 0 0 2.5rem;
+}
+
+.ln-band p {
+  max-width: 68ch;
+  margin: 0 0 1rem;
+}
+
+/* Hero */
+
+.ln-hero {
+  min-height: 100vh;
+  padding-top: calc(var(--nav-h) + 3rem);
+  padding-bottom: 4rem;
+  display: flex;
+  align-items: center;
+}
+
+.ln-hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 4.5rem;
+  align-items: center;
+  width: 100%;
+}
+
+.ln-hero h1 {
+  font-size: 3.5rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0 0 1.25rem;
+}
+
+.ln-hero .ln-desc {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  max-width: 34rem;
+  margin: 0 0 2.5rem;
+}
+
+.ln-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+  margin: 0 0 1rem;
+}
+
+.ln-stat .value {
+  display: block;
+  font-size: 3.75rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.ln-stat .label {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+}
+
+.ln-stat--lucky .value {
+  color: var(--lucky-pass);
+}
+
+.ln-stats-note {
+  color: var(--text-muted);
+  max-width: 34rem;
+  margin: 0 0 2.5rem;
+}
+
+.ln-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+
+.ln-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.7rem 1.25rem;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 150ms, border-color 150ms, color 150ms;
+}
+
+.ln-btn--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.ln-btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.ln-btn--secondary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.ln-btn--secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Interactive 2x2 */
+
+.ln-matrix {
+  display: grid;
+  grid-template-columns: 5.5rem repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.ln-matrix .axis {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+}
+
+.ln-matrix .axis--col {
+  padding-left: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.ln-cell {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.1rem;
+  cursor: pointer;
+  transition: border-color 150ms, background-color 150ms;
+}
+
+.ln-cell .verdict {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+  transition: color 150ms;
+}
+
+.ln-cell .explain {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.ln-cell:hover {
+  border-color: var(--text-muted);
+}
+
+.ln-cell[aria-pressed="true"] {
+  border-color: var(--cell-border);
+  background: var(--cell-bg);
+}
+
+.ln-cell[aria-pressed="true"] .verdict {
+  color: var(--cell);
+}
+
+.ln-cell[aria-pressed="true"] .explain {
+  color: var(--text);
+}
+
+.ln-cell--true  { --cell: var(--true-pass); --cell-border: var(--true-pass); --cell-bg: var(--true-pass-bg); }
+.ln-cell--lucky { --cell: var(--lucky-pass); --cell-border: var(--lucky-pass); --cell-bg: var(--lucky-pass-bg); }
+.ln-cell--gen   { --cell: var(--generation-failure); --cell-border: var(--generation-failure); --cell-bg: var(--generation-failure-bg); }
+.ln-cell--ret   { --cell: var(--retrieval-failure); --cell-border: var(--retrieval-failure); --cell-bg: var(--retrieval-failure-bg); }
+
+/* Lucky is always the dominant cell, selected or not. */
+.ln-cell--lucky {
+  border-color: var(--lucky-pass);
+  padding: 1.5rem 1.25rem;
+}
+
+.ln-cell--lucky .verdict {
+  font-size: 1.25rem;
+  color: var(--lucky-pass);
+}
+
+.ln-cell--lucky[aria-pressed="true"] {
+  border-width: 2px;
+  padding: calc(1.5rem - 1px) calc(1.25rem - 1px);
+}
+
+.ln-cell-detail {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 1.25rem 1.5rem;
+  min-height: 9.5rem;
+}
+
+.ln-cell-detail .ln-detail-title {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.ln-cell-detail p {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  max-width: none;
+}
+
+.ln-cell-detail p:last-child {
+  margin-bottom: 0;
+}
+
+.ln-cell-detail [data-detail] {
+  display: none;
+}
+
+.ln-cell-detail [data-detail].is-active {
+  display: block;
+}
+
+/* How it works */
+
+.ln-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+  counter-reset: step;
+}
+
+.ln-step {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  padding: 1.25rem 1.25rem 1.4rem;
+}
+
+.ln-step .k {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.ln-step strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.ln-step p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+/* Report viewer */
+
+.ln-viewer-desc {
+  min-height: 1.6em;
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+}
+
+.ln-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  flex-wrap: wrap;
+}
+
+.ln-tab {
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background-color 150ms;
+}
+
+.ln-tab:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.ln-tab[aria-selected="true"] {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.ln-frame {
+  display: block;
+  width: 100%;
+  height: 700px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.ln-viewer-foot {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Install: code blocks with copy buttons */
+
+.ln-code {
+  position: relative;
+  margin: 0 0 1.5rem;
+}
+
+.ln-code pre {
+  padding-right: 5.5rem;
+}
+
+.ln-copy {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background-color 150ms;
+}
+
+.ln-copy:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.ln-copy.is-done {
+  color: var(--true-pass);
+  border-color: var(--true-pass);
+}
+
+.ln-install-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.ln-aside {
+  border-left: 2px solid var(--border);
+  padding-left: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.ln-aside p {
+  max-width: none;
+}
+
+/* Footer */
+
+.ln-footer {
+  border-top: 1px solid var(--border);
+  padding: 2.5rem 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.ln-footer .ln-col {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Responsive */
+
+@media (max-width: 960px) {
+  .ln-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .ln-hero {
+    min-height: 0;
+  }
+
+  .ln-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ln-install-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ln-aside {
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .ln-col {
+    padding: 0 1.25rem;
+  }
+
+  .ln-nav-links a:not(.ln-nav-gh) {
+    display: none;
+  }
+
+  .ln-band {
+    padding: 4rem 0;
+  }
+
+  .ln-hero h1 {
+    font-size: 2.5rem;
+  }
+
+  .ln-stats {
+    gap: 1.25rem;
+  }
+
+  .ln-stat .value {
+    font-size: 2.75rem;
+  }
+
+  .ln-matrix {
+    grid-template-columns: 1fr;
+  }
+
+  .ln-matrix .axis--col {
+    display: none;
+  }
+
+  .ln-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .ln-frame {
+    height: 480px;
+  }
+}
+
+/* v2-only additions for the generate and tune reports. Loaded after
+   style.css, which stays the single source for the shared look. */
+
+:root {
+  --v2-dev: #3987e5;
+  --v2-test: #d95926;
+  --v2-muted-mark: #4a5160;
+  --v2-grid: #262b35;
+}
+
+.v2-badge-mock {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--lucky-pass);
+  border-radius: 999px;
+  color: var(--lucky-pass);
+  font-size: 0.75rem;
+  vertical-align: middle;
+}
+
+.v2-callout {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-raised);
+  border-radius: 4px;
+}
+
+.v2-callout.warn {
+  border-left-color: var(--lucky-pass);
+}
+
+.v2-callout.ok {
+  border-left-color: var(--true-pass);
+}
+
+.v2-figure {
+  position: relative;
+  margin: 1rem 0 0.5rem;
+}
+
+.v2-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.v2-grid {
+  stroke: var(--v2-grid);
+  stroke-width: 1;
+}
+
+.v2-tick,
+.v2-axis-title {
+  fill: var(--text-muted);
+  font-size: 12px;
+}
+
+.v2-label {
+  fill: var(--text);
+  font-size: 13px;
+}
+
+.v2-value {
+  fill: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-inside {
+  fill: #0f1115;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.v2-rule {
+  stroke: var(--text);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.v2-mark {
+  outline: none;
+}
+
+.v2-mark:hover,
+.v2-mark:focus-visible {
+  filter: brightness(1.2);
+}
+
+.v2-fill-accent { fill: var(--accent); }
+.v2-fill-muted { fill: var(--v2-muted-mark); }
+.v2-fill-dev { fill: var(--v2-dev); }
+.v2-fill-test { fill: var(--v2-test); }
+.v2-fill-pass { fill: var(--true-pass); }
+.v2-fill-gen { fill: var(--generation-failure); }
+.v2-fill-ret { fill: var(--retrieval-failure); }
+
+.v2-dot {
+  fill: var(--v2-dev);
+  stroke: var(--surface);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.v2-dot-best {
+  fill: var(--text);
+}
+
+.v2-hit {
+  fill: transparent;
+  outline: none;
+  cursor: default;
+}
+
+.v2-hit:focus-visible {
+  stroke: var(--text);
+  stroke-width: 1;
+}
+
+.v2-line-ref {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-dasharray: 2 4;
+}
+
+.v2-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.v2-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.v2-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.v2-swatch.line {
+  width: 18px;
+  height: 0;
+  border-top: 2px dashed var(--text-muted);
+  border-radius: 0;
+}
+
+.v2-swatch.dot {
+  border-radius: 50%;
+}
+
+.v2-tooltip {
+  position: absolute;
+  z-index: 10;
+  max-width: 280px;
+  padding: 0.45rem 0.6rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  pointer-events: none;
+  white-space: pre-line;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.v2-tooltip strong {
+  display: block;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.v2-table-wrap {
+  overflow-x: auto;
+}
+
+table.v2-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+table.v2-table th,
+table.v2-table td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+table.v2-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+table.v2-table td.num,
+table.v2-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+table.v2-table tr.is-best td {
+  background: var(--surface-raised);
+}
+
+.v2-changed {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.v2-unchanged {
+  color: var(--text-muted);
+}
+
+details.v2-data {
+  margin-top: 0.5rem;
+}
+
+details.v2-data summary {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.v2-q {
+  margin: 0;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.v2-q:last-child {
+  border-bottom: none;
+}
+
+.v2-q .q {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.v2-q .a,
+.v2-q .src {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.v2-tag {
+  display: inline-block;
+  margin-right: 0.4rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.meta code {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  section {
+    padding: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="report-header">
+    <h1>ragaudit tune report<span class="v2-badge-mock">built with the mock LLM</span></h1>
+    <div class="meta">
+      Tune <code>cccbada5-388c-4443-b462-7e0b6d80ac36</code> ·
+      strategy <code>llm</code> ·
+      adapter <code>demo/v2/toy_adapter.py</code> ·
+      judge <code>mock-judge</code> ·
+      k=5 ·
+      index <code>c627d276b24e</code> ·
+      started 2026-10-22 06:23:38.319264+00:00
+    </div>
+  </header>
+
+  <section class="headline">
+    <h2>The headline finding</h2>
+    <p class="headline-sentence">
+      
+      Tuning moved the honest score, measured once on the locked test set, from
+      <strong>38.1</strong> to <strong>61.9</strong>
+      (+23.8 points) after 20 trial(s).
+      The search only ever saw the dev set, where the same change was +38.8 points.
+      
+    </p>
+    
+    <div class="v2-callout warn">Built with ragaudit's offline mock LLM as both judge and proposer. The numbers show how the loop behaves, not how good any real pipeline is.</div>
+    
+    <div class="stats-grid">
+      <div class="stat"><span class="value">38.1</span><span class="label">Baseline, test</span></div>
+      <div class="stat"><span class="value">61.9</span><span class="label">Best, test</span></div>
+      <div class="stat"><span class="value">65.3</span><span class="label">Best, dev</span></div>
+      <div class="stat"><span class="value">+3.4</span><span class="label">Dev minus test (best)</span></div>
+    </div>
+    <p class="meta">Score = share of questions where the gold passage was in the top 5 <em>and</em> the answer was judged correct, ×100.
+      Dev: 49 questions. Test: 21 questions.</p>
+  </section>
+
+  <section>
+    <h2>Overfitting check</h2>
+    
+    <div class="v2-callout ok">
+      <strong>No sign of overfitting.</strong> The best config's dev score (65.3) is within
+      10.0 points of its locked test score (61.9);
+      the gap is +3.4.
+    </div>
+    
+    <figure class="v2-figure"><svg class="v2-chart" viewBox="0 0 720 232" role="img" aria-label="Dev and test score, baseline and best" preserveAspectRatio="xMidYMid meet"><line class="v2-grid" x1="44" x2="704" y1="210.0" y2="210.0"></line><text class="v2-tick" x="36" y="214.0" text-anchor="end">0</text><line class="v2-grid" x1="44" x2="704" y1="164.5" y2="164.5"></line><text class="v2-tick" x="36" y="168.5" text-anchor="end">25</text><line class="v2-grid" x1="44" x2="704" y1="119.0" y2="119.0"></line><text class="v2-tick" x="36" y="123.0" text-anchor="end">50</text><line class="v2-grid" x1="44" x2="704" y1="73.5" y2="73.5"></line><text class="v2-tick" x="36" y="77.5" text-anchor="end">75</text><line class="v2-grid" x1="44" x2="704" y1="28.0" y2="28.0"></line><text class="v2-tick" x="36" y="32.0" text-anchor="end">100</text><path class="v2-mark v2-fill-dev" d="M177.0,210.0 V165.7 Q177.0,161.7 181.0,161.7 H197.0 Q201.0,161.7 201.0,165.7 V210.0 Z" data-tip="26.5 dev
+baseline config" tabindex="0"></path><text class="v2-value" x="189.0" y="155.7" text-anchor="middle">26.5</text><path class="v2-mark v2-fill-test" d="M217.0,210.0 V144.7 Q217.0,140.7 221.0,140.7 H237.0 Q241.0,140.7 241.0,144.7 V210.0 Z" data-tip="38.1 locked test
+baseline config" tabindex="0"></path><text class="v2-value" x="229.0" y="134.7" text-anchor="middle">38.1</text><text class="v2-label" x="209.0" y="230" text-anchor="middle">Baseline</text><path class="v2-mark v2-fill-dev" d="M507.0,210.0 V95.1 Q507.0,91.1 511.0,91.1 H527.0 Q531.0,91.1 531.0,95.1 V210.0 Z" data-tip="65.3 dev
+best config" tabindex="0"></path><text class="v2-value" x="519.0" y="85.1" text-anchor="middle">65.3</text><path class="v2-mark v2-fill-test" d="M547.0,210.0 V101.3 Q547.0,97.3 551.0,97.3 H567.0 Q571.0,97.3 571.0,101.3 V210.0 Z" data-tip="61.9 locked test
+best config" tabindex="0"></path><text class="v2-value" x="559.0" y="91.3" text-anchor="middle">61.9</text><text class="v2-label" x="539.0" y="230" text-anchor="middle">Best</text></svg></figure>
+    <ul class="v2-legend">
+      <li><span class="v2-swatch" style="background: var(--v2-dev)"></span>Dev (searched on)</li>
+      <li><span class="v2-swatch" style="background: var(--v2-test)"></span>Locked test (scored once at the end)</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Dev score per trial</h2>
+    <p>Each dot is one config evaluated on the dev set. The dashed line is the best dev score so far; the white dot is the config that was kept.
+      Trials by source: 1 baseline, 19 llm.
+      Stopped because: <code>max_trials</code>. LLM calls used: 1041.</p>
+    <figure class="v2-figure"><svg class="v2-chart" viewBox="0 0 720 272" role="img" aria-label="Dev score per trial" preserveAspectRatio="xMidYMid meet"><line class="v2-grid" x1="44" x2="696" y1="230.0" y2="230.0"></line><text class="v2-tick" x="36" y="234.0" text-anchor="end">0</text><line class="v2-grid" x1="44" x2="696" y1="178.5" y2="178.5"></line><text class="v2-tick" x="36" y="182.5" text-anchor="end">25</text><line class="v2-grid" x1="44" x2="696" y1="127.0" y2="127.0"></line><text class="v2-tick" x="36" y="131.0" text-anchor="end">50</text><line class="v2-grid" x1="44" x2="696" y1="75.5" y2="75.5"></line><text class="v2-tick" x="36" y="79.5" text-anchor="end">75</text><line class="v2-grid" x1="44" x2="696" y1="24.0" y2="24.0"></line><text class="v2-tick" x="36" y="28.0" text-anchor="end">100</text><polyline class="v2-line-ref" points="56.0,175.3 89.1,175.3 89.1,175.3 122.1,175.3 122.1,116.5 155.2,116.5 155.2,103.9 188.2,103.9 188.2,103.9 221.3,103.9 221.3,103.9 254.3,103.9 254.3,99.7 287.4,99.7 287.4,99.7 320.4,99.7 320.4,99.7 353.5,99.7 353.5,99.7 386.5,99.7 386.5,95.5 419.6,95.5 419.6,95.5 452.6,95.5 452.6,95.5 485.7,95.5 485.7,95.5 518.7,95.5 518.7,95.5 551.8,95.5 551.8,95.5 584.8,95.5 584.8,95.5 617.9,95.5 617.9,95.5 650.9,95.5 650.9,95.5 684.0,95.5 684.0,95.5"></polyline><circle class="v2-dot" cx="56.0" cy="175.3" r="5"></circle><circle class="v2-hit" cx="56.0" cy="175.3" r="12" data-tip="26.5 dev
+trial 0 (baseline)
+baseline config" tabindex="0"></circle><circle class="v2-dot" cx="89.1" cy="175.3" r="5"></circle><circle class="v2-hit" cx="89.1" cy="175.3" r="12" data-tip="26.5 dev
+trial 1 (llm)
+top_k=3" tabindex="0"></circle><circle class="v2-dot" cx="122.1" cy="116.5" r="5"></circle><circle class="v2-hit" cx="122.1" cy="116.5" r="12" data-tip="55.1 dev
+trial 2 (llm)
+prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="155.2" cy="103.9" r="5"></circle><circle class="v2-hit" cx="155.2" cy="103.9" r="12" data-tip="61.2 dev
+trial 3 (llm)
+top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="188.2" cy="103.9" r="5"></circle><circle class="v2-hit" cx="188.2" cy="103.9" r="12" data-tip="61.2 dev
+trial 4 (llm)
+chunk_size=80, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="221.3" cy="133.3" r="5"></circle><circle class="v2-hit" cx="221.3" cy="133.3" r="12" data-tip="46.9 dev
+trial 5 (llm)
+chunk_size=20, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="254.3" cy="99.7" r="5"></circle><circle class="v2-hit" cx="254.3" cy="99.7" r="12" data-tip="63.3 dev
+trial 6 (llm)
+chunk_overlap=10, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="287.4" cy="166.9" r="5"></circle><circle class="v2-hit" cx="287.4" cy="166.9" r="12" data-tip="30.6 dev
+trial 7 (llm)
+chunk_overlap=10, top_k=3" tabindex="0"></circle><circle class="v2-dot" cx="320.4" cy="103.9" r="5"></circle><circle class="v2-hit" cx="320.4" cy="103.9" r="12" data-tip="61.2 dev
+trial 8 (llm)
+chunk_size=80, chunk_overlap=10, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="353.5" cy="116.5" r="5"></circle><circle class="v2-hit" cx="353.5" cy="116.5" r="12" data-tip="55.1 dev
+trial 9 (llm)
+chunk_size=20, chunk_overlap=10, top_k=3, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot v2-dot-best" cx="386.5" cy="95.5" r="5"></circle><circle class="v2-hit" cx="386.5" cy="95.5" r="12" data-tip="65.3 dev
+trial 10 (llm)
+chunk_overlap=10, top_k=5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="419.6" cy="166.9" r="5"></circle><circle class="v2-hit" cx="419.6" cy="166.9" r="12" data-tip="30.6 dev
+trial 11 (llm)
+chunk_overlap=10, top_k=5" tabindex="0"></circle><circle class="v2-dot" cx="452.6" cy="99.7" r="5"></circle><circle class="v2-hit" cx="452.6" cy="99.7" r="12" data-tip="63.3 dev
+trial 12 (llm)
+chunk_size=80, chunk_overlap=10, top_k=5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="485.7" cy="116.5" r="5"></circle><circle class="v2-hit" cx="485.7" cy="116.5" r="12" data-tip="55.1 dev
+trial 13 (llm)
+chunk_size=20, chunk_overlap=10, top_k=5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="518.7" cy="99.7" r="5"></circle><circle class="v2-hit" cx="518.7" cy="99.7" r="12" data-tip="63.3 dev
+trial 14 (llm)
+top_k=5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="551.8" cy="112.3" r="5"></circle><circle class="v2-hit" cx="551.8" cy="112.3" r="12" data-tip="57.1 dev
+trial 15 (llm)
+chunk_overlap=10, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="584.8" cy="95.5" r="5"></circle><circle class="v2-hit" cx="584.8" cy="95.5" r="12" data-tip="65.3 dev
+trial 16 (llm)
+chunk_overlap=10, top_k=5, hybrid_weight=0.5, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="617.9" cy="95.5" r="5"></circle><circle class="v2-hit" cx="617.9" cy="95.5" r="12" data-tip="65.3 dev
+trial 17 (llm)
+chunk_overlap=10, top_k=5, reranker=overlap, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="650.9" cy="99.7" r="5"></circle><circle class="v2-hit" cx="650.9" cy="99.7" r="12" data-tip="63.3 dev
+trial 18 (llm)
+chunk_overlap=10, top_k=5, hybrid_weight=1.0, prompt_variant=extractive" tabindex="0"></circle><circle class="v2-dot" cx="684.0" cy="145.9" r="5"></circle><circle class="v2-hit" cx="684.0" cy="145.9" r="12" data-tip="40.8 dev
+trial 19 (llm)
+chunk_size=20" tabindex="0"></circle><text class="v2-label" x="66.0" y="165.3" text-anchor="start">baseline 26.5</text><text class="v2-label" x="376.5" y="85.5" text-anchor="end">best 65.3</text><text class="v2-tick" x="56.0" y="248" text-anchor="middle">0</text><text class="v2-tick" x="122.1" y="248" text-anchor="middle">2</text><text class="v2-tick" x="188.2" y="248" text-anchor="middle">4</text><text class="v2-tick" x="254.3" y="248" text-anchor="middle">6</text><text class="v2-tick" x="320.4" y="248" text-anchor="middle">8</text><text class="v2-tick" x="386.5" y="248" text-anchor="middle">10</text><text class="v2-tick" x="452.6" y="248" text-anchor="middle">12</text><text class="v2-tick" x="518.7" y="248" text-anchor="middle">14</text><text class="v2-tick" x="584.8" y="248" text-anchor="middle">16</text><text class="v2-tick" x="650.9" y="248" text-anchor="middle">18</text><text class="v2-axis-title" x="370.0" y="266" text-anchor="middle">trial</text></svg></figure>
+    <ul class="v2-legend">
+      <li><span class="v2-swatch dot" style="background: var(--v2-dev)"></span>Trial dev score</li>
+      <li><span class="v2-swatch dot" style="background: var(--text)"></span>Best (kept)</li>
+      <li><span class="v2-swatch line"></span>Best so far</li>
+    </ul>
+    <details class="v2-data">
+      <summary>Show every trial as a table</summary>
+      <div class="v2-table-wrap">
+        <table class="v2-table">
+          <thead><tr><th class="num">#</th><th>Source</th><th class="num">Dev score</th><th class="num">Pass</th><th class="num">Gen miss</th><th class="num">Ret miss</th><th>Changed from baseline</th><th>Rationale</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td class="num">0</td>
+              <td>baseline</td>
+              <td class="num">26.5</td>
+              <td class="num">13</td>
+              <td class="num">14</td>
+              <td class="num">22</td>
+              <td><code>(baseline)</code></td>
+              <td></td>
+            </tr>
+            
+            <tr>
+              <td class="num">1</td>
+              <td>llm</td>
+              <td class="num">26.5</td>
+              <td class="num">13</td>
+              <td class="num">28</td>
+              <td class="num">8</td>
+              <td><code>top_k=3</code></td>
+              <td>retrieval misses dominate, so try top_k=3</td>
+            </tr>
+            
+            <tr>
+              <td class="num">2</td>
+              <td>llm</td>
+              <td class="num">55.1</td>
+              <td class="num">27</td>
+              <td class="num">0</td>
+              <td class="num">22</td>
+              <td><code>prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try prompt_variant=extractive</td>
+            </tr>
+            
+            <tr>
+              <td class="num">3</td>
+              <td>llm</td>
+              <td class="num">61.2</td>
+              <td class="num">30</td>
+              <td class="num">11</td>
+              <td class="num">8</td>
+              <td><code>top_k=3, prompt_variant=extractive</code></td>
+              <td>retrieval misses dominate, so try top_k=3</td>
+            </tr>
+            
+            <tr>
+              <td class="num">4</td>
+              <td>llm</td>
+              <td class="num">61.2</td>
+              <td class="num">30</td>
+              <td class="num">11</td>
+              <td class="num">8</td>
+              <td><code>chunk_size=80, top_k=3, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try chunk_size=80</td>
+            </tr>
+            
+            <tr>
+              <td class="num">5</td>
+              <td>llm</td>
+              <td class="num">46.9</td>
+              <td class="num">23</td>
+              <td class="num">19</td>
+              <td class="num">7</td>
+              <td><code>chunk_size=20, top_k=3, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try chunk_size=20</td>
+            </tr>
+            
+            <tr>
+              <td class="num">6</td>
+              <td>llm</td>
+              <td class="num">63.3</td>
+              <td class="num">31</td>
+              <td class="num">10</td>
+              <td class="num">8</td>
+              <td><code>chunk_overlap=10, top_k=3, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try chunk_overlap=10</td>
+            </tr>
+            
+            <tr>
+              <td class="num">7</td>
+              <td>llm</td>
+              <td class="num">30.6</td>
+              <td class="num">15</td>
+              <td class="num">26</td>
+              <td class="num">8</td>
+              <td><code>chunk_overlap=10, top_k=3</code></td>
+              <td>generation misses dominate, so try prompt_variant=lead</td>
+            </tr>
+            
+            <tr>
+              <td class="num">8</td>
+              <td>llm</td>
+              <td class="num">61.2</td>
+              <td class="num">30</td>
+              <td class="num">11</td>
+              <td class="num">8</td>
+              <td><code>chunk_size=80, chunk_overlap=10, top_k=3, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try chunk_size=80</td>
+            </tr>
+            
+            <tr>
+              <td class="num">9</td>
+              <td>llm</td>
+              <td class="num">55.1</td>
+              <td class="num">27</td>
+              <td class="num">16</td>
+              <td class="num">6</td>
+              <td><code>chunk_size=20, chunk_overlap=10, top_k=3, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try chunk_size=20</td>
+            </tr>
+            
+            <tr class="is-best">
+              <td class="num">10</td>
+              <td>llm (best)</td>
+              <td class="num">65.3</td>
+              <td class="num">32</td>
+              <td class="num">16</td>
+              <td class="num">1</td>
+              <td><code>chunk_overlap=10, top_k=5, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try top_k=5</td>
+            </tr>
+            
+            <tr>
+              <td class="num">11</td>
+              <td>llm</td>
+              <td class="num">30.6</td>
+              <td class="num">15</td>
+              <td class="num">33</td>
+              <td class="num">1</td>
+              <td><code>chunk_overlap=10, top_k=5</code></td>
+              <td>generation misses dominate, so try prompt_variant=lead</td>
+            </tr>
+            
+            <tr>
+              <td class="num">12</td>
+              <td>llm</td>
+              <td class="num">63.3</td>
+              <td class="num">31</td>
+              <td class="num">17</td>
+              <td class="num">1</td>
+              <td><code>chunk_size=80, chunk_overlap=10, top_k=5, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try chunk_size=80</td>
+            </tr>
+            
+            <tr>
+              <td class="num">13</td>
+              <td>llm</td>
+              <td class="num">55.1</td>
+              <td class="num">27</td>
+              <td class="num">18</td>
+              <td class="num">4</td>
+              <td><code>chunk_size=20, chunk_overlap=10, top_k=5, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try chunk_size=20</td>
+            </tr>
+            
+            <tr>
+              <td class="num">14</td>
+              <td>llm</td>
+              <td class="num">63.3</td>
+              <td class="num">31</td>
+              <td class="num">17</td>
+              <td class="num">1</td>
+              <td><code>top_k=5, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try chunk_overlap=0</td>
+            </tr>
+            
+            <tr>
+              <td class="num">15</td>
+              <td>llm</td>
+              <td class="num">57.1</td>
+              <td class="num">28</td>
+              <td class="num">0</td>
+              <td class="num">21</td>
+              <td><code>chunk_overlap=10, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try top_k=1</td>
+            </tr>
+            
+            <tr>
+              <td class="num">16</td>
+              <td>llm</td>
+              <td class="num">65.3</td>
+              <td class="num">32</td>
+              <td class="num">16</td>
+              <td class="num">1</td>
+              <td><code>chunk_overlap=10, top_k=5, hybrid_weight=0.5, prompt_variant=extractive</code></td>
+              <td>retrieval misses dominate, so try hybrid_weight=0.5</td>
+            </tr>
+            
+            <tr>
+              <td class="num">17</td>
+              <td>llm</td>
+              <td class="num">65.3</td>
+              <td class="num">32</td>
+              <td class="num">17</td>
+              <td class="num">0</td>
+              <td><code>chunk_overlap=10, top_k=5, reranker=overlap, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try reranker=overlap</td>
+            </tr>
+            
+            <tr>
+              <td class="num">18</td>
+              <td>llm</td>
+              <td class="num">63.3</td>
+              <td class="num">31</td>
+              <td class="num">14</td>
+              <td class="num">4</td>
+              <td><code>chunk_overlap=10, top_k=5, hybrid_weight=1.0, prompt_variant=extractive</code></td>
+              <td>generation misses dominate, so try hybrid_weight=1.0</td>
+            </tr>
+            
+            <tr>
+              <td class="num">19</td>
+              <td>llm</td>
+              <td class="num">40.8</td>
+              <td class="num">20</td>
+              <td class="num">9</td>
+              <td class="num">20</td>
+              <td><code>chunk_size=20</code></td>
+              <td>every single-knob change was tried; next untried config</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2>Failure classes before and after</h2>
+    <p><strong>Retrieval miss</strong>: the gold passage wasn't in the top 5 (a correct answer without it counts here too, since it was luck).
+      <strong>Generation miss</strong>: the passage was retrieved but the answer was still wrong.</p>
+    <figure class="v2-figure"><svg class="v2-chart" viewBox="0 0 720 166" role="img" aria-label="Failure classes before and after tuning" preserveAspectRatio="xMidYMid meet"><text class="v2-label" x="120" y="23" text-anchor="end">Baseline, dev</text><path class="v2-mark v2-fill-pass" d="M130.0,8.0 H280.3 V32.0 H130.0 Z" data-tip="13 (27%)
+Pass, Baseline, dev" tabindex="0"></path><text class="v2-inside" x="205.1" y="24" text-anchor="middle">13</text><path class="v2-mark v2-fill-gen" d="M282.3,8.0 H444.3 V32.0 H282.3 Z" data-tip="14 (29%)
+Generation miss, Baseline, dev" tabindex="0"></path><text class="v2-inside" x="363.3" y="24" text-anchor="middle">14</text><path class="v2-mark v2-fill-ret" d="M446.3,8.0 H700.0 Q704.0,8.0 704.0,12.0 V28.0 Q704.0,32.0 700.0,32.0 H446.3 Z" data-tip="22 (45%)
+Retrieval miss, Baseline, dev" tabindex="0"></path><text class="v2-inside" x="575.1" y="24" text-anchor="middle">22</text><text class="v2-label" x="120" y="63" text-anchor="end">Best, dev</text><path class="v2-mark v2-fill-pass" d="M130.0,48.0 H502.9 V72.0 H130.0 Z" data-tip="32 (65%)
+Pass, Best, dev" tabindex="0"></path><text class="v2-inside" x="316.4" y="64" text-anchor="middle">32</text><path class="v2-mark v2-fill-gen" d="M504.9,48.0 H690.3 V72.0 H504.9 Z" data-tip="16 (33%)
+Generation miss, Best, dev" tabindex="0"></path><text class="v2-inside" x="597.6" y="64" text-anchor="middle">16</text><path class="v2-mark v2-fill-ret" d="M692.3,48.0 H700.0 Q704.0,48.0 704.0,52.0 V68.0 Q704.0,72.0 700.0,72.0 H692.3 Z" data-tip="1 (2%)
+Retrieval miss, Best, dev" tabindex="0"></path><text class="v2-label" x="120" y="103" text-anchor="end">Baseline, test</text><path class="v2-mark v2-fill-pass" d="M130.0,88.0 H346.7 V112.0 H130.0 Z" data-tip="8 (38%)
+Pass, Baseline, test" tabindex="0"></path><text class="v2-inside" x="238.3" y="104" text-anchor="middle">8</text><path class="v2-mark v2-fill-gen" d="M348.7,88.0 H538.0 V112.0 H348.7 Z" data-tip="7 (33%)
+Generation miss, Baseline, test" tabindex="0"></path><text class="v2-inside" x="443.3" y="104" text-anchor="middle">7</text><path class="v2-mark v2-fill-ret" d="M540.0,88.0 H700.0 Q704.0,88.0 704.0,92.0 V108.0 Q704.0,112.0 700.0,112.0 H540.0 Z" data-tip="6 (29%)
+Retrieval miss, Baseline, test" tabindex="0"></path><text class="v2-inside" x="622.0" y="104" text-anchor="middle">6</text><text class="v2-label" x="120" y="143" text-anchor="end">Best, test</text><path class="v2-mark v2-fill-pass" d="M130.0,128.0 H483.3 V152.0 H130.0 Z" data-tip="13 (62%)
+Pass, Best, test" tabindex="0"></path><text class="v2-inside" x="306.7" y="144" text-anchor="middle">13</text><path class="v2-mark v2-fill-gen" d="M485.3,128.0 H674.7 V152.0 H485.3 Z" data-tip="7 (33%)
+Generation miss, Best, test" tabindex="0"></path><text class="v2-inside" x="580.0" y="144" text-anchor="middle">7</text><path class="v2-mark v2-fill-ret" d="M676.7,128.0 H700.0 Q704.0,128.0 704.0,132.0 V148.0 Q704.0,152.0 700.0,152.0 H676.7 Z" data-tip="1 (5%)
+Retrieval miss, Best, test" tabindex="0"></path><text class="v2-inside" x="690.3" y="144" text-anchor="middle">1</text></svg></figure>
+    <ul class="v2-legend">
+      
+      <li><span class="v2-swatch" style="background: var(--true-pass)"></span>Pass</li>
+      
+      <li><span class="v2-swatch" style="background: var(--generation-failure)"></span>Generation miss</li>
+      
+      <li><span class="v2-swatch" style="background: var(--retrieval-failure)"></span>Retrieval miss</li>
+      
+    </ul>
+    <details class="v2-data">
+      <summary>Show as a table</summary>
+      <table class="v2-table">
+        <thead><tr><th>Config, split</th><th class="num">Pass</th><th class="num">Generation miss</th><th class="num">Retrieval miss</th></tr></thead>
+        <tbody>
+          
+          <tr><td>Baseline, dev</td><td class="num">13</td><td class="num">14</td><td class="num">22</td></tr>
+          
+          <tr><td>Best, dev</td><td class="num">32</td><td class="num">16</td><td class="num">1</td></tr>
+          
+          <tr><td>Baseline, test</td><td class="num">8</td><td class="num">7</td><td class="num">6</td></tr>
+          
+          <tr><td>Best, test</td><td class="num">13</td><td class="num">7</td><td class="num">1</td></tr>
+          
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+  <section>
+    <h2>Best config</h2>
+    <p>Written to <code>demo/v2/output/best_config.yaml</code>.</p>
+    <div class="v2-table-wrap">
+      <table class="v2-table">
+        <thead><tr><th>Knob</th><th>Baseline</th><th>Best</th><th>Searched over</th></tr></thead>
+        <tbody>
+          
+          <tr>
+            <td><code>chunk_size</code></td>
+            <td>40</td>
+            <td class="v2-unchanged">40</td>
+            <td class="v2-unchanged">20, 40, 80</td>
+          </tr>
+          
+          <tr>
+            <td><code>chunk_overlap</code></td>
+            <td>0</td>
+            <td class="v2-changed">10 (changed)</td>
+            <td class="v2-unchanged">0, 10</td>
+          </tr>
+          
+          <tr>
+            <td><code>top_k</code></td>
+            <td>1</td>
+            <td class="v2-changed">5 (changed)</td>
+            <td class="v2-unchanged">1, 3, 5</td>
+          </tr>
+          
+          <tr>
+            <td><code>hybrid_weight</code></td>
+            <td>0.0</td>
+            <td class="v2-unchanged">0.0</td>
+            <td class="v2-unchanged">0.0, 0.5, 1.0</td>
+          </tr>
+          
+          <tr>
+            <td><code>reranker</code></td>
+            <td>none</td>
+            <td class="v2-unchanged">none</td>
+            <td class="v2-unchanged">none, overlap</td>
+          </tr>
+          
+          <tr>
+            <td><code>prompt_variant</code></td>
+            <td>lead</td>
+            <td class="v2-changed">extractive (changed)</td>
+            <td class="v2-unchanged">lead, extractive</td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+<script>
+(function () {
+  "use strict";
+  // One tooltip per chart figure. Each mark carries data-tip: the first
+  // line is the value (bold), the rest is context. textContent only.
+  Array.prototype.slice.call(document.querySelectorAll(".v2-figure")).forEach(function (figure) {
+    var tip = document.createElement("div");
+    tip.className = "v2-tooltip";
+    tip.hidden = true;
+    figure.appendChild(tip);
+
+    function show(mark, clientX, clientY) {
+      var lines = (mark.getAttribute("data-tip") || "").split("\n");
+      tip.textContent = "";
+      var head = document.createElement("strong");
+      head.textContent = lines[0];
+      tip.appendChild(head);
+      if (lines.length > 1) {
+        tip.appendChild(document.createTextNode(lines.slice(1).join("\n")));
+      }
+      tip.hidden = false;
+      var box = figure.getBoundingClientRect();
+      var x = clientX - box.left + 14;
+      var y = clientY - box.top + 14;
+      if (x + tip.offsetWidth > box.width) { x = Math.max(0, clientX - box.left - tip.offsetWidth - 14); }
+      tip.style.left = x + "px";
+      tip.style.top = y + "px";
+    }
+
+    function hide() { tip.hidden = true; }
+
+    Array.prototype.slice.call(figure.querySelectorAll("[data-tip]")).forEach(function (mark) {
+      mark.addEventListener("mousemove", function (event) { show(mark, event.clientX, event.clientY); });
+      mark.addEventListener("mouseleave", hide);
+      mark.addEventListener("focus", function () {
+        var r = mark.getBoundingClientRect();
+        show(mark, r.left + r.width / 2, r.top);
+      });
+      mark.addEventListener("blur", hide);
+    });
+  });
+})();
+</script>
+</body>
+</html>

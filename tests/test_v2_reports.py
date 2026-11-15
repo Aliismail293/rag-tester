@@ -232,3 +232,15 @@ def test_docs_sample_reports_show_the_summary_box():
     for name in ("healthy", "degraded", "lucky"):
         page = (ROOT / "docs" / f"sample-report-{name}.html").read_text()
         assert "In plain English" in page and "Most useful fix:" in page
+
+
+def test_run_report_case_table_stacks_on_phones(tmp_path, v1_db):
+    """At phone width each case becomes a card, so the page never scrolls sideways."""
+    CliRunner().invoke(app, ["report", "--db", str(v1_db), "--out", str(tmp_path / "r.html")])
+    page = (tmp_path / "r.html").read_text()
+    phone_css = page[page.index("@media (max-width: 600px)"):]
+    assert "table#case-table thead" in phone_css and "display: block" in phone_css
+    assert 'class="case-rank" data-label="Retrieval rank"' in page
+    assert "overflow-wrap: anywhere" in page
+    for name in ("healthy", "degraded", "lucky"):  # the published samples carry the same CSS
+        assert 'class="case-question"' in (ROOT / "docs" / f"sample-report-{name}.html").read_text()

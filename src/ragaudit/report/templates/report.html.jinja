@@ -154,10 +154,10 @@
       <tbody>
         {% for row in rows %}
         <tr class="case-row" data-verdict="{{ row.verdict }}" data-rank="{{ row.retrieval_rank if row.retrieval_rank is not none else -1 }}">
-          <td>{{ row.question }}</td>
-          <td><span class="badge badge-{{ row.verdict }}">{{ row.verdict_label }}</span></td>
-          <td>{% if row.retrieval_rank is not none %}{{ row.retrieval_rank }}{% else %}not retrieved{% endif %}</td>
-          <td>
+          <td class="case-question">{{ row.question }}</td>
+          <td class="case-verdict"><span class="badge badge-{{ row.verdict }}">{{ row.verdict_label }}</span></td>
+          <td class="case-rank" data-label="Retrieval rank">{% if row.retrieval_rank is not none %}{{ row.retrieval_rank }}{% else %}not retrieved{% endif %}</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -166,7 +166,7 @@
                 <dt>Model answer</dt>
                 <dd>{{ row.answer }}</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   {% if row.contexts %}
                   <ol>
                     {% for ctx in row.contexts %}

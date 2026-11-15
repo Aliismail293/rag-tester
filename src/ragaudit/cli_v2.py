@@ -23,6 +23,7 @@ from ragaudit.models.tune import Trial, TuneResult
 from ragaudit.runner.evaluate import compute_config_hash, file_sha256, run_evaluation
 from ragaudit.runner.locked import evaluate_test_split
 from ragaudit.scoring.correctness import judge_correctness
+from ragaudit.scoring.text_match import DEFAULT_MATCH_THRESHOLD, validate_match_by
 from ragaudit.storage.store import Store, StoreSchemaError
 from ragaudit.tune.loop import TuneError, run_tune
 from ragaudit.tune.search_space import SearchSpaceError, load_search_space
@@ -294,8 +295,17 @@ def run_evaluate(
     judge_model: str | None,
     ablation: bool,
     full: bool,
+    match_by: str = "id",
+    match_threshold: float = DEFAULT_MATCH_THRESHOLD,
 ) -> EvalSummary:
     from ragaudit.cli import NO_CONTEXT_SYSTEM_PROMPT
+
+    try:
+        validate_match_by(match_by)
+    except ValueError as exc:
+        _fail(str(exc))
+    if match_by == "text" and corpus is None:
+        _fail("--match-by text compares chunk texts, so it needs the corpus: pass --corpus <path>.")
 
     try:
         split_enum = Split(split)
@@ -312,8 +322,16 @@ def run_evaluate(
 
         adapter = build_adapter(adapter_path, config)
         judge_client, judge = make_judge(provider, judge_model)
-        config_hash = compute_config_hash(config, file_sha256(adapter_path), judge_client.model, k)
+        text_mode = match_by == "text"
+        config_hash = compute_config_hash(
+            config, file_sha256(adapter_path), judge_client.model, k, match_threshold if text_mode else None
+        )
+        chunk_texts = {chunk.chunk_id: chunk.text for chunk in _load_corpus_or_fail(corpus)} if text_mode else None
+        if text_mode:
+            typer.echo(f"Matching retrieval by text (threshold {match_threshold:g}), using the contexts the adapter returns.")
         kwargs = dict(
+            chunk_texts=chunk_texts,
+            match_threshold=match_threshold,
             config=config,
             config_hash=config_hash,
             index_version=index_version,

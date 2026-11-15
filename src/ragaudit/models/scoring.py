@@ -29,13 +29,22 @@ class CorrectnessResult(BaseModel):
 
 
 class RetrievalResult(BaseModel):
-    """Pure set-membership check — no LLM involved."""
+    """Whether retrieval found the gold chunk — no LLM involved.
+
+    By id (the default): set membership of expected_chunk_id. By text: the
+    gold chunk's text overlaps one of the returned contexts (see
+    ragaudit.scoring.text_match).
+    """
 
     hit: bool
     expected_chunk_id: str
     retrieved_chunk_ids: list[str]
     rank: int | None = None
-    """Index of expected_chunk_id in retrieved_chunk_ids, if present."""
+    """Index of the first match: in retrieved_chunk_ids (by id) or in the contexts (by text)."""
+    match_by: str = "id"
+    """"id" or "text"."""
+    match_score: float | None = None
+    """By text only: the best overlap between the gold chunk and any returned context."""
 
 
 class GroundednessResult(BaseModel):

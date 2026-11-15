@@ -17,7 +17,7 @@ from typing import Optional
 
 import typer
 
-from ragaudit import cli_v2
+from ragaudit import cli_easy, cli_v2
 from ragaudit.adapters.base import AdapterLoadError, load_adapter
 from ragaudit.generate.pipeline import (
     DEFAULT_LEXICAL_THRESHOLD,
@@ -41,6 +41,8 @@ from ragaudit.scoring.retrieval import score_retrieval_by_text
 from ragaudit.scoring.text_match import DEFAULT_MATCH_THRESHOLD, validate_match_by
 from ragaudit.storage import db as db_module
 from ragaudit.storage import repository
+from ragaudit.env import load_dotenv
+from ragaudit.scaffold import DEFAULT_ADAPTER_PATH
 from ragaudit.storage.store import DEFAULT_STORE_PATH
 from ragaudit.tune.loop import DEFAULT_MAX_TRIALS, DEFAULT_OVERFIT_THRESHOLD
 
@@ -83,6 +85,23 @@ def _cli_safe(func):
             _error_exit(f"unexpected error: {exc}")
 
     return wrapper
+
+
+@app.callback()
+def _load_settings() -> None:
+    # RAGAUDIT_* settings can live in ./.env (see `ragaudit init`); exported variables win.
+    load_dotenv()
+
+
+@app.command()
+@_cli_safe
+def init(
+    framework: str = typer.Option("plain", "--framework", help="Adapter template: plain, langchain or llamaindex."),
+    out: Path = typer.Option(DEFAULT_ADAPTER_PATH, "--out", help="Where to write the adapter template."),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing files."),
+) -> None:
+    """Write a starter adapter (one TODO: plug in your pipeline) and a .env.example."""
+    cli_easy.run_init(framework, out, force)
 
 
 @app.command()

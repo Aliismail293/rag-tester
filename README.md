@@ -152,6 +152,7 @@ Adapters ship for: a raw callable, LangChain, LlamaIndex.
 ## CLI
 
 ```
+ragaudit init --framework plain         # starter adapter (plain|langchain|llamaindex) + .env.example
 ragaudit ingest ./docs                  # load, chunk, and persist a corpus
 ragaudit generate --n 100               # generate a test set (n questions/chunk)
 ragaudit run --adapter my_adapter.py    # run + score + ablate against the latest test set
@@ -160,7 +161,9 @@ ragaudit report --out report.html       # render the latest run as a static HTML
 ```
 
 Every command takes `--db` (default `./ragaudit.db`) to point at a
-specific database file.
+specific database file. All commands read `RAGAUDIT_*` settings from the
+environment or from a `.env` file in the current folder (exported
+variables win); `ragaudit init` writes a `.env.example` to copy.
 
 ## v2: generate, evaluate, tune
 

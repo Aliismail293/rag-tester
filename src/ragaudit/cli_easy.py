@@ -67,7 +67,7 @@ def check_python(version: tuple = tuple(sys.version_info[:3])) -> Check:
     return Check(
         f"Python {shown} is too old (3.11+ required)",
         False,
-        "install Python 3.11 or newer, then `python3.11 -m pip install ragaudit` in a fresh virtualenv.",
+        "install Python 3.11 or newer, then `python3.11 -m pip install ragaudit-cli` in a fresh virtualenv.",
     )
 
 

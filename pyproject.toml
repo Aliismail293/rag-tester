@@ -3,7 +3,7 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ragaudit"
+name = "ragaudit-cli"
 version = "0.3.0"
 description = "Test a RAG pipeline in minutes: catch correct answers that retrieval didn't earn (lucky passes), without re-indexing."
 readme = { file = "README.md", content-type = "text/markdown" }

@@ -34,6 +34,9 @@ are unchanged.
   report. The docs sample reports are re-rendered with it.
 - All commands read `RAGAUDIT_*` settings from `./.env`; exported
   variables take priority.
+- Published on PyPI as `ragaudit-cli` (`pip install ragaudit-cli`;
+  the YAML extra is `pip install "ragaudit-cli[yaml]"`). The command and
+  the import package are still `ragaudit`.
 - PyPI packaging metadata and a release workflow
   (`.github/workflows/publish.yml`) that publishes on a `vX.Y.Z` tag via
   trusted publishing.

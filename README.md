@@ -9,10 +9,11 @@ API, or a local [Ollama](https://ollama.com). Your pipeline is not re-indexed.
 **1. Install**
 
 ```bash
-pip install ragaudit
+pip install ragaudit-cli
 ```
 
-(Until the first PyPI release: `pip install git+https://github.com/Aliismail293/rag-tester`.)
+The package is `ragaudit-cli` on PyPI; the command and the Python import are
+`ragaudit`. (Until the first PyPI release: `pip install git+https://github.com/Aliismail293/rag-tester`.)
 
 **2. Check your setup**
 
@@ -330,7 +331,7 @@ baseline:            # optional; defaults to each knob's first value
 
 `tune` writes the best config to `best_config.yaml`, which `evaluate
 --config` accepts directly. Reading YAML uses PyYAML if installed
-(`pip install "ragaudit[yaml]"`) and a built-in parser for simple files
+(`pip install "ragaudit-cli[yaml]"`) and a built-in parser for simple files
 otherwise.
 
 ### CLI reference
@@ -360,8 +361,10 @@ and `report` defaults to the v1 run report.
 Pushing a tag `vX.Y.Z` that matches `version` in `pyproject.toml` runs
 `.github/workflows/publish.yml`: tests, build, `twine check`, then upload
 to PyPI through trusted publishing (no API token in GitHub). It needs a
-one-time trusted publisher on pypi.org for this repository, workflow
-`publish.yml`, environment `pypi`.
+one-time trusted publisher on pypi.org for project `ragaudit-cli`, this
+repository, workflow `publish.yml`, environment `pypi`. (The distribution is
+`ragaudit-cli` because PyPI treats `ragaudit` as the same name as the existing
+`rag-audit` project.)
 
 ## License
 

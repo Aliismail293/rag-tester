@@ -538,6 +538,7 @@ def _run_check(
                 "match_by": match_by,
                 "match_threshold": match_threshold,
                 "docs": str(docs),
+                "report_path": str(out.resolve()),
                 "reused_questions": len(plan.reused),
                 "new_questions": len(cases) - len(plan.reused),
             },
@@ -579,8 +580,7 @@ def render_run_report(run, test_set, out: Path, *, legacy: bool = False, **kwarg
 
     if legacy:
         return generate_report(run, test_set, out)
-    try:
-        from ragaudit.report.v3 import render_v1_run
-    except ImportError:  # the v3 report lands in a later commit
-        return generate_report(run, test_set, out)
+    from ragaudit.report.v3 import render_v1_run
+
+    kwargs.pop("project_store", None)
     return render_v1_run(run, test_set, out, **kwargs)

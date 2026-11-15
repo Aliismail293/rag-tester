@@ -1,0 +1,373 @@
+{%- from "v3/_slides.jinja" import slides -%}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ragaudit report · {{ v.date }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{ v.font_url }}">
+<style>
+{{ css }}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="brand-name">ragaudit</div>
+      <div class="brand-meta">Run report · {{ v.date }}{% if v.adapter %} · {{ v.adapter }}{% endif %} · run {{ v.run_short }}</div>
+    </div>
+    <div class="top-actions">
+      <span class="badge badge-{{ v.badge.cls }}" title="STRONG: 80% or more true passes · GOOD: 60% or more · NEEDS WORK: below 60%">{{ v.badge.label }}</span>
+      <button type="button" class="btn" data-welcome-open>What is this?</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  {% if v.scope_note %}<p class="scope">{{ v.scope_note }}</p>{% endif %}
+  <section class="report" aria-label="Report">
+    <div class="tabbar">
+      <div class="tabs" role="tablist" aria-label="Report sections">
+        {%- set tab_names = [("overview", "Overview"), ("history", "Score history"), ("verdicts", "Verdicts"), ("failed", "What failed"), ("loop", "Improvement loop"), ("questions", "All questions"), ("how", "How it works"), ("run", "How to run")] %}
+        {%- for key, label in tab_names %}
+        <button type="button" role="tab" id="tab-{{ key }}" data-tab="{{ key }}" aria-controls="panel-{{ key }}" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}" class="tab">{{ label }}</button>
+        {%- endfor %}
+      </div>
+      <div class="tab-nav">
+        <span class="tab-pos" data-tab-pos>1 / 8</span>
+        <button type="button" class="btn btn-arrow" data-tab-prev aria-label="Previous section">←</button>
+        <button type="button" class="btn btn-arrow btn-primary" data-tab-next aria-label="Next section">→</button>
+      </div>
+    </div>
+
+    {# 1. Overview #}
+    <div class="panel" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+      <div class="hero">
+        <svg class="ring" width="150" height="150" viewBox="0 0 148 148" role="img" aria-label="{{ v.ring.aria }}">
+          <circle cx="74" cy="74" r="62" fill="none" stroke="#E6E8F5" stroke-width="14"></circle>
+          {% if not v.ring.empty %}<circle cx="74" cy="74" r="62" fill="none" stroke="#4338CA" stroke-width="14" stroke-linecap="round" stroke-dasharray="{{ v.ring.dash }}" transform="rotate(-90 74 74)"></circle>{% endif %}
+          <text x="74" y="72" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="34" font-weight="800" fill="#111827">{{ v.ring.text }}</text>
+          <text x="74" y="96" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#5B6577">true passes</text>
+        </svg>
+        <div class="hero-text">
+          <h1>{{ v.headline.title }}</h1>
+          <p>{{ v.headline.body }}</p>
+        </div>
+      </div>
+      <div class="stats">
+        {% for s in v.stats %}
+        <div class="stat"><div class="stat-label">{{ s.label }}</div><div class="stat-value">{{ s.value }}</div><div class="stat-note">{{ s.note }}</div></div>
+        {% endfor %}
+      </div>
+      <div class="row-16">
+        <div class="card-soft reading col-2">
+          <div class="card-label">HOW TO READ THESE NUMBERS</div>
+          <ul>{% for b in v.bullets %}<li>{{ b }}</li>{% endfor %}</ul>
+        </div>
+        <div class="card-deep col-side">
+          <div class="card-label">NEXT STEP</div>
+          <div class="next-title">{{ v.headline.next }}</div>
+          <button type="button" class="btn btn-lilac" data-goto="failed">See what failed →</button>
+        </div>
+      </div>
+    </div>
+
+    {# 2. Score history #}
+    <div class="panel" role="tabpanel" id="panel-history" aria-labelledby="tab-history" hidden>
+      <h2 class="sr-only">Score history</h2>
+      <div class="row">
+        <div class="col-main chart" data-chart>
+          {% set ch = v.chart %}
+          <div class="chart-head">
+            <div class="chart-title">Score history</div>
+            <div class="legend">
+              <span><span class="legend-line" aria-hidden="true"></span>true pass</span>
+              <span><span class="legend-dash" aria-hidden="true"></span>retrieval hit</span>
+              {% if ch.any_changed %}<span><span class="legend-mark" aria-hidden="true"></span>docs changed</span>{% endif %}
+            </div>
+          </div>
+          {% if ch.runs %}
+          <div class="chart-sub">{% if ch.single %}Your first recorded run. Each new run of this project adds a point.{% else %}{{ ch.runs|length }} runs of this project, oldest on the left. Deltas compare only the questions two runs share.{% endif %}</div>
+          <svg viewBox="0 0 640 280" role="img" aria-label="{{ ch.aria }}">
+            <line x1="40" y1="250" x2="620" y2="250" stroke="#E2E6EE"></line>
+            <line x1="40" y1="145" x2="620" y2="145" stroke="#E2E6EE" stroke-dasharray="3 5"></line>
+            <line x1="40" y1="40" x2="620" y2="40" stroke="#E2E6EE" stroke-dasharray="3 5"></line>
+            <text x="34" y="254" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="11" fill="#5B6577">0</text>
+            <text x="34" y="149" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="11" fill="#5B6577">50</text>
+            <text x="34" y="44" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="11" fill="#5B6577">100</text>
+            <line data-sel-band x1="{{ ch.sel.x }}" y1="30" x2="{{ ch.sel.x }}" y2="250" stroke="#EEF0FF" stroke-width="22"></line>
+            {% if not ch.single %}
+            <polyline fill="none" stroke="#D97706" stroke-width="2.5" stroke-dasharray="6 5" points="{{ ch.hit_points }}"></polyline>
+            <polyline fill="none" stroke="#4338CA" stroke-width="3.5" stroke-linejoin="round" points="{{ ch.tp_points }}"></polyline>
+            {% else %}
+            <circle cx="{{ ch.sel.x }}" cy="{{ ch.sel.y_hit }}" r="5" fill="#FFFFFF" stroke="#D97706" stroke-width="2.5"></circle>
+            {% endif %}
+            {% for r in ch.runs %}
+            {% if r.corpus_changed %}<path d="M{{ r.x }} 256l6 6-6 6-6-6z" fill="#F59E0B"><title>Run {{ r.number }}: documents changed</title></path>{% endif %}
+            <circle data-point cx="{{ r.x }}" cy="{{ r.y }}" r="{{ 9 if loop.index0 == ch.selected else 6 }}" fill="#4338CA" stroke="#FFFFFF" stroke-width="2"></circle>
+            {% endfor %}
+            <text data-sel-label x="{{ ch.sel.x }}" y="{{ ch.sel.label_y }}" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="800" fill="#4338CA">{{ ch.sel.tp_text }}</text>
+          </svg>
+          <div class="runs">
+            {% for r in ch.runs %}
+            <button type="button" class="run-btn" data-run aria-pressed="{{ 'true' if loop.index0 == ch.selected else 'false' }}" aria-label="Run {{ r.number }}, {{ r.date }}: true pass {{ r.tp_text }}">
+              <span class="run-name">{{ r.name }}</span><span class="run-date">{{ r.date }}</span>
+            </button>
+            {% endfor %}
+          </div>
+          {% if ch.older %}<div class="older">{{ ch.older }} older run{{ 's' if ch.older != 1 }} not shown; the chart keeps the last 30.</div>{% endif %}
+          <div class="run-detail" data-run-detail aria-live="polite">
+            <div class="run-detail-main">
+              <div class="run-detail-meta" data-d="meta">{{ ch.sel.meta }}</div>
+              <div class="run-detail-note" data-d="note">{{ ch.sel.note }}</div>
+            </div>
+            <div class="run-detail-nums">
+              <div><div class="muted">true pass</div><div class="num" data-d="tp">{{ ch.sel.tp_text }}</div></div>
+              <div><div class="muted">retrieval hit</div><div class="num" data-d="hit">{{ ch.sel.hit_text }}</div></div>
+              <div><div class="muted">vs last run</div><div class="num {{ ch.sel.delta_class }}" data-d="delta">{{ ch.sel.delta_text }}</div></div>
+            </div>
+            <div class="run-detail-warn" data-d="warn"{% if not ch.sel.warn %} hidden{% endif %}>{{ ch.sel.warn }}</div>
+          </div>
+          {% if ch.single %}
+          <div class="empty">
+            <div class="empty-title">Run the same check again after a change to see a trend</div>
+            <div class="card-text">ragaudit reuses the same questions while your documents stay the same, so the next point is a fair comparison.</div>
+            <div class="cmd-inline"><code>{{ v.commands.again }}</code><button type="button" class="copy" data-copy="{{ v.commands.again }}" aria-label="Copy command: {{ v.commands.again }}">Copy</button></div>
+          </div>
+          {% endif %}
+          {% else %}
+          <div class="empty">
+            <div class="empty-title">No runs recorded for this project yet</div>
+            <div class="card-text">Runs from <code>ragaudit check</code> and <code>ragaudit improve</code> are saved in a .ragaudit folder next to your documents and drawn here.</div>
+            <div class="cmd-inline"><code>{{ v.commands.check }}</code><button type="button" class="copy" data-copy="{{ v.commands.check }}" aria-label="Copy command: {{ v.commands.check }}">Copy</button></div>
+          </div>
+          {% endif %}
+        </div>
+        <div class="col-side">
+          <div class="card-soft"><div class="card-label">WHERE THIS COMES FROM</div><div class="card-text">Every check is saved in your project folder, so each new report draws every earlier run.</div></div>
+          <div class="card-soft"><div class="card-label">FAIR COMPARISONS</div><div class="card-text">Runs reuse the same questions while your documents stay the same. Runs where documents changed are marked.</div></div>
+          <div class="card-soft"><div class="card-label">READING A DIP</div><div class="card-text">A drop right after new documents usually means look-alike pages now compete. Try raising top-k or adding re-ranking.</div></div>
+        </div>
+      </div>
+    </div>
+
+    {# 3. Verdicts #}
+    <div class="panel" role="tabpanel" id="panel-verdicts" aria-labelledby="tab-verdicts" hidden>
+      <h2 class="panel-title">Verdicts: two checks, crossed</h2>
+      <p class="panel-lede">Each question is judged on retrieval and on the answer separately. Where it lands tells you what to fix.</p>
+      {%- set c = v.counts %}
+      {%- set worst = [("lucky_pass", c.lucky_pass), ("generation_failure", c.generation_failure), ("retrieval_failure", c.retrieval_failure)]|sort(attribute="1", reverse=True)|first %}
+      <div class="verdicts">
+        <div></div>
+        <div class="vg-col">FOUND THE PAGE</div>
+        <div class="vg-col">MISSED THE PAGE</div>
+        <div class="vg-row">RIGHT ANSWER</div>
+        <div class="cell cell-true_pass"><div class="cell-head"><span class="cell-count">{{ c.true_pass }}</span><span class="cell-name">True pass</span></div><div class="cell-text">Worked end to end. This is the number to protect when you change anything.</div></div>
+        <div class="cell{% if worst[0] == 'lucky_pass' and worst[1] %} cell-hot{% endif %}"><div class="cell-head"><span class="cell-count">{{ c.lucky_pass }}</span><span class="cell-name">Lucky pass</span></div><div class="cell-text">Right answer from the wrong page: the model guessed from memory. Each one is re-asked with no pages to confirm.</div></div>
+        <div class="vg-row">WRONG ANSWER</div>
+        <div class="cell{% if worst[0] == 'generation_failure' and worst[1] %} cell-hot{% endif %}"><div class="cell-head"><span class="cell-count">{{ c.generation_failure }}</span><span class="cell-name">Generation failure</span></div><div class="cell-text">The page was there and the model still got it wrong. Fix the prompt, passage length or model.</div></div>
+        <div class="cell{% if worst[0] == 'retrieval_failure' and worst[1] %} cell-hot{% endif %}"><div class="cell-head"><span class="cell-count">{{ c.retrieval_failure }}</span><span class="cell-name">Retrieval failure</span></div><div class="cell-text">Wrong page, wrong answer. Fix chunking, embeddings or top-k.</div></div>
+      </div>
+    </div>
+
+    {# 4. What failed #}
+    <div class="panel" role="tabpanel" id="panel-failed" aria-labelledby="tab-failed" hidden>
+      {% if not v.failures %}
+      <h2 class="panel-title">Nothing failed.</h2>
+      <p class="panel-lede">Protect this: re-run after every change.</p>
+      <div class="empty"><div class="cmd-inline"><code>{{ v.commands.again }}</code><button type="button" class="copy" data-copy="{{ v.commands.again }}" aria-label="Copy command: {{ v.commands.again }}">Copy</button></div></div>
+      {% else %}
+      <h2 class="sr-only">What failed</h2>
+      <div class="fail-layout">
+        {% if v.failures|length > 1 %}
+        <div class="fail-list" aria-label="Failing questions">
+          {% for f in v.failures %}
+          <button type="button" class="fail-item" data-fail aria-pressed="{{ 'true' if loop.first else 'false' }}"><span class="fail-kind">{{ f.label|upper }}</span>{{ f.question }}</button>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <div class="fail-detail-wrap">
+          {% for f in v.failures %}
+          <article class="fail-detail" data-fail-detail{% if not loop.first %} hidden{% endif %}>
+            <div class="row">
+              <div class="col-2">
+                <div class="eyebrow amber" style="margin-bottom: 8px">{{ f.label|upper }} · {{ loop.index }} OF {{ v.failures|length }}</div>
+                <h3 class="fail-q">{{ f.question }}</h3>
+                <div class="answers">
+                  <div class="ans ans-key"><div class="ans-label">Answer key</div><div class="ans-text">{{ f.key }}</div></div>
+                  <div class="ans ans-got{% if f.verdict == 'lucky_pass' %} ok{% endif %}"><div class="ans-label">Pipeline said</div><div class="ans-text">{{ f.answer or "(no answer)" }}</div></div>
+                </div>
+                <div class="card-label">WHAT THE SEARCH RETURNED</div>
+                <div class="passages">
+                  {% for p in f.passages %}
+                  <div class="passage{% if p.source %} source{% endif %}"><span class="passage-rank">#{{ p.n }}</span><span class="passage-text">{{ p.html }}</span>{% if p.source %}<span class="passage-tag">source</span>{% endif %}</div>
+                  {% else %}
+                  <div class="none-note">Your adapter returned no passages for this question.</div>
+                  {% endfor %}
+                </div>
+                {% if f.gold_html %}
+                <div class="card-label" style="margin-top: 16px">THE PAGE IT SHOULD HAVE FOUND</div>
+                <div class="passages"><div class="passage gold"><span class="passage-rank">src</span><span class="passage-text">{{ f.gold_html }}</span></div></div>
+                {% endif %}
+              </div>
+              <div class="col-side">
+                <div class="card-soft"><div class="card-label">WHY IT FAILED</div><div class="card-text">{{ f.why }}</div></div>
+                <div class="card-deep">
+                  <div class="card-label">TRY THIS</div>
+                  <ul>{% for t in f.tries %}<li>{{ t }}</li>{% endfor %}</ul>
+                  <code>{{ v.commands.again }}</code>
+                </div>
+              </div>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {# 5. Improvement loop #}
+    <div class="panel" role="tabpanel" id="panel-loop" aria-labelledby="tab-loop" hidden>
+      {% set L = v.loop %}
+      {% if L %}
+      <div class="row-16">
+        <div class="card-soft col-2" style="padding: 20px">
+          <h2 style="margin: 0 0 4px; font-size: 18px; font-weight: 800">Self-improvement loop</h2>
+          <p style="margin: 0 0 16px; font-size: 14px; color: #4B5565">Tuned on {{ L.n_practice }} practice question{{ 's' if L.n_practice != 1 }}, scored once on the {{ L.n_exam }}-question locked exam · {{ L.date }}.</p>
+          <div class="bars">
+            {% for label, value, color in [("Baseline · locked exam", L.baseline_exam, "#A5B4FC"), ("Best config · locked exam", L.best_exam, "#4338CA"), ("Best config · practice", L.best_practice, "#6366F1")] %}
+            <div><div class="bar-head"><span>{{ label }}</span><b>{{ "%.0f"|format(value or 0) }}</b></div><div class="bar"><span style="width: {{ value or 0 }}%; background: {{ color }}"></span></div></div>
+            {% endfor %}
+          </div>
+          {% if L.gap is not none %}
+          {% if L.warn %}
+          <div class="chip chip-warn">⚠ Practice − exam = {{ "%.0f"|format(L.gap) }} pts: likely memorising (over {{ "%g"|format(L.threshold) }})</div>
+          {% else %}
+          <div class="chip chip-good">✓ Practice − exam = {{ "%.0f"|format(L.gap) }} pts: no memorising</div>
+          {% endif %}
+          {% endif %}
+        </div>
+        <div class="card-soft col-side" style="padding: 20px; display: block">
+          <div class="card-label">WHAT IT CHANGED</div>
+          {% if L.changes %}
+          <div class="changes">
+            {% for ch in L.changes %}<div><span class="knob">{{ ch.knob }}</span><span>{{ ch.before }} → <b>{{ ch.after }}</b></span></div>{% endfor %}
+          </div>
+          {% else %}
+          <div class="card-text">No setting beat your current one on practice, so it kept your settings.</div>
+          {% endif %}
+          <div class="muted" style="font-size: 13px; margin-top: 10px">{{ L.n_trials }} trial{{ 's' if L.n_trials != 1 }} · saved to {{ L.path }}</div>
+          {% if L.spark %}
+          <svg class="sparkline" viewBox="-4 0 288 64" role="img" aria-label="{{ L.spark.aria }}">
+            <polyline fill="none" stroke="#4338CA" stroke-width="2" stroke-linejoin="round" points="{{ L.spark.points }}"></polyline>
+            {% for d in L.spark.dots %}<circle cx="{{ d.x }}" cy="{{ d.y }}" r="{{ 4.5 if d.best else 3 }}" fill="{{ '#F59E0B' if d.best else '#4338CA' }}"></circle>{% endfor %}
+          </svg>
+          <div class="muted" style="font-size: 12px">Practice score per trial; the best one in amber.</div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <h2 class="panel-title">Self-improvement loop</h2>
+      <p class="panel-lede">ragaudit improve tries different settings on practice questions and keeps whatever scores better. It then scores your old and new settings once on a locked final exam, so you can see whether the gain is real.</p>
+      <div class="empty"><div class="empty-title">No improvement run for this project yet</div><div class="cmd-inline"><code>{{ v.commands.improve }}</code><button type="button" class="copy" data-copy="{{ v.commands.improve }}" aria-label="Copy command: {{ v.commands.improve }}">Copy</button></div></div>
+      {% endif %}
+    </div>
+
+    {# 6. All questions #}
+    <div class="panel" role="tabpanel" id="panel-questions" aria-labelledby="tab-questions" hidden>
+      <div class="table-head">
+        <h2 class="panel-title" style="margin: 0">All {{ v.total }} question{{ 's' if v.total != 1 }}</h2>
+        {% if v.match_text %}<div class="muted" style="font-size: 13px">{{ v.match_text }}</div>{% endif %}
+      </div>
+      {% if v.filters|length > 2 %}
+      <div class="chips" aria-label="Filter by verdict">
+        {% for f in v.filters %}<button type="button" class="filter" data-filter="{{ f.key }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ f.label }}</button>{% endfor %}
+      </div>
+      {% endif %}
+      <div class="table-scroll" tabindex="0" aria-label="All questions table, scrolls sideways">
+        <table class="cases">
+          <thead><tr><th scope="col">Question</th><th scope="col" style="width: 150px">Key</th><th scope="col" style="width: 170px">Answered</th><th scope="col" style="width: 60px">Rank</th><th scope="col" style="width: 160px">Verdict</th></tr></thead>
+          <tbody>
+            {% for c in v.cases %}
+            <tr data-case="{{ c.verdict }}"{% if c.verdict != 'true_pass' %} class="hot"{% endif %}><td>{{ c.question }}</td><td>{{ c.key }}</td><td>{{ c.answer }}</td><td>{{ c.rank_text }}</td><td class="v-{{ c.verdict }}">{{ c.label }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="facts">{% for f in v.facts %}<span>{{ f }}</span>{% endfor %}</div>
+    </div>
+
+    {# 7. How it works #}
+    <div class="panel" role="tabpanel" id="panel-how" aria-labelledby="tab-how" hidden>
+      <h2 class="sr-only">How it works</h2>
+      <div class="row" style="align-items: flex-start">
+        <div class="col-main">{{ slides("how") }}</div>
+        <div class="col-side" style="flex: 2 1 300px">
+          <div class="card-soft"><h3>Why two checks?</h3><div class="card-text">A right answer can come from the model's memory. Checking the page separately catches that.</div></div>
+          <div class="card-soft"><h3>Why can't the score be faked?</h3><div class="card-text">Questions avoid the page's exact wording, a second model checks every answer key, and the final exam stays locked during tuning.</div></div>
+          <div class="card-soft"><h3>Why the same questions every run?</h3><div class="card-text">Scores only compare fairly on the same quiz. ragaudit keeps your questions while your documents stay the same, and writes new ones only for pages you add or edit.</div></div>
+          <button type="button" class="card-link" data-goto="run"><div class="card-title">Ready to run it yourself?</div><div class="card-text">Two commands, with copy buttons, in How to run →</div></button>
+        </div>
+      </div>
+    </div>
+
+    {# 8. How to run #}
+    <div class="panel" role="tabpanel" id="panel-run" aria-labelledby="tab-run" hidden>
+      <div class="row">
+        <div class="col-main">
+          <div class="eyebrow indigo" style="margin-bottom: 8px">EASIEST WAY · 2 COMMANDS</div>
+          <h2 class="panel-title">Install once, then set everything up in your browser.</h2>
+          <p class="panel-lede" style="line-height: 1.6">Open a terminal (Terminal on Mac, PowerShell on Windows), paste each line, press Enter.</p>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px">
+            {% for cmd in v.commands.easy %}
+            <div class="cmd-easy">
+              <div class="cmd-easy-head"><span class="cmd-n">{{ cmd.n }}</span><span class="cmd-what-strong">{{ cmd.what }}</span></div>
+              <div class="cmd-easy-body"><code><span class="prompt" aria-hidden="true">$ </span>{{ cmd.code }}</code><button type="button" class="copy copy-dark" data-copy="{{ cmd.code }}" aria-label="Copy command: {{ cmd.code }}">Copy</button></div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="card-label">PREFER THE TERMINAL? EVERY COMMAND</div>
+          <div class="cmd-list">
+            {% for cmd in v.commands.more %}
+            <div class="cmd-row"><code>{{ cmd.code }}</code><span class="cmd-what">{{ cmd.what }}</span><button type="button" class="copy" data-copy="{{ cmd.code }}" aria-label="Copy command: {{ cmd.code }}">Copy</button></div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-side">
+          <div class="card-soft"><h3>What you need</h3><div class="card-text">Python 3.11 or newer, a folder of documents, and either Ollama (free, runs on your computer) or an API key. The setup page checks all three for you.</div></div>
+          <div class="card-soft"><h3>Where results go</h3><div class="card-text">Every run is saved in a .ragaudit folder next to your documents. That is what the score history reads.</div></div>
+          <div class="card-soft"><h3>Your data stays local</h3><div class="card-text">With Ollama, nothing leaves your computer. Reports are files on your disk, not web links.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="foot">Generated by ragaudit on {{ v.generated }} · run {{ v.run_id }}</footer>
+
+<div class="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title" data-welcome hidden>
+  <div class="welcome-box">
+    <button type="button" class="welcome-close" data-welcome-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"></path></svg>
+    </button>
+    <div class="welcome-text">
+      <div class="eyebrow indigo" style="margin-bottom: 10px">FIRST TIME HERE?</div>
+      <h2 id="welcome-title">A report card for your document-answering AI.</h2>
+      <p>ragaudit quizzed it on your own files and graded two things separately: did it find the right page, and was its answer right.</p>
+      <p>Run it again after any change and the report tracks whether you got better.</p>
+      <div class="welcome-actions">
+        <button type="button" class="btn btn-primary btn-big" data-welcome-close>Show my results</button>
+        <button type="button" class="btn btn-ghost-big" data-welcome-run>How to run it</button>
+      </div>
+    </div>
+    <div class="welcome-art">{{ slides("welcome") }}</div>
+  </div>
+</div>
+<script type="application/json" id="ra-data">{{ v.data_json|safe }}</script>
+<script>
+{{ js }}
+</script>
+</body>
+</html>

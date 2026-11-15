@@ -62,6 +62,8 @@ packages = ["src/ragaudit"]
 include = [
     "src/ragaudit/report/templates/*.css",
     "src/ragaudit/report/templates/*.jinja",
+    "src/ragaudit/report/templates/v3/*",
+    "src/ragaudit/ui/*.html",
 ]
 
 [tool.hatch.build.targets.sdist]

@@ -535,6 +535,38 @@ def check(
     )
 
 
+def _history_for_run(db: Path, run_id: str):
+    """The history of the project a run belongs to: the store next to its database, or one level up."""
+    from ragaudit import history
+    from ragaudit.storage.store import Store
+
+    for candidate in (db.resolve().parent / "store.db", db.resolve().parent / ".ragaudit" / "store.db"):
+        if not candidate.is_file():
+            continue
+        with Store(candidate) as store:
+            rows = history.load_history(store)
+        if any(row.run_id == run_id for row in rows):
+            return rows
+    return []
+
+
+def _latest_report_file() -> Optional[Path]:
+    """The newest report recorded in this folder's project history, if it still exists."""
+    from ragaudit import history
+    from ragaudit.storage.store import DEFAULT_STORE_PATH as store_path
+    from ragaudit.storage.store import Store
+
+    if not store_path.is_file():
+        return None
+    with Store(store_path) as store:
+        rows = history.load_history(store)
+    for row in reversed(rows):
+        path = row.extra.get("report_path")
+        if path and Path(path).is_file():
+            return Path(path)
+    return None
+
+
 @app.command()
 @_cli_safe
 def report(
@@ -546,17 +578,36 @@ def report(
         None, "--run-id", help="Run id to report on (defaults to the most recently run). For v2 kinds, the generate run or tune id."
     ),
     kind: str = typer.Option(
-        "run", "--kind", help="run (v1 run report, the default), generate (v2 generate run) or tune (v2 tune run)."
+        "run", "--kind", help="run (the run report, the default), generate (v2 generate run) or tune (v2 tune run)."
     ),
     store: Path = STORE_OPTION,
+    legacy: bool = typer.Option(False, "--legacy", help="Render the run with the old (v1) report template."),
+    open_report: bool = typer.Option(
+        False, "--open", help="Open the report in the browser. With no ragaudit.db here, re-opens the latest check or improve report."
+    ),
 ) -> None:
     """Render the latest (or specified) Run into a static HTML report. v2: --kind generate|tune."""
+    import webbrowser
+
+    def done(path: Path) -> None:
+        typer.echo(f"Report written to {path}")
+        if open_report:
+            webbrowser.open(path.resolve().as_uri())
+
     if kind in ("generate", "tune"):
-        output_path = cli_v2.run_report(kind, store, out or Path(f"{kind}-report.html"), run_id)
-        typer.echo(f"Report written to {output_path}")
+        done(cli_v2.run_report(kind, store, out or Path(f"{kind}-report.html"), run_id))
         return
     if kind != "run":
         _error_exit(f"--kind must be run, generate or tune, got {kind!r}")
+    if open_report and not db.exists() and out is None and run_id is None:
+        latest = _latest_report_file()
+        if latest is None and Path(cli_easy.DEFAULT_CHECK_REPORT).is_file():
+            latest = Path(cli_easy.DEFAULT_CHECK_REPORT)
+        if latest is None:
+            _error_exit("no report found here — run `ragaudit check --docs <folder>` (or `ragaudit ui`) first.")
+        typer.echo(f"Opening {latest}")
+        webbrowser.open(latest.resolve().as_uri())
+        return
     out = out or Path("report.html")
     if not db.exists():
         _error_exit(f"database not found at {db} — run `ragaudit ingest`, `generate`, and `run` first.")
@@ -574,11 +625,18 @@ def report(
         test_set = repository.load_test_set(conn, run.config.testset_id)
         if test_set is None:
             _error_exit(f"test set '{run.config.testset_id}' referenced by run '{resolved_run_id}' not found.")
+        chunk_texts = {chunk.chunk_id: chunk.text for chunk in repository.load_chunks(conn)}
     finally:
         conn.close()
 
-    output_path = generate_report(run, test_set, out)
-    typer.echo(f"Report written to {output_path}")
+    if legacy:
+        done(generate_report(run, test_set, out))
+        return
+    from ragaudit.report.v3 import render_v1_run
+
+    done(render_v1_run(
+        run, test_set, out, history_rows=_history_for_run(db, run.config.run_id), chunk_texts=chunk_texts, kind="run"
+    ))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,165 @@
+{# The 6-picture "how it works" widget. Drawings copied from the approved design (Slides.dc.html), light theme. #}
+{% macro slides(prefix) %}
+<div class="slides" data-slides id="{{ prefix }}-slides">
+<div class="slides-inner">
+<div class="slides-top">
+<div class="eyebrow muted">HOW IT WORKS · <span data-slide-label>1 / 6</span></div>
+<button type="button" class="btn btn-small slides-fs" data-slide-fs aria-label="Open pictures full screen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"></path></svg><span data-slide-fs-text>Full screen</span></button>
+</div>
+<div class="slides-stage">
+<figure class="slide" data-slide="0">
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Three document pages turn into three quiz cards, each pinned to a page number">
+<rect x="94" y="54" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="82" y="66" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="70" y="78" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="90" y="102" width="90" height="10" rx="5" fill="#4338CA"></rect>
+<rect x="90" y="126" width="110" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="142" width="100" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="158" width="112" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="174" width="80" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="198" width="106" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="214" width="94" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<text x="145" y="304" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">your docs</text>
+<path d="M268 170h66" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<path d="M322 158l14 12-14 12" fill="none" stroke="#4338CA" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="370" y="58" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="96" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q1</text>
+<rect x="426" y="84" width="86" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="78" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="94" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.2</text>
+<rect x="370" y="138" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="176" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q2</text>
+<rect x="426" y="164" width="70" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="158" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="174" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.5</text>
+<rect x="370" y="218" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="256" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q3</text>
+<rect x="426" y="244" width="80" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="238" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="254" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.9</text>
+<text x="475" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">a quiz, each answer pinned to its page</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Your documents become a quiz</span><span class="slide-body">ragaudit writes questions from your files and pins each answer to the page it came from.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="1" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A magnifying glass finds the pinned page among five pages and marks it with a check">
+<rect x="54" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="160" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="266" y="96" width="84" height="112" rx="8" fill="#E0E7FF" stroke="#4338CA" stroke-width="3"></rect>
+<rect x="372" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="478" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="280" y="116" width="44" height="8" rx="4" fill="#4338CA"></rect>
+<rect x="280" y="134" width="56" height="6" rx="3" fill="#A5B4FC"></rect>
+<rect x="280" y="148" width="50" height="6" rx="3" fill="#A5B4FC"></rect>
+<rect x="280" y="162" width="54" height="6" rx="3" fill="#A5B4FC"></rect>
+<text x="308" y="196" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="800" fill="#4338CA">p.5</text>
+<circle cx="308" cy="152" r="76" fill="none" stroke="#1E1B4B" stroke-width="8"></circle>
+<path d="M362 206l52 52" stroke="#1E1B4B" stroke-width="16" stroke-linecap="round"></path>
+<circle cx="368" cy="86" r="20" fill="#4338CA"></circle>
+<path d="M359 86l6 7 12-14" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="150" y="282" width="340" height="38" rx="19" fill="#FFFFFF" stroke="#E2E6EE" stroke-width="2"></rect>
+<text x="320" y="307" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">Q2 pinned to p.5 · search returned p.5 ✓</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 1: did it find the right page?</span><span class="slide-body">We look at what your search returned. If the pinned page is in there, that is a hit.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="2" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="The answer key says 20, the pipeline said 5, and the judge marks it wrong">
+<rect x="60" y="66" width="220" height="132" rx="18" fill="#E0E7FF"></rect>
+<path d="M110 198l-6 30 30-30z" fill="#E0E7FF"></path>
+<text x="84" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#4338CA">answer key</text>
+<text x="84" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#4338CA">20</text>
+<rect x="360" y="66" width="220" height="132" rx="18" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3"></rect>
+<path d="M530 198l6 30-30-30z" fill="#FEF3C7"></path>
+<text x="384" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#92400E">your pipeline said</text>
+<text x="384" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#92400E">5</text>
+<text x="320" y="152" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="44" font-weight="800" fill="#5B6577">≠</text>
+<rect x="200" y="258" width="240" height="44" rx="22" fill="#1E1B4B"></rect>
+<text x="320" y="286" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">judge model: wrong ✕</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 2: was the answer right?</span><span class="slide-body">A separate judge model compares your pipeline’s answer to the answer key.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="3" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A two by two grid: true pass, lucky pass highlighted, generation failure and retrieval failure">
+<text x="250" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">found the page</text>
+<text x="440" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">missed the page</text>
+<text x="148" y="116" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">right</text>
+<text x="148" y="246" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">wrong</text>
+<rect x="160" y="56" width="180" height="118" rx="14" fill="#E0E7FF"></rect>
+<text x="250" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#4338CA">true pass</text>
+<text x="250" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#4338CA">it worked</text>
+<rect x="350" y="56" width="180" height="118" rx="14" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3"></rect>
+<text x="440" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#92400E">lucky pass</text>
+<text x="440" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#92400E">guessed from memory</text>
+<path d="M520 46l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="#F59E0B"></path>
+<rect x="160" y="184" width="180" height="118" rx="14" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="250" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#111827">generation fail</text>
+<text x="250" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">fix the prompt</text>
+<rect x="350" y="184" width="180" height="118" rx="14" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="440" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#111827">retrieval fail</text>
+<text x="440" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">fix the search</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Two checks, four verdicts</span><span class="slide-body">A lucky pass is a right answer from the wrong page. Most tests count it as a win; ragaudit flags it.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="4" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Practice questions feed a tuning loop that keeps better settings, while a locked final exam is opened once at the end">
+<rect x="66" y="96" width="140" height="96" rx="12" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="58" y="108" width="140" height="96" rx="12" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="50" y="120" width="140" height="96" rx="12" fill="#FFFFFF" stroke="#4338CA" stroke-width="2"></rect>
+<text x="120" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#4338CA">practice</text>
+<text x="120" y="186" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">7 of 10 questions</text>
+<path d="M200 168h44" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<circle cx="320" cy="168" r="62" fill="none" stroke="#4338CA" stroke-width="6" stroke-dasharray="300 90"></circle>
+<path d="M366 120l14 -4 -4 14" fill="none" stroke="#4338CA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+<text x="320" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="800" fill="#111827">try a setting</text>
+<text x="320" y="184" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">keep it if better</text>
+<text x="320" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#5B6577">chunk size · top-k · re-rank</text>
+<rect x="444" y="96" width="140" height="132" rx="14" fill="#1E1B4B"></rect>
+<rect x="497" y="144" width="34" height="28" rx="5" fill="#F59E0B"></rect>
+<path d="M503 144v-10a11 11 0 0 1 22 0v10" fill="none" stroke="#F59E0B" stroke-width="5"></path>
+<text x="514" y="200" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#FFFFFF">final exam</text>
+<text x="514" y="218" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#FFFFFF">locked · 3 of 10</text>
+<text x="514" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#5B6577">opened once, at the end</text>
+<rect x="130" y="290" width="380" height="36" rx="18" fill="#FFFFFF" stroke="#E2E6EE" stroke-width="2"></rect>
+<text x="320" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#111827">practice high, exam low = it memorised, alarm rings</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Then it gets better on its own</span><span class="slide-body">ragaudit tune tries settings on practice questions and keeps what scores better. A locked final exam is opened once, so the score can’t be faked.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="5" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="New pages get new questions, old pages get a few spot checks, deleted pages have their questions retired">
+<rect x="70" y="40" width="56" height="70" rx="7" fill="#E0E7FF" stroke="#4338CA" stroke-width="2"></rect>
+<rect x="140" y="40" width="56" height="70" rx="7" fill="#E0E7FF" stroke="#4338CA" stroke-width="2"></rect>
+<rect x="74" y="30" width="40" height="18" rx="9" fill="#4338CA"></rect>
+<text x="94" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#FFFFFF">NEW</text>
+<rect x="144" y="30" width="40" height="18" rx="9" fill="#4338CA"></rect>
+<text x="164" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#FFFFFF">NEW</text>
+<path d="M224 75h70" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="52" width="270" height="46" rx="23" fill="#E0E7FF"></rect>
+<text x="445" y="81" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#4338CA">new questions written</text>
+<rect x="70" y="135" width="56" height="70" rx="7" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="140" y="135" width="56" height="70" rx="7" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<path d="M224 170h70" stroke="#CBD2DE" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="147" width="270" height="46" rx="23" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="445" y="176" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#111827">a few old ones spot-checked</text>
+<rect x="105" y="230" width="56" height="70" rx="7" fill="none" stroke="#5B6577" stroke-width="2" stroke-dasharray="5 4"></rect>
+<path d="M115 240l36 50M151 240l-36 50" stroke="#5B6577" stroke-width="3" stroke-linecap="round"></path>
+<path d="M224 265h70" stroke="#CBD2DE" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="242" width="270" height="46" rx="23" fill="#F6F7FB" stroke="#CBD2DE" stroke-width="2" stroke-dasharray="5 4"></rect>
+<text x="445" y="271" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#5B6577">its questions retired</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Only re-test what changed</span><span class="slide-body">Add or edit documents and only those get new questions. Old ones are spot-checked, and deleted pages retire theirs.</span></figcaption>
+</figure>
+</div>
+<div class="slides-nav">
+<div class="slide-dots">
+<button type="button" class="slide-dot" data-slide-dot="0" aria-label="Picture 1: Your documents become a quiz" aria-current="true"></button>
+<button type="button" class="slide-dot" data-slide-dot="1" aria-label="Picture 2: Check 1: did it find the right page?"></button>
+<button type="button" class="slide-dot" data-slide-dot="2" aria-label="Picture 3: Check 2: was the answer right?"></button>
+<button type="button" class="slide-dot" data-slide-dot="3" aria-label="Picture 4: Two checks, four verdicts"></button>
+<button type="button" class="slide-dot" data-slide-dot="4" aria-label="Picture 5: Then it gets better on its own"></button>
+<button type="button" class="slide-dot" data-slide-dot="5" aria-label="Picture 6: Only re-test what changed"></button>
+</div>
+<div class="slides-arrows"><button type="button" class="btn btn-arrow" data-slide-prev aria-label="Previous picture">←</button><button type="button" class="btn btn-arrow btn-primary" data-slide-next aria-label="Next picture">→</button></div>
+</div>
+</div>
+</div>
+{% endmacro %}

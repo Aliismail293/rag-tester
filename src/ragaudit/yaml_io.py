@@ -1,6 +1,6 @@
 """Read and write the small YAML files v2 uses (pipeline configs, tuning search spaces).
 
-Uses PyYAML when it's installed (`pip install ragaudit[yaml]`); otherwise
+Uses PyYAML when it's installed (`pip install "ragaudit-cli[yaml]"`); otherwise
 falls back to a built-in parser for the subset these files need, so YAML
 support adds no required dependency:
 

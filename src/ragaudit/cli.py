@@ -17,7 +17,7 @@ from typing import Optional
 
 import typer
 
-from ragaudit import cli_v2
+from ragaudit import cli_easy, cli_v2
 from ragaudit.adapters.base import AdapterLoadError, load_adapter
 from ragaudit.generate.pipeline import (
     DEFAULT_LEXICAL_THRESHOLD,
@@ -33,12 +33,16 @@ from ragaudit.models.scoring import Verdict
 from ragaudit.report.generator import generate_report
 from ragaudit.runner.ablation import run_ablation
 from ragaudit.runner.evaluate import DEFAULT_K, DEFAULT_REGRESSION_SAMPLE
-from ragaudit.runner.executor import run_test_set
+from ragaudit.runner.executor import run_test_set, score_by_id
 from ragaudit.runner.summary import compute_run_summary
 from ragaudit.scoring.correctness import judge_correctness
 from ragaudit.scoring.groundedness import judge_groundedness
+from ragaudit.scoring.retrieval import score_retrieval_by_text
+from ragaudit.scoring.text_match import DEFAULT_MATCH_THRESHOLD, validate_match_by
 from ragaudit.storage import db as db_module
 from ragaudit.storage import repository
+from ragaudit.env import load_dotenv
+from ragaudit.scaffold import DEFAULT_ADAPTER_PATH
 from ragaudit.storage.store import DEFAULT_STORE_PATH
 from ragaudit.tune.loop import DEFAULT_MAX_TRIALS, DEFAULT_OVERFIT_THRESHOLD
 
@@ -81,6 +85,39 @@ def _cli_safe(func):
             _error_exit(f"unexpected error: {exc}")
 
     return wrapper
+
+
+@app.callback()
+def _load_settings() -> None:
+    # RAGAUDIT_* settings can live in ./.env (see `ragaudit init`); exported variables win.
+    load_dotenv()
+
+
+@app.command()
+@_cli_safe
+def init(
+    framework: str = typer.Option(
+        "plain", "--framework",
+        help="Adapter template: plain, langchain, llamaindex, or demo (a ready-to-run toy pipeline, no edits needed).",
+    ),
+    out: Path = typer.Option(DEFAULT_ADAPTER_PATH, "--out", help="Where to write the adapter template."),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing files."),
+    docs: Path = typer.Option(
+        cli_easy.DEFAULT_DEMO_DOCS, "--docs", help="demo only: the docs folder the demo pipeline searches."
+    ),
+) -> None:
+    """Write a starter adapter (one TODO: plug in your pipeline) and a .env.example. --framework demo needs no edits."""
+    cli_easy.run_init(framework, out, force, docs)
+
+
+@app.command()
+@_cli_safe
+def doctor(
+    adapter: Path = typer.Option(DEFAULT_ADAPTER_PATH, "--adapter", help="Adapter file to check."),
+    llm: Optional[str] = LLM_OPTION,
+) -> None:
+    """Check your setup: Python, RAGAUDIT_* settings, one LLM call, and the adapter. Prints a fix for each failure."""
+    cli_easy.run_doctor(adapter, llm)
 
 
 @app.command()
@@ -194,6 +231,17 @@ def generate(
     )
 
 
+MATCH_BY_OPTION = typer.Option(
+    "id",
+    "--match-by",
+    help="How a retrieval hit is decided: id (the adapter returns ragaudit's chunk ids; default) or text "
+    "(a returned context overlaps the gold chunk's text; works without re-indexing your pipeline).",
+)
+MATCH_THRESHOLD_OPTION = typer.Option(
+    DEFAULT_MATCH_THRESHOLD, "--match-threshold", help="--match-by text: minimum overlap (0-1) to count as a hit."
+)
+
+
 @app.command()
 @_cli_safe
 def evaluate(
@@ -215,6 +263,8 @@ def evaluate(
     store: Path = STORE_OPTION,
     llm: Optional[str] = LLM_OPTION,
     judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Correctness judge model."),
+    match_by: str = MATCH_BY_OPTION,
+    match_threshold: float = MATCH_THRESHOLD_OPTION,
 ) -> None:
     """v2: evaluate a pipeline on generated questions, with caching and regression sampling."""
     cli_v2.run_evaluate(
@@ -230,6 +280,8 @@ def evaluate(
         judge_model=judge_model,
         ablation=ablation,
         full=full,
+        match_by=match_by,
+        match_threshold=match_threshold,
     )
 
 
@@ -274,6 +326,90 @@ def tune(
     )
 
 
+def _text_retrieval_scorer(chunk_texts: dict[str, str], threshold: float):
+    def scorer(test_case, response):
+        gold_text = chunk_texts.get(test_case.source_chunk_id)
+        if gold_text is None:
+            raise ValueError(f"chunk {test_case.source_chunk_id} is not in the database; re-run `ragaudit ingest`.")
+        return score_retrieval_by_text(
+            test_case.source_chunk_id, gold_text, response.retrieved_chunk_ids, response.contexts, threshold
+        )
+
+    return scorer
+
+
+def _execute_run(
+    conn,
+    test_set,
+    adapter_path: Path,
+    client,
+    *,
+    run_ablation_flag: bool,
+    match_by: str,
+    match_threshold: float,
+) -> Run:
+    """Run, score, ablate and save one Run. Shared by `run` and `check`."""
+    loaded_adapter = load_adapter(str(adapter_path))
+
+    def correctness_judge(question: str, expected_answer: str, candidate_answer: str):
+        return judge_correctness(client, question, expected_answer, candidate_answer)
+
+    def groundedness_judge(answer: str, contexts: list[str]):
+        return judge_groundedness(client, answer, contexts)
+
+    if match_by == "text":
+        chunk_texts = {chunk.chunk_id: chunk.text for chunk in repository.load_chunks(conn)}
+        retrieval_scorer = _text_retrieval_scorer(chunk_texts, match_threshold)
+        typer.echo(f"Matching retrieval by text (threshold {match_threshold:g}), using the contexts the adapter returns.")
+    else:
+        retrieval_scorer = score_by_id
+
+    typer.echo(f"Running {len(test_set.test_cases)} test case(s) through adapter {adapter_path}...")
+    scored_cases = run_test_set(test_set, loaded_adapter, correctness_judge, groundedness_judge, retrieval_scorer)
+
+    if match_by == "text" and scored_cases and not any(case.response.contexts for case in scored_cases):
+        typer.secho(
+            "Warning: --match-by text needs the retrieved passages, but the adapter returned no `contexts` for any "
+            "question, so every case counts as a retrieval miss. Return the retrieved texts in RAGResponse.contexts.",
+            fg=typer.colors.YELLOW,
+        )
+
+    if run_ablation_flag:
+        lucky_pass_count = sum(1 for case in scored_cases if case.verdict == Verdict.LUCKY_PASS)
+        if lucky_pass_count:
+            typer.echo(f"Ablation: enabled — running against {lucky_pass_count} lucky-pass candidate(s)...")
+
+            def no_context_query(question: str) -> str:
+                return client.complete(NO_CONTEXT_SYSTEM_PROMPT, question)
+
+            def check_correctness(question: str, expected_answer: str, candidate_answer: str) -> bool:
+                return judge_correctness(client, question, expected_answer, candidate_answer).is_correct
+
+            scored_cases = run_ablation(scored_cases, test_set.test_cases, no_context_query, check_correctness)
+        else:
+            typer.echo("Ablation: enabled, but no lucky-pass candidates were found — nothing to ablate.")
+    else:
+        typer.echo("Ablation: disabled (--no-ablation).")
+
+    summary = compute_run_summary(scored_cases)
+    run = Run(
+        config=RunConfig(
+            run_id=str(uuid.uuid4()),
+            testset_id=test_set.testset_id,
+            adapter_path=str(adapter_path),
+            correctness_judge_model=client.model,
+            groundedness_judge_model=client.model,
+            run_ablation=run_ablation_flag,
+            started_at=datetime.now(timezone.utc),
+        ),
+        finished_at=datetime.now(timezone.utc),
+        scored_cases=scored_cases,
+        summary=summary,
+    )
+    repository.save_run(conn, run)
+    return run
+
+
 @app.command(name="run")
 @_cli_safe
 def run_cmd(
@@ -283,8 +419,14 @@ def run_cmd(
         None, "--testset-id", help="Test set id to run (defaults to the most recently generated)."
     ),
     no_ablation: bool = typer.Option(False, "--no-ablation", help="Skip the retrieval-disabled ablation step."),
+    match_by: str = MATCH_BY_OPTION,
+    match_threshold: float = MATCH_THRESHOLD_OPTION,
 ) -> None:
     """Run the adapter over a test set, score it, ablate lucky passes, and persist the Run."""
+    try:
+        validate_match_by(match_by)
+    except ValueError as exc:
+        _error_exit(str(exc))
     if not db.exists():
         _error_exit(f"database not found at {db} — run `ragaudit ingest` and `ragaudit generate` first.")
 
@@ -299,62 +441,52 @@ def run_cmd(
             _error_exit(f"test set '{resolved_testset_id}' not found.")
 
         try:
-            loaded_adapter = load_adapter(str(adapter))
+            load_adapter(str(adapter))
         except AdapterLoadError as exc:
             _error_exit(str(exc))
 
-        client = LLMClient()
-
-        def correctness_judge(question: str, expected_answer: str, candidate_answer: str):
-            return judge_correctness(client, question, expected_answer, candidate_answer)
-
-        def groundedness_judge(answer: str, contexts: list[str]):
-            return judge_groundedness(client, answer, contexts)
-
-        typer.echo(f"Running {len(test_set.test_cases)} test case(s) through adapter {adapter}...")
-        scored_cases = run_test_set(test_set, loaded_adapter, correctness_judge, groundedness_judge)
-
-        run_ablation_flag = not no_ablation
-        if run_ablation_flag:
-            lucky_pass_count = sum(1 for case in scored_cases if case.verdict == Verdict.LUCKY_PASS)
-            if lucky_pass_count:
-                typer.echo(f"Ablation: enabled — running against {lucky_pass_count} lucky-pass candidate(s)...")
-
-                def no_context_query(question: str) -> str:
-                    return client.complete(NO_CONTEXT_SYSTEM_PROMPT, question)
-
-                def check_correctness(question: str, expected_answer: str, candidate_answer: str) -> bool:
-                    return judge_correctness(client, question, expected_answer, candidate_answer).is_correct
-
-                scored_cases = run_ablation(scored_cases, test_set.test_cases, no_context_query, check_correctness)
-            else:
-                typer.echo("Ablation: enabled, but no lucky-pass candidates were found — nothing to ablate.")
-        else:
-            typer.echo("Ablation: disabled (--no-ablation).")
-
-        summary = compute_run_summary(scored_cases)
-        run_id = str(uuid.uuid4())
-        run = Run(
-            config=RunConfig(
-                run_id=run_id,
-                testset_id=test_set.testset_id,
-                adapter_path=str(adapter),
-                correctness_judge_model=client.model,
-                groundedness_judge_model=client.model,
-                run_ablation=run_ablation_flag,
-                started_at=datetime.now(timezone.utc),
-            ),
-            finished_at=datetime.now(timezone.utc),
-            scored_cases=scored_cases,
-            summary=summary,
+        run = _execute_run(
+            conn,
+            test_set,
+            adapter,
+            LLMClient(),
+            run_ablation_flag=not no_ablation,
+            match_by=match_by,
+            match_threshold=match_threshold,
         )
-        repository.save_run(conn, run)
     finally:
         conn.close()
 
     typer.echo(
-        f"Run '{run_id}' complete: {summary.total_cases} case(s), "
-        f"lucky-pass rate {summary.lucky_pass_rate:.1%}. Saved to {db}"
+        f"Run '{run.config.run_id}' complete: {run.summary.total_cases} case(s), "
+        f"lucky-pass rate {run.summary.lucky_pass_rate:.1%}. Saved to {db}"
+    )
+
+
+@app.command()
+@_cli_safe
+def check(
+    docs: Path = typer.Option(..., "--docs", help="Folder of .txt/.md documents your pipeline answers from."),
+    adapter: Path = typer.Option(DEFAULT_ADAPTER_PATH, "--adapter", help="Adapter file (see `ragaudit init`)."),
+    questions: int = typer.Option(
+        cli_easy.DEFAULT_CHECK_QUESTIONS, "--questions", help="How many test questions to write in total."
+    ),
+    match_by: str = typer.Option(
+        "text", "--match-by", help="text (default: compare returned contexts with the source passage) or id."
+    ),
+    match_threshold: float = MATCH_THRESHOLD_OPTION,
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
+    no_open: bool = typer.Option(False, "--no-open", help="Don't open the report in the browser."),
+    max_llm_calls: Optional[int] = typer.Option(
+        None, "--max-llm-calls", help="Hard cap on LLM calls (default: the estimate's upper bound)."
+    ),
+    db: Path = typer.Option(cli_easy.DEFAULT_CHECK_DB, "--db", help="Working database, recreated on every check."),
+    out: Path = typer.Option(cli_easy.DEFAULT_CHECK_REPORT, "--out", help="Where to write the HTML report."),
+    llm: Optional[str] = LLM_OPTION,
+) -> None:
+    """Test your RAG end to end: write questions from your docs, run your adapter, score it, open the report."""
+    cli_easy.run_check(
+        docs, adapter, questions, match_by, match_threshold, yes, no_open, max_llm_calls, db, out, llm
     )
 
 

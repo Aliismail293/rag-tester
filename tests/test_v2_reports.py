@@ -145,9 +145,44 @@ def test_report_kind_by_id_and_errors(demo_store, tmp_path):
     assert not (tmp_path / "absent.db").exists()
 
 
-def test_v1_report_command_output_is_unchanged(tmp_path):
+class _StubClient:
+    def __init__(self, *args, **kwargs):
+        self.model = "stub-model"
+
+    def complete(self, system: str, user: str) -> str:
+        if "generating a test set" in system:
+            return '{"questions": [{"question": "What is in this document?", "answer": "some fact"}]}'
+        if "judging whether a candidate answer" in system:
+            return '{"is_correct": true, "score": 1.0, "rationale": "matches"}'
+        return '{"is_grounded": false, "score": 0.0, "rationale": "no context"}'
+
+
+@pytest.fixture(scope="module")
+def v1_db(tmp_path_factory):
+    """A v1 database with one run (built offline; demo/output is not in git)."""
+    tmp = tmp_path_factory.mktemp("v1")
+    docs = tmp / "docs"
+    docs.mkdir()
+    (docs / "a.txt").write_text("This document contains some fact about widgets.")
+    (docs / "b.txt").write_text("Gadgets are blue and are made in a small town by the sea.")
+    adapter = tmp / "adapter.py"
+    adapter.write_text(
+        "from ragaudit.models.adapter import RAGResponse\n"
+        "def query(q):\n    return RAGResponse(answer='some fact', retrieved_chunk_ids=['nope'], contexts=[])\n"
+    )
+    db = tmp / "ragaudit.db"
+    runner = CliRunner()
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr("ragaudit.cli.LLMClient", _StubClient)
+        for args in (["ingest", str(docs)], ["generate"], ["run", "--adapter", str(adapter)]):
+            result = runner.invoke(app, [*args, "--db", str(db)])
+            assert result.exit_code == 0, result.output
+    return db
+
+
+def test_v1_report_command_output_is_unchanged(tmp_path, v1_db):
     """The default `report` path renders exactly what the v1 generator renders."""
-    db = ROOT / "demo" / "output" / "ragaudit.db"
+    db = v1_db
     conn = db_module.get_connection(db)
     try:
         run = repository.load_run(conn, repository.get_latest_run_id(conn))
@@ -179,3 +214,33 @@ def test_v2_demo_script_runs_end_to_end_offline(tmp_path):
     assert "mode regression" in result.stdout and "mode cached" in result.stdout
     for name in ("generate-report.html", "tune-report.html", "best_config.yaml"):
         assert (tmp_path / "out" / name).is_file()
+
+
+def test_run_report_opens_with_the_plain_english_summary(tmp_path, v1_db):
+    db = v1_db
+    result = CliRunner().invoke(app, ["report", "--db", str(db), "--out", str(tmp_path / "r.html")])
+    assert result.exit_code == 0, result.output
+    page = (tmp_path / "r.html").read_text()
+    box = page.index('class="summary-box summary-needs_work"')
+    assert box < page.index('class="headline"')
+    text = visible_text(page[box:page.index("</section>", box)])
+    for label in ("Verdict: NEEDS WORK", "Retrieval hit rate: 0%", "Answer correctness: 100%", "Lucky passes: 2", "Most useful fix:"):
+        assert label in text
+
+
+def test_docs_sample_reports_show_the_summary_box():
+    for name in ("healthy", "degraded", "lucky"):
+        page = (ROOT / "docs" / f"sample-report-{name}.html").read_text()
+        assert "In plain English" in page and "Most useful fix:" in page
+
+
+def test_run_report_case_table_stacks_on_phones(tmp_path, v1_db):
+    """At phone width each case becomes a card, so the page never scrolls sideways."""
+    CliRunner().invoke(app, ["report", "--db", str(v1_db), "--out", str(tmp_path / "r.html")])
+    page = (tmp_path / "r.html").read_text()
+    phone_css = page[page.index("@media (max-width: 600px)"):]
+    assert "table#case-table thead" in phone_css and "display: block" in phone_css
+    assert 'class="case-rank" data-label="Retrieval rank"' in page
+    assert "overflow-wrap: anywhere" in page
+    for name in ("healthy", "degraded", "lucky"):  # the published samples carry the same CSS
+        assert 'class="case-question"' in (ROOT / "docs" / f"sample-report-{name}.html").read_text()

@@ -82,6 +82,45 @@ section h2 {
   font-size: 1.15rem;
 }
 
+.report-header .meta code {
+  overflow-wrap: anywhere;
+}
+
+.summary-box {
+  border-left: 4px solid var(--accent);
+}
+
+.summary-box.summary-healthy {
+  border-left-color: var(--true-pass);
+}
+
+.summary-box.summary-needs_work {
+  border-left-color: var(--lucky-pass);
+}
+
+.summary-box.summary-empty {
+  border-left-color: var(--retrieval-failure);
+}
+
+.summary-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summary-lines li {
+  padding: 0.35rem 0;
+  line-height: 1.5;
+}
+
+.summary-lines li:first-child {
+  font-size: 1.1rem;
+}
+
+.summary-lines strong {
+  color: var(--text);
+}
+
 .headline-sentence {
   font-size: 1.15rem;
   line-height: 1.6;
@@ -218,6 +257,54 @@ table#case-table th[data-sort]::after {
   font-size: 0.75rem;
 }
 
+table#case-table td {
+  overflow-wrap: anywhere;
+}
+
+/* Phones: one card per case instead of four columns, so the page never scrolls sideways. */
+@media (max-width: 600px) {
+  table#case-table,
+  table#case-table tbody,
+  table#case-table tr,
+  table#case-table td {
+    display: block;
+    width: auto;
+  }
+
+  table#case-table thead {
+    display: none;
+  }
+
+  table#case-table tr.case-row {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table#case-table td {
+    border-bottom: 0;
+    padding: 0.2rem 0;
+  }
+
+  table#case-table td.case-question {
+    font-weight: 600;
+  }
+
+  table#case-table td.case-verdict,
+  table#case-table td.case-rank {
+    display: inline-block;
+    margin-right: 0.75rem;
+  }
+
+  table#case-table td.case-rank {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  table#case-table td.case-rank::before {
+    content: attr(data-label) ": ";
+  }
+}
+
 .badge {
   display: inline-block;
   padding: 0.15rem 0.6rem;
@@ -271,8 +358,747 @@ details ol {
   padding-left: 1.2rem;
 }
 
+/* The contexts list itself is markup: only each passage keeps its line breaks. */
+details dd.contexts {
+  white-space: normal;
+}
+
+details dd.contexts li {
+  white-space: pre-wrap;
+}
+
 a {
   color: var(--accent);
+}
+
+/* --- Code blocks (shared) --- */
+
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+code {
+  font-size: 0.9em;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 0;
+  overflow-x: auto;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+pre code {
+  font-size: inherit;
+}
+
+/* --- Landing page (docs/index.html) ---
+   Everything below is scoped under html.ln / body.ln-page so the report
+   styles above are untouched. The page uses full-width bands with the
+   text held in an 1100px column. */
+
+:root {
+  --accent-hover: #78afff;
+  --accent-ink: #061021;
+  --nav-h: 60px;
+}
+
+html.ln {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--nav-h) + 16px);
+}
+
+body.ln-page {
+  line-height: 1.6;
+}
+
+.ln-col {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Nav */
+
+.ln-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-h);
+  z-index: 10;
+  background: rgba(15, 17, 21, 0.78);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.ln-nav .ln-col {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ln-brand {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ln-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ln-nav-links a {
+  display: inline-block;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  transition: color 150ms, background-color 150ms;
+}
+
+.ln-nav-links a:hover {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+.ln-nav-links a.ln-nav-gh {
+  color: var(--text);
+  border: 1px solid var(--border);
+  margin-left: 0.5rem;
+}
+
+.ln-nav-links a.ln-nav-gh:hover {
+  border-color: var(--accent);
+}
+
+/* Focus, shared by every interactive element on the page */
+
+.ln-page a:focus-visible,
+.ln-page button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Bands */
+
+.ln-band {
+  padding: 6rem 0;
+}
+
+.ln-band--alt {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.ln-band--alt pre {
+  background: var(--surface-raised);
+}
+
+.ln-band h2 {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.75rem;
+}
+
+.ln-band .ln-lead {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  max-width: 64ch;
+  margin: 0 0 2.5rem;
+}
+
+.ln-band p {
+  max-width: 68ch;
+  margin: 0 0 1rem;
+}
+
+/* Hero */
+
+.ln-hero {
+  min-height: 100vh;
+  padding-top: calc(var(--nav-h) + 3rem);
+  padding-bottom: 4rem;
+  display: flex;
+  align-items: center;
+}
+
+.ln-hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 4.5rem;
+  align-items: center;
+  width: 100%;
+}
+
+.ln-hero h1 {
+  font-size: 3.5rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0 0 1.25rem;
+}
+
+.ln-hero .ln-desc {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  max-width: 34rem;
+  margin: 0 0 2.5rem;
+}
+
+.ln-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+  margin: 0 0 1rem;
+}
+
+.ln-stat .value {
+  display: block;
+  font-size: 3.75rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.ln-stat .label {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+}
+
+.ln-stat--lucky .value {
+  color: var(--lucky-pass);
+}
+
+.ln-stats-note {
+  color: var(--text-muted);
+  max-width: 34rem;
+  margin: 0 0 2.5rem;
+}
+
+.ln-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+
+.ln-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.7rem 1.25rem;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 150ms, border-color 150ms, color 150ms;
+}
+
+.ln-btn--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.ln-btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.ln-btn--secondary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.ln-btn--secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Interactive 2x2 */
+
+.ln-matrix {
+  display: grid;
+  grid-template-columns: 5.5rem repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.ln-matrix .axis {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+}
+
+.ln-matrix .axis--col {
+  padding-left: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.ln-cell {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.1rem;
+  cursor: pointer;
+  transition: border-color 150ms, background-color 150ms;
+}
+
+.ln-cell .verdict {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+  transition: color 150ms;
+}
+
+.ln-cell .explain {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.ln-cell:hover {
+  border-color: var(--text-muted);
+}
+
+.ln-cell[aria-pressed="true"] {
+  border-color: var(--cell-border);
+  background: var(--cell-bg);
+}
+
+.ln-cell[aria-pressed="true"] .verdict {
+  color: var(--cell);
+}
+
+.ln-cell[aria-pressed="true"] .explain {
+  color: var(--text);
+}
+
+.ln-cell--true  { --cell: var(--true-pass); --cell-border: var(--true-pass); --cell-bg: var(--true-pass-bg); }
+.ln-cell--lucky { --cell: var(--lucky-pass); --cell-border: var(--lucky-pass); --cell-bg: var(--lucky-pass-bg); }
+.ln-cell--gen   { --cell: var(--generation-failure); --cell-border: var(--generation-failure); --cell-bg: var(--generation-failure-bg); }
+.ln-cell--ret   { --cell: var(--retrieval-failure); --cell-border: var(--retrieval-failure); --cell-bg: var(--retrieval-failure-bg); }
+
+/* Lucky is always the dominant cell, selected or not. */
+.ln-cell--lucky {
+  border-color: var(--lucky-pass);
+  padding: 1.5rem 1.25rem;
+}
+
+.ln-cell--lucky .verdict {
+  font-size: 1.25rem;
+  color: var(--lucky-pass);
+}
+
+.ln-cell--lucky[aria-pressed="true"] {
+  border-width: 2px;
+  padding: calc(1.5rem - 1px) calc(1.25rem - 1px);
+}
+
+.ln-cell-detail {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 1.25rem 1.5rem;
+  min-height: 9.5rem;
+}
+
+.ln-cell-detail .ln-detail-title {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.ln-cell-detail p {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  max-width: none;
+}
+
+.ln-cell-detail p:last-child {
+  margin-bottom: 0;
+}
+
+.ln-cell-detail [data-detail] {
+  display: none;
+}
+
+.ln-cell-detail [data-detail].is-active {
+  display: block;
+}
+
+/* How it works */
+
+.ln-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+  counter-reset: step;
+}
+
+.ln-step {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  padding: 1.25rem 1.25rem 1.4rem;
+}
+
+.ln-step .k {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.ln-step strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.ln-step p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+/* Report viewer */
+
+.ln-viewer-desc {
+  min-height: 1.6em;
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+}
+
+.ln-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  flex-wrap: wrap;
+}
+
+.ln-tab {
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background-color 150ms;
+}
+
+.ln-tab:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.ln-tab[aria-selected="true"] {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.ln-frame {
+  display: block;
+  width: 100%;
+  height: 700px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.ln-viewer-foot {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Install: code blocks with copy buttons */
+
+.ln-code {
+  position: relative;
+  margin: 0 0 1.5rem;
+}
+
+.ln-code pre {
+  padding-right: 5.5rem;
+}
+
+.ln-copy {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background-color 150ms;
+}
+
+.ln-copy:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.ln-copy.is-done {
+  color: var(--true-pass);
+  border-color: var(--true-pass);
+}
+
+/* 5-minute quickstart */
+
+.ln-quick-demo {
+  margin: 1.5rem 0 0;
+  max-width: 820px;
+  min-width: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.ln-quick-demo > p:first-child {
+  margin: 0 0 0.75rem;
+}
+
+.ln-quick-demo .ln-code {
+  margin-bottom: 0.6rem;
+}
+
+.ln-quick {
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: quick;
+  max-width: 820px;
+}
+
+.ln-quick > li {
+  counter-increment: quick;
+  position: relative;
+  padding: 0 0 1.5rem 3rem;
+}
+
+.ln-quick > li::before {
+  content: counter(quick);
+  position: absolute;
+  left: 0;
+  top: -0.1rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ln-quick > li > strong {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 1.05rem;
+}
+
+.ln-quick .ln-code {
+  margin-bottom: 0.6rem;
+}
+
+.ln-quick-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.ln-quick-note code {
+  overflow-wrap: anywhere;
+}
+
+.ln-quick-h {
+  margin: 1.5rem 0 1rem;
+}
+
+.ln-table-wrap {
+  overflow-x: auto;
+}
+
+/* Let code blocks scroll inside their column instead of widening the page. */
+.ln-install-grid > *,
+.ln-quick > li {
+  min-width: 0;
+}
+
+.ln-verdicts {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.ln-verdicts th,
+.ln-verdicts td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ln-verdicts th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.ln-tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ln-install-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.ln-aside {
+  border-left: 2px solid var(--border);
+  padding-left: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.ln-aside p {
+  max-width: none;
+}
+
+/* Footer */
+
+.ln-footer {
+  border-top: 1px solid var(--border);
+  padding: 2.5rem 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.ln-footer .ln-col {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Responsive */
+
+@media (max-width: 960px) {
+  .ln-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .ln-hero {
+    min-height: 0;
+  }
+
+  .ln-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ln-install-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ln-aside {
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .ln-col {
+    padding: 0 1.25rem;
+  }
+
+  .ln-nav-links a:not(.ln-nav-gh) {
+    display: none;
+  }
+
+  .ln-band {
+    padding: 4rem 0;
+  }
+
+  .ln-hero h1 {
+    font-size: 2.5rem;
+  }
+
+  .ln-stats {
+    gap: 1.25rem;
+  }
+
+  .ln-stat .value {
+    font-size: 2.75rem;
+  }
+
+  .ln-matrix {
+    grid-template-columns: 1fr;
+  }
+
+  .ln-matrix .axis--col {
+    display: none;
+  }
+
+  .ln-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .ln-frame {
+    height: 480px;
+  }
 }
 
 </style>
@@ -289,6 +1115,23 @@ a {
       started 2026-09-17 21:03:33.402052+00:00
     </div>
   </header>
+
+  <section class="summary-box summary-healthy" aria-label="Summary">
+    <h2>In plain English</h2>
+    <ul class="summary-lines">
+      
+      <li><strong>Verdict:</strong> HEALTHY. 18 of 18 answers were correct and came from the right passage.</li>
+      
+      <li><strong>Retrieval hit rate:</strong> 100% (18 of 18 found the passage the question came from, matched by id)</li>
+      
+      <li><strong>Answer correctness:</strong> 100% (18 of 18 judged correct)</li>
+      
+      <li><strong>Lucky passes:</strong> 0 (correct answer, but the right passage was not retrieved)</li>
+      
+      <li><strong>Most useful fix:</strong> nothing stands out. Keep this check in CI to catch regressions.</li>
+      
+    </ul>
+  </section>
 
   <section class="headline">
     <h2>The headline finding</h2>
@@ -384,10 +1227,10 @@ a {
       <tbody>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>What is the uptime guarantee provided by the Enterprise SLA Addendum?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">What is the uptime guarantee provided by the Enterprise SLA Addendum?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -396,7 +1239,7 @@ a {
                 <dt>Model answer</dt>
                 <dd>The uptime guarantee provided by the Enterprise SLA Addendum is 99.9% measured monthly.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -423,10 +1266,10 @@ renewed annually rather than automatically.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>How many automated test cases does the hardware regression suite run?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">How many automated test cases does the hardware regression suite run?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -435,7 +1278,7 @@ renewed annually rather than automatically.
                 <dt>Model answer</dt>
                 <dd>The hardware regression suite runs 212 automated test cases.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -462,10 +1305,10 @@ tests as &#34;known flaky&#34; and skip them. The suite was last rewritten in
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>Who is the first point of contact for suspected security incidents at Thistlewick Robotics?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">Who is the first point of contact for suspected security incidents at Thistlewick Robotics?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -474,7 +1317,7 @@ tests as &#34;known flaky&#34; and skip them. The suite was last rewritten in
                 <dt>Model answer</dt>
                 <dd>The first point of contact for suspected security incidents at Thistlewick Robotics is the on-call security lead.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -502,10 +1345,10 @@ created in 2021.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>What is the name of the travel booking tool at Thistlewick Robotics?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">What is the name of the travel booking tool at Thistlewick Robotics?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -514,7 +1357,7 @@ created in 2021.
                 <dt>Model answer</dt>
                 <dd>The name of the travel booking tool at Thistlewick Robotics is Farroute.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -542,10 +1385,10 @@ it ships company-wide.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>When was the Emberloop EL-6 discontinued?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">When was the Emberloop EL-6 discontinued?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -554,7 +1397,7 @@ it ships company-wide.
                 <dt>Model answer</dt>
                 <dd>The Emberloop EL-6 was discontinued in March 2023.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -582,10 +1425,10 @@ credit.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>How many concurrent calibration channels can the EL-7 support per rig?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">How many concurrent calibration channels can the EL-7 support per rig?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -594,7 +1437,7 @@ credit.
                 <dt>Model answer</dt>
                 <dd>The EL-7 can support a maximum of 14 concurrent calibration channels per rig.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -622,10 +1465,10 @@ warranty is unaffected.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>How long does Thistlewick Robotics retain customer telemetry data from Emberloop units if no add-on is chosen?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">How long does Thistlewick Robotics retain customer telemetry data from Emberloop units if no add-on is chosen?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -634,7 +1477,7 @@ warranty is unaffected.
                 <dt>Model answer</dt>
                 <dd>Thistlewick Robotics retains customer telemetry data from Emberloop units for 18 months if no add-on is chosen.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -662,10 +1505,10 @@ that has been held by the same person since the policy was written in
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>Who is the founder and CEO of Thistlewick Robotics?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">Who is the founder and CEO of Thistlewick Robotics?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -674,7 +1517,7 @@ that has been held by the same person since the policy was written in
                 <dt>Model answer</dt>
                 <dd>The founder and CEO of Thistlewick Robotics is Mira Oyelaran.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -701,10 +1544,10 @@ founding round.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>What is the response time guarantee for Anchorline support?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">What is the response time guarantee for Anchorline support?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -713,7 +1556,7 @@ founding round.
                 <dt>Model answer</dt>
                 <dd>The response time guarantee for Anchorline support is 8 hours during business hours.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -740,10 +1583,10 @@ routed to the general support queue instead.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>What is the cap for meals during business travel?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">What is the cap for meals during business travel?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -752,7 +1595,7 @@ routed to the general support queue instead.
                 <dt>Model answer</dt>
                 <dd>The cap for meals during business travel is 45 dollars per day.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -779,10 +1622,10 @@ company&#39;s founding.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>What is the first response time required for an Inferno-tier incident?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">What is the first response time required for an Inferno-tier incident?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -791,7 +1634,7 @@ company&#39;s founding.
                 <dt>Model answer</dt>
                 <dd>The first response time required for an Inferno-tier incident is within 12 minutes of being declared.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -819,10 +1662,10 @@ the Cinder Response Unit lead before it is closed.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>Which sales territory has a dedicated field sales team?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">Which sales territory has a dedicated field sales team?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -831,7 +1674,7 @@ the Cinder Response Unit lead before it is closed.
                 <dt>Model answer</dt>
                 <dd>Callendra Metro has a dedicated field sales team.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -859,10 +1702,10 @@ billing address on file.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>What is the internal booking tool that must be used for business travel at Thistlewick Robotics?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">What is the internal booking tool that must be used for business travel at Thistlewick Robotics?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -871,7 +1714,7 @@ billing address on file.
                 <dt>Model answer</dt>
                 <dd>The internal booking tool that must be used for business travel at Thistlewick Robotics is Farroute.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -898,10 +1741,10 @@ manager beyond the standard Farroute booking approval.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>What is the maximum continuous torque of the Emberloop EL-7?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">What is the maximum continuous torque of the Emberloop EL-7?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -910,7 +1753,7 @@ manager beyond the standard Farroute booking approval.
                 <dt>Model answer</dt>
                 <dd>The maximum continuous torque of the Emberloop EL-7 is 38 newton-meters.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -937,10 +1780,10 @@ warranty offered on the EL-6.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>How often does Thistlewick Robotics ship firmware updates?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">How often does Thistlewick Robotics ship firmware updates?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -949,7 +1792,7 @@ warranty offered on the EL-6.
                 <dt>Model answer</dt>
                 <dd>Thistlewick Robotics ships firmware updates every 6 weeks.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -976,10 +1819,10 @@ one week rather than shipping partial fixes.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>What happens to an employee&#39;s IT access after they leave Thistlewick Robotics?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">What happens to an employee&#39;s IT access after they leave Thistlewick Robotics?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -988,7 +1831,7 @@ one week rather than shipping partial fixes.
                 <dt>Model answer</dt>
                 <dd>An employee&#39;s IT access is revoked within 4 hours of their last day being confirmed.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -1016,10 +1859,10 @@ standard at all.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>How long does the Kindlepath Program last?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">How long does the Kindlepath Program last?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -1028,7 +1871,7 @@ standard at all.
                 <dt>Model answer</dt>
                 <dd>The Kindlepath Program lasts for 21 business days.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     
@@ -1056,10 +1899,10 @@ unstructured onboarding process that had no fixed length.
         </tr>
         
         <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td>What are the two levels of certification in the Ironclasp Certification Program?</td>
-          <td><span class="badge badge-true_pass">True pass</span></td>
-          <td>0</td>
-          <td>
+          <td class="case-question">What are the two levels of certification in the Ironclasp Certification Program?</td>
+          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
+          <td class="case-rank" data-label="Retrieval rank">0</td>
+          <td class="case-details">
             <details>
               <summary>Show</summary>
               <dl>
@@ -1068,7 +1911,7 @@ unstructured onboarding process that had no fixed length.
                 <dt>Model answer</dt>
                 <dd>The two levels of certification in the Ironclasp Certification Program are Ironclasp Associate and Ironclasp Master.</dd>
                 <dt>Retrieved contexts</dt>
-                <dd>
+                <dd class="contexts">
                   
                   <ol>
                     

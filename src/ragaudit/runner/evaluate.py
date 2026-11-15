@@ -36,6 +36,7 @@ from ragaudit.models.adapter import Adapter, RAGResponse
 from ragaudit.models.evaluation import EvalSummary, FailureClass, QuestionResult
 from ragaudit.models.question import Question, Split, utc_now
 from ragaudit.models.scoring import AblationResult, CorrectnessResult, Verdict
+from ragaudit.scoring.text_match import DEFAULT_MATCH_THRESHOLD, first_matching_context
 from ragaudit.scoring.verdict import compute_verdict
 from ragaudit.storage.store import Store
 
@@ -66,8 +67,14 @@ def file_sha256(path: str | Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def compute_config_hash(config: dict, adapter_sha256: str, judge_model: str, k: int) -> str:
-    """Identity of everything that can change a result: pipeline config, adapter code, judge model, k."""
+def compute_config_hash(
+    config: dict, adapter_sha256: str, judge_model: str, k: int, match_threshold: float | None = None
+) -> str:
+    """Identity of everything that can change a result: pipeline config, adapter code, judge model, k.
+
+    match_threshold is set only for --match-by text, so id-mode hashes (and
+    their cached results) are the same as before text matching existed.
+    """
     payload = {
         "config": config,
         "adapter_sha256": adapter_sha256,
@@ -75,6 +82,8 @@ def compute_config_hash(config: dict, adapter_sha256: str, judge_model: str, k: 
         "k": k,
         "scoring_version": SCORING_VERSION,
     }
+    if match_threshold is not None:
+        payload["match"] = {"by": "text", "threshold": match_threshold}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode("utf-8")).hexdigest()
 
 
@@ -89,14 +98,37 @@ def score_retrieval_at_k(gold_chunk_ids: list[str], retrieved_chunk_ids: list[st
     return recall, reciprocal_rank, bool(gold) and found == gold
 
 
+def score_retrieval_by_text_at_k(
+    gold_texts: list[str], contexts: list[str], k: int, threshold: float = DEFAULT_MATCH_THRESHOLD
+) -> tuple[float, float, bool]:
+    """Like score_retrieval_at_k, but a gold chunk counts as retrieved when one of the first k contexts overlaps its text."""
+    top_k = contexts[:k]
+    ranks = [first_matching_context(text, top_k, threshold)[0] for text in gold_texts]
+    found = [rank for rank in ranks if rank is not None]
+    recall = len(found) / len(gold_texts) if gold_texts else 0.0
+    reciprocal_rank = 1.0 / (min(found) + 1) if found else 0.0
+    return recall, reciprocal_rank, bool(gold_texts) and len(found) == len(gold_texts)
+
+
 def classify(retrieval_hit: bool, is_correct: bool) -> FailureClass:
     if not retrieval_hit:
         return FailureClass.RETRIEVAL_MISS
     return FailureClass.PASS if is_correct else FailureClass.GENERATION_MISS
 
 
-def evaluate_question(question: Question, adapter: Adapter, judge: CorrectnessJudge, k: int) -> QuestionResult:
-    """Run one question through the adapter and score it. An adapter exception is a scored failure, not a crash."""
+def evaluate_question(
+    question: Question,
+    adapter: Adapter,
+    judge: CorrectnessJudge,
+    k: int,
+    chunk_texts: dict[str, str] | None = None,
+    match_threshold: float = DEFAULT_MATCH_THRESHOLD,
+) -> QuestionResult:
+    """Run one question through the adapter and score it. An adapter exception is a scored failure, not a crash.
+
+    With chunk_texts (chunk_id -> text), retrieval is matched by text against
+    the returned contexts (--match-by text) instead of by chunk id.
+    """
     started = time.perf_counter()
     try:
         response = adapter.query(question.question)
@@ -106,7 +138,14 @@ def evaluate_question(question: Question, adapter: Adapter, judge: CorrectnessJu
         response, error = RAGResponse(answer=""), str(exc)
     latency_ms = response.latency_ms if response.latency_ms is not None else (time.perf_counter() - started) * 1000
 
-    recall, reciprocal_rank, hit = score_retrieval_at_k(question.chunk_ids, response.retrieved_chunk_ids, k)
+    if chunk_texts is None:
+        recall, reciprocal_rank, hit = score_retrieval_at_k(question.chunk_ids, response.retrieved_chunk_ids, k)
+    else:
+        missing = [chunk_id for chunk_id in question.chunk_ids if chunk_id not in chunk_texts]
+        if missing:
+            raise ValueError(f"chunk(s) {missing} are not in the corpus passed with --match-by text")
+        gold_texts = [chunk_texts[chunk_id] for chunk_id in question.chunk_ids]
+        recall, reciprocal_rank, hit = score_retrieval_by_text_at_k(gold_texts, response.contexts, k, match_threshold)
     if error is None:
         correctness = judge(question.question, question.gold_answer, response.answer)
     else:
@@ -233,6 +272,8 @@ def run_evaluation(
     full: bool = False,
     no_context_query: NoContextQuery | None = None,
     on_progress: Callable[[int, int], None] | None = None,
+    chunk_texts: dict[str, str] | None = None,
+    match_threshold: float = DEFAULT_MATCH_THRESHOLD,
 ) -> tuple[EvalSummary, list[QuestionResult]]:
     """Evaluate the selected questions (cached results reused), save the run, return summary and results.
 
@@ -253,7 +294,7 @@ def run_evaluation(
     for index, question in enumerate(selection.questions, start=1):
         result = store.load_result(question.question_id, config_hash, index_version)
         if result is None:
-            result = evaluate_question(question, adapter, judge, k)
+            result = evaluate_question(question, adapter, judge, k, chunk_texts, match_threshold)
             store.save_result(result, config_hash, index_version)
         else:
             n_cached += 1

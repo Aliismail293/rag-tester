@@ -1,5 +1,89 @@
 # ragaudit
 
+## Test your RAG in 5 minutes
+
+You need Python 3.11+, a folder of your documents (`.txt` or `.md`), and an
+LLM for ragaudit to write questions and judge answers: any OpenAI-compatible
+API, or a local [Ollama](https://ollama.com). Your pipeline is not re-indexed.
+
+**0. No pipeline yet? Use `--framework demo` to see a full report in 2 minutes.**
+
+```bash
+pip install ragaudit-cli
+mkdir docs && cp ~/notes/*.md docs/   # any few .txt or .md files
+ragaudit init --framework demo
+ragaudit check --docs ./docs --adapter ragaudit_adapter.py --questions 5
+```
+
+The demo adapter is a small, complete pipeline (paragraphs from `./docs`, top 3
+by word overlap, answered by the same LLM ragaudit uses), so there is nothing to
+edit. Set the three `RAGAUDIT_*` settings from step 2 first, or add `--llm mock`
+to try it offline with a fake LLM. Then follow steps 1 to 5 for your own pipeline.
+
+**1. Install**
+
+```bash
+pip install ragaudit-cli
+```
+
+The package is `ragaudit-cli` on PyPI; the command and the Python import are
+`ragaudit`. (Until the first PyPI release: `pip install git+https://github.com/Aliismail293/rag-tester`.)
+
+**2. Check your setup**
+
+```bash
+export RAGAUDIT_API_BASE=https://api.openai.com/v1  # Ollama: http://localhost:11434/v1
+export RAGAUDIT_API_KEY=sk-...                      # Ollama: ollama
+export RAGAUDIT_MODEL=gpt-4o-mini                   # Ollama: llama3.1:8b
+ragaudit doctor
+```
+
+Each check prints PASS or FAIL with the exact fix. The adapter check fails
+until step 4. Settings can also go in a `.env` file (step 3 writes an example).
+
+**3. Create an adapter**
+
+```bash
+ragaudit init --framework plain   # or langchain, llamaindex
+```
+
+This writes `ragaudit_adapter.py` and `.env.example`.
+
+**4. Fill in the adapter**
+
+Open `ragaudit_adapter.py` and connect your pipeline at the one `TODO`: return
+its answer and the text of the passages it retrieved. Run `ragaudit doctor`
+again until every line says PASS.
+
+**5. Run the check**
+
+```bash
+ragaudit check --docs ./docs --adapter ragaudit_adapter.py
+```
+
+It shows how many LLM calls it will make (about 3 per question, 20 questions
+by default) and asks before starting. Then it writes questions from your docs,
+runs them through your pipeline, opens an HTML report, and prints a summary
+like this:
+
+```
+ragaudit check: summary
+  Verdict: NEEDS WORK. Only 4 of 13 answers were correct and from the right passage; main problem: ...
+  Retrieval hit rate: 31% (4 of 13 found the passage the question came from, matched by text)
+  Answer correctness: 100% (13 of 13 judged correct)
+  Lucky passes: 9 (correct answer, but the right passage was not retrieved); ...
+  Most useful fix: don't trust the correct answers yet. ...
+```
+
+**Reading the four verdicts.** Every question gets one:
+
+| Verdict | Answer | Right passage retrieved? | What it means |
+|---|---|---|---|
+| `TRUE_PASS` | correct | yes | The pipeline worked. This is the number to protect. |
+| `LUCKY_PASS` | correct | no | The model answered from memory; retrieval did nothing. Other evals count this as a pass. |
+| `GENERATION_FAILURE` | wrong | yes | Retrieval worked; the prompt or model didn't use it. |
+| `RETRIEVAL_FAILURE` | wrong | no | Retrieval missed. Raise top-k, add keyword/hybrid search, or change chunking. |
+
 ## Try it in 60 seconds
 
 Requires Docker and an OpenAI-compatible API key.
@@ -95,29 +179,46 @@ regression evaluation, and config tuning with a locked test split; see
    nothing — this empirically confirms the verdict.
 7. Emit a static HTML report.
 
-## Important: chunk IDs must match
+## Matching retrieval: by id or by text
 
-ragaudit's retrieval scoring is set membership: it checks whether the
-`source_chunk_id` it assigned during ingestion appears in the
-`retrieved_chunk_ids` your adapter returns. This only works if **your RAG
-pipeline is indexed against the chunks ragaudit produced**, not chunks it
-made independently with its own boundaries and IDs.
+ragaudit needs to know whether your pipeline retrieved the passage a
+question was written from. `run` and `evaluate` can decide that two ways,
+chosen with `--match-by`:
 
-The supported workflow is:
+**`--match-by id` (the default).** A hit means the `source_chunk_id`
+ragaudit assigned during ingestion appears in the `retrieved_chunk_ids`
+your adapter returns. This only works if your pipeline is indexed against
+the chunks ragaudit produced:
 
 1. Run `ragaudit ingest ./docs` to chunk your corpus and assign IDs.
-2. Index *those chunks* into your own pipeline (vector store, etc.), so
-   your pipeline's retrieved documents carry ragaudit's chunk IDs as
-   metadata.
-3. Your adapter's `query()` returns those same IDs in
-   `retrieved_chunk_ids`.
+2. Index *those chunks* into your own pipeline, so retrieved documents
+   carry ragaudit's chunk IDs as metadata.
+3. Your adapter's `query()` returns those same IDs in `retrieved_chunk_ids`.
 
-If your pipeline chunks the corpus itself and can't surface ragaudit's
-IDs, retrieval hit rate will read as 0% and every correct answer will be
-misreported as `LUCKY_PASS` — not because retrieval failed, but because
-the tool can't recognize IDs it didn't assign. There is no ID-agnostic
-fallback (e.g. text-overlap matching) yet; it may be added later as an
-opt-in `--match-by text` mode for pipelines that can't be re-indexed.
+If your pipeline chunks the corpus itself, id matching reads retrieval as
+0% and misreports every correct answer as `LUCKY_PASS`, because the tool
+can't recognize IDs it didn't assign.
+
+**`--match-by text`.** A hit means one of the `contexts` your adapter
+already returns overlaps the gold chunk's text. Your pipeline can keep its
+own chunking and IDs; nothing is re-indexed. The score is the share of the
+gold chunk's word pairs found in the context, measured against whichever
+side is shorter, so a big chunk that contains the gold passage matches and
+so does a smaller chunk cut from inside it. Case, punctuation and
+whitespace are ignored. The default threshold is 0.5; change it with
+`--match-threshold`. `ragaudit check` uses text matching by default.
+
+| | `--match-by id` | `--match-by text` |
+|---|---|---|
+| Setup | index ragaudit's chunks, return their ids | return the retrieved texts in `contexts` |
+| Precision | exact: same chunk or not | approximate: a threshold on word overlap |
+| False hits | none | a near-duplicate passage elsewhere in the corpus can count |
+| False misses | none, if ids are returned | heavy rewriting of chunks (summaries, translations) can miss |
+| `evaluate` needs | nothing extra | `--corpus`, for the gold chunk texts |
+
+Use id matching when you can index ragaudit's chunks; use text matching to
+test the pipeline you already have. The two modes are cached as separate
+configs in `evaluate`, so switching never reuses the other mode's results.
 
 ## Adapter interface
 
@@ -135,14 +236,20 @@ Adapters ship for: a raw callable, LangChain, LlamaIndex.
 ## CLI
 
 ```
+ragaudit init --framework plain         # starter adapter (plain|langchain|llamaindex|demo) + .env.example
+ragaudit doctor                         # check Python, RAGAUDIT_* settings, one LLM call, and the adapter
+ragaudit check --docs ./docs --adapter ragaudit_adapter.py   # all of the below in one go, then open the report
 ragaudit ingest ./docs                  # load, chunk, and persist a corpus
 ragaudit generate --n 100               # generate a test set (n questions/chunk)
 ragaudit run --adapter my_adapter.py    # run + score + ablate against the latest test set
+ragaudit run --adapter my_adapter.py --match-by text   # same, matching retrieval by context text
 ragaudit report --out report.html       # render the latest run as a static HTML report
 ```
 
 Every command takes `--db` (default `./ragaudit.db`) to point at a
-specific database file.
+specific database file. All commands read `RAGAUDIT_*` settings from the
+environment or from a `.env` file in the current folder (exported
+variables win); `ragaudit init` writes a `.env.example` to copy.
 
 ## v2: generate, evaluate, tune
 
@@ -238,7 +345,7 @@ baseline:            # optional; defaults to each knob's first value
 
 `tune` writes the best config to `best_config.yaml`, which `evaluate
 --config` accepts directly. Reading YAML uses PyYAML if installed
-(`pip install "ragaudit[yaml]"`) and a built-in parser for simple files
+(`pip install "ragaudit-cli[yaml]"`) and a built-in parser for simple files
 otherwise.
 
 ### CLI reference
@@ -246,7 +353,7 @@ otherwise.
 | Command | Key options |
 |---|---|
 | `ragaudit generate --corpus PATH` | `--n` (max facts per chunk, default 3), `--multi-hop`, `--multi-hop-pairs 10`, `--lexical-threshold 0.5`, `--max-chunks`, `--max-llm-calls`, `--generator-model`, `--verifier-model`, `--retry-processed` |
-| `ragaudit evaluate --adapter FILE` | `--config YAML`, `--corpus PATH`, `--split dev\|test`, `--k 5`, `--regression-sample 50`, `--seed`, `--full`, `--ablation`, `--judge-model` |
+| `ragaudit evaluate --adapter FILE` | `--config YAML`, `--corpus PATH`, `--split dev\|test`, `--k 5`, `--regression-sample 50`, `--seed`, `--full`, `--ablation`, `--judge-model`, `--match-by id\|text` (text needs `--corpus`), `--match-threshold 0.5` |
 | `ragaudit tune --adapter FILE --search-space YAML` | `--strategy grid\|random\|llm`, `--max-trials 20`, `--max-llm-calls`, `--seed`, `--k 5`, `--overfit-threshold 10`, `--out best_config.yaml`, `--judge-model`, `--proposer-model` |
 | `ragaudit report --kind generate\|tune` | `--run-id` (generate run or tune id; default latest), `--out` |
 
@@ -262,6 +369,16 @@ and `report` defaults to the v1 run report.
 - The real-LLM path was smoke-tested on `generate` with local Ollama models
   (qwen2.5:7b generator, llama3.1:8b verifier) and its bugs were fixed, but
   a full real-LLM `evaluate`/`tune` run is still pending.
+
+## Releasing
+
+Pushing a tag `vX.Y.Z` that matches `version` in `pyproject.toml` runs
+`.github/workflows/publish.yml`: tests, build, `twine check`, then upload
+to PyPI through trusted publishing (no API token in GitHub). It needs a
+one-time trusted publisher on pypi.org for project `ragaudit-cli`, this
+repository, workflow `publish.yml`, environment `pypi`. (The distribution is
+`ragaudit-cli` because PyPI treats `ragaudit` as the same name as the existing
+`rag-audit` project.)
 
 ## License
 

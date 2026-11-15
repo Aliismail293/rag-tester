@@ -13,6 +13,7 @@
   <div class="ln-col">
     <a class="ln-brand" href="#top">RAG Tester</a>
     <ul class="ln-nav-links">
+      <li><a href="#quickstart">5-minute test</a></li>
       <li><a href="#problem">The problem</a></li>
       <li><a href="#how">How it works</a></li>
       <li><a href="#reports">Reports</a></li>
@@ -53,8 +54,8 @@
         </p>
 
         <div class="ln-actions">
-          <a class="ln-btn ln-btn--primary" href="#reports">View a sample report</a>
-          <a class="ln-btn ln-btn--secondary" href="https://github.com/Aliismail293/rag-tester">GitHub</a>
+          <a class="ln-btn ln-btn--primary" href="#quickstart">Test your RAG in 5 minutes</a>
+          <a class="ln-btn ln-btn--secondary" href="#reports">View a sample report</a>
         </div>
       </div>
 
@@ -109,6 +110,97 @@
         </div>
       </div>
 
+    </div>
+  </section>
+
+  <section id="quickstart" class="ln-band">
+    <div class="ln-col">
+      <h2>Test your RAG in 5 minutes</h2>
+      <p class="ln-lead">
+        Python 3.11+, a folder of your <code>.txt</code> or <code>.md</code> docs, and an LLM to
+        write and judge questions: any OpenAI-compatible API, or local Ollama. Your pipeline is
+        not re-indexed.
+      </p>
+
+      <div class="ln-quick-demo">
+        <p><strong>No pipeline yet?</strong> Use <code>--framework demo</code> to see a full report in 2 minutes.</p>
+        <div class="ln-code">
+<pre><code>pip install ragaudit-cli
+ragaudit init --framework demo
+ragaudit check --docs ./docs --adapter ragaudit_adapter.py --questions 5</code></pre>
+          <button type="button" class="ln-copy" aria-label="Copy demo commands">Copy</button>
+        </div>
+        <p class="ln-quick-note">
+          The demo adapter is a small keyword-search pipeline over your <code>./docs</code> folder, answered
+          by the same LLM ragaudit uses: nothing to edit. Set the <code>RAGAUDIT_*</code> settings from step 2
+          first, or add <code>--llm mock</code> to try it offline.
+        </p>
+      </div>
+
+      <ol class="ln-quick">
+        <li>
+          <strong>Install</strong>
+          <div class="ln-code">
+<pre><code>pip install ragaudit-cli</code></pre>
+            <button type="button" class="ln-copy" aria-label="Copy install command">Copy</button>
+          </div>
+          <p class="ln-quick-note">Until the first PyPI release: <code>pip install git+https://github.com/Aliismail293/rag-tester</code></p>
+        </li>
+        <li>
+          <strong>Check your setup</strong>
+          <div class="ln-code">
+<pre><code>export RAGAUDIT_API_BASE=https://api.openai.com/v1  # Ollama: http://localhost:11434/v1
+export RAGAUDIT_API_KEY=sk-...                      # Ollama: ollama
+export RAGAUDIT_MODEL=gpt-4o-mini                   # Ollama: llama3.1:8b
+ragaudit doctor</code></pre>
+            <button type="button" class="ln-copy" aria-label="Copy doctor commands">Copy</button>
+          </div>
+          <p class="ln-quick-note">Each check prints PASS or FAIL with the exact fix. The adapter check fails until step 4.</p>
+        </li>
+        <li>
+          <strong>Create an adapter</strong>
+          <div class="ln-code">
+<pre><code>ragaudit init --framework plain   # or langchain, llamaindex (demo: no pipeline needed)</code></pre>
+            <button type="button" class="ln-copy" aria-label="Copy init command">Copy</button>
+          </div>
+          <p class="ln-quick-note">Writes <code>ragaudit_adapter.py</code> and a <code>.env.example</code> for your settings.</p>
+        </li>
+        <li>
+          <strong>Fill in the adapter</strong>
+          <p class="ln-quick-note">
+            Open <code>ragaudit_adapter.py</code> and connect your pipeline at the one <code>TODO</code>:
+            return its answer and the text of the passages it retrieved. Run <code>ragaudit doctor</code>
+            again until every line says PASS.
+          </p>
+        </li>
+        <li>
+          <strong>Run the check</strong>
+          <div class="ln-code">
+<pre><code>ragaudit check --docs ./docs --adapter ragaudit_adapter.py</code></pre>
+            <button type="button" class="ln-copy" aria-label="Copy check command">Copy</button>
+          </div>
+          <p class="ln-quick-note">
+            It shows how many LLM calls it will make and asks first, then writes 20 questions from your
+            docs, runs them through your pipeline, opens the report and prints a six-line summary with
+            the most useful fix.
+          </p>
+        </li>
+      </ol>
+
+      <h3 class="ln-quick-h">Reading the four verdicts</h3>
+      <div class="ln-table-wrap">
+        <table class="ln-verdicts">
+          <thead>
+            <tr><th>Verdict</th><th>Answer</th><th>Right passage retrieved?</th><th>What it means</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="cell-true-pass ln-tag">TRUE_PASS</span></td><td>correct</td><td>yes</td><td>The pipeline worked. This is the number to protect.</td></tr>
+            <tr><td><span class="cell-lucky-pass ln-tag">LUCKY_PASS</span></td><td>correct</td><td>no</td><td>The model answered from memory; retrieval did nothing. Other evals count this as a pass.</td></tr>
+            <tr><td><span class="cell-generation-failure ln-tag">GENERATION_FAILURE</span></td><td>wrong</td><td>yes</td><td>Retrieval worked; the prompt or model didn't use it.</td></tr>
+            <tr><td><span class="cell-retrieval-failure ln-tag">RETRIEVAL_FAILURE</span></td><td>wrong</td><td>no</td><td>Retrieval missed. Raise top-k, add keyword/hybrid search, or change chunking.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -231,9 +323,10 @@ ragaudit report --out report.html</code></pre>
             returning the answer, the retrieved chunk IDs, and the contexts it used.
           </p>
           <p>
-            Your pipeline needs to be indexed against the chunks <code>ragaudit ingest</code>
-            produced so the IDs line up. If it isn't, every hit reads as a miss and the
-            tool looks broken. The README covers this in detail.
+            By default <code>run</code> matches retrieval by chunk ID, so your pipeline must be
+            indexed against the chunks <code>ragaudit ingest</code> produced. If it chunks the
+            docs itself, pass <code>--match-by text</code> (the default in <code>ragaudit check</code>)
+            to match the returned passages by their text instead. The README covers the trade-off.
           </p>
         </aside>
       </div>

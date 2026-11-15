@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>ragaudit setup</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{--bg:#F2F4F8;--card:#FFFFFF;--line:#E2E6EE;--field:#D5DAE3;--ink:#111827;--muted:#5B6577;--soft:#4B5565;--accent:#4338CA;--accent-ink:#312E81;--accent-bg:#EEF0FF;--accent-line:#C7CBF5;--good:#15803D;--good-bg:#F0FDF4;--good-line:#BBF7D0;--good-ink:#14532D;--bad:#B91C1C;--bad-bg:#FEF2F2;--bad-line:#FECACA;--warn-bg:#FFFBEB;--warn-line:#FDE68A;--warn-ink:#78350F;--tint:#F6F7FB;--code:#13122B;--code-ink:#EEF0FF;--track:#E6E8F5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,-apple-system,sans-serif;font-size:15px}
+a{color:var(--accent)}a:hover{color:var(--accent-ink)}
+button,input{font:inherit}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+header{background:var(--card);border-bottom:1px solid var(--line)}
+.bar{max-width:1180px;margin:0 auto;padding:14px 32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-weight:800;font-size:17px}.brand span{font-weight:500;font-size:13px;color:var(--muted)}
+.host{font-size:12px;color:var(--muted)}
+main{max-width:1180px;margin:0 auto;padding:28px 32px 56px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+nav{flex:1 1 240px;max-width:280px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.step{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 12px;border-radius:12px;cursor:pointer;color:var(--ink);border:1px solid transparent;background:transparent;text-align:left;width:100%}
+.step[aria-current="step"]{border-color:var(--accent-line);background:var(--card)}
+.step .badge{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--muted);background:var(--line)}
+.step[aria-current="step"] .badge{background:var(--accent);color:#fff}
+.step.done .badge{background:var(--good);color:#fff}
+.step b{display:block;font-size:14px;font-weight:800}.step small{display:block;font-size:12px;color:var(--muted)}
+section.panel-wrap{flex:999 1 560px;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px;min-height:560px;display:flex;flex-direction:column}
+.kicker{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--accent);margin-bottom:8px}
+h1{margin:0 0 6px;font-size:26px;font-weight:800}
+.lead{margin:0 0 20px;font-size:15px;color:var(--soft);line-height:1.5}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.choice{text-align:left;display:flex;flex-direction:column;gap:8px;padding:18px;border-radius:14px;cursor:pointer;color:var(--ink);background:var(--card);border:2px solid var(--line)}
+.choice[aria-pressed="true"]{background:var(--accent-bg);border-color:var(--accent)}
+.choice .t{font-size:16px;font-weight:800}.choice .d{font-size:13px;color:var(--soft);line-height:1.5}.choice .s{font-size:13px;font-weight:700;color:var(--muted)}
+.choice .s.ok{color:var(--good)}.choice .s.est{color:var(--accent-ink)}
+.box{margin-top:16px;background:var(--tint);border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.6;color:var(--soft)}
+.msg{border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.6;margin-top:14px;overflow-wrap:anywhere}
+.msg.ok{background:var(--good-bg);border:1px solid var(--good-line);color:var(--good-ink)}
+.msg.bad{background:var(--bad-bg);border:1px solid var(--bad-line);color:var(--bad)}
+.msg.warn{background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-ink)}
+.msg .fix{display:block;color:var(--ink);margin-top:4px}
+label{font-size:13px;font-weight:700;display:block;margin:14px 0 6px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text],input[type=password],input[type=number]{font-size:14px;flex:1 1 220px;min-width:0;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--field);background:var(--card);color:var(--ink)}
+input.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.btn{font-size:14px;font-weight:700;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--field);background:var(--card);color:var(--ink);cursor:pointer}
+.btn.primary{font-size:15px;font-weight:800;min-height:48px;padding:0 22px;border:none;background:var(--accent);color:#fff}
+.btn:disabled{opacity:.55;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chip{font-size:14px;font-weight:700;min-height:40px;padding:8px 14px;border-radius:999px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--soft)}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-ink)}
+.code{border-radius:12px;overflow:hidden;border:1px solid var(--line);margin-bottom:14px}
+.code .head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 14px;background:var(--tint);font-size:13px}
+.code pre{margin:0;padding:14px;background:var(--code);color:var(--code-ink);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;line-height:1.7;overflow:auto;white-space:pre;max-height:340px}
+.small-btn{font-size:13px;font-weight:700;min-height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--field);background:var(--card);color:var(--ink);cursor:pointer}
+.progress{background:var(--tint);border-radius:12px;padding:16px;margin-top:16px}
+.progress .top{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:8px;flex-wrap:wrap}
+.track{height:10px;border-radius:5px;background:var(--track);overflow:hidden}.fill{height:10px;border-radius:5px;background:var(--accent);width:0;transition:width .4s}
+.log{margin:12px 0 0;max-height:180px;overflow:auto;font-size:12px;line-height:1.6;color:var(--soft);white-space:pre-wrap}
+.foot{margin-top:auto;padding-top:20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.muted{color:var(--muted)}
+.hide{display:none!important}
+ul.files{margin:6px 0 0;padding-left:18px}
+@media (max-width:720px){.bar,main{padding-left:16px;padding-right:16px}main{padding-top:16px}nav{max-width:none;flex-basis:100%}section.panel-wrap{padding:20px;min-height:0}.cards{grid-template-columns:1fr}h1{font-size:22px}}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brand">ragaudit <span>· setup · running on this computer only</span></div>
+  <div class="host mono" id="host"></div>
+</div></header>
+
+<main>
+  <nav aria-label="Setup steps" id="steps"></nav>
+
+  <section class="panel-wrap" aria-live="polite">
+    <div id="s0" class="pane">
+      <div class="kicker">STEP 1 OF 4</div>
+      <h1>Which AI should write and grade the quiz?</h1>
+      <p class="lead">This is separate from the app you're testing. It only writes questions and checks answers.</p>
+      <div id="mock-note" class="msg warn hide">Started with the mock LLM (<span class="mono">--llm mock</span>): nothing is sent anywhere and the scores are not meaningful. Continue to the next step.</div>
+      <div class="cards" id="ai-cards">
+        <button class="choice" id="pick-ollama" aria-pressed="false">
+          <span class="t">Free, on this computer</span>
+          <span class="d">Ollama runs the AI locally. Nothing leaves your machine.</span>
+          <span class="s" id="ollama-status">Looking for Ollama…</span>
+        </button>
+        <button class="choice" id="pick-key" aria-pressed="false">
+          <span class="t">Online, with an API key</span>
+          <span class="d">OpenAI or any compatible service. Faster, costs a few cents a run.</span>
+          <span class="s" id="key-status">Paste a key below</span>
+        </button>
+      </div>
+      <div id="ollama-pane" class="hide">
+        <div id="ollama-missing" class="box hide">Ollama isn't running on this computer. Get it from <a href="https://ollama.com/download" target="_blank" rel="noopener noreferrer">ollama.com/download</a>, open it once, then <button class="small-btn" id="ollama-retry">Check again</button></div>
+        <div id="ollama-models" class="box hide"></div>
+        <div id="pull-box" class="hide">
+          <div class="row" style="margin-top:14px"><button class="btn" id="pull">Download models</button><span class="muted" id="pull-note"></span></div>
+        </div>
+      </div>
+      <div id="key-pane" class="hide">
+        <label for="api-key">API key</label>
+        <div class="row"><input type="password" id="api-key" class="mono" autocomplete="off" spellcheck="false" placeholder="sk-…"></div>
+        <label for="api-base">Base URL</label>
+        <div class="row"><input type="text" id="api-base" class="mono" value="https://api.openai.com/v1" spellcheck="false"></div>
+        <label for="model">Model</label>
+        <div class="row"><input type="text" id="model" class="mono" value="gpt-4o-mini" spellcheck="false"></div>
+        <label for="verifier">Second model, to check the first one's questions (optional)</label>
+        <div class="row"><input type="text" id="verifier" class="mono" placeholder="for example gpt-4o" spellcheck="false"></div>
+        <div class="row" style="margin-top:14px"><button class="btn" id="test-key">Test</button></div>
+      </div>
+      <div id="s0-msg"></div>
+    </div>
+
+    <div id="s1" class="pane hide">
+      <div class="kicker">STEP 2 OF 4</div>
+      <h1>Where are your documents?</h1>
+      <p class="lead">The same files your AI app answers from. Text (.txt) and Markdown (.md) files work.</p>
+      <label for="docs">Folder, inside <span class="mono" id="project"></span></label>
+      <div class="row"><input type="text" id="docs" class="mono" value="./docs" spellcheck="false"><button class="btn" id="docs-look">Look</button></div>
+      <div id="s1-msg"></div>
+    </div>
+
+    <div id="s2" class="pane hide">
+      <div class="kicker">STEP 3 OF 4</div>
+      <h1>Connect the AI app you want to test</h1>
+      <p class="lead">Pick how it's built. ragaudit writes the connector file; you fill in the one marked line.</p>
+      <div class="chips" id="fws"></div>
+      <div class="code">
+        <div class="head"><span class="mono" id="adapter-name">ragaudit_adapter.py</span><span class="row"><span class="muted" id="adapter-state"></span><button class="small-btn" id="copy">Copy</button></span></div>
+        <pre id="code" tabindex="0" aria-label="Connector file, read-only"></pre>
+      </div>
+      <div class="row"><button class="btn" id="write">Save the file</button><button class="btn" id="test-conn">Test connection</button></div>
+      <div id="s2-msg"></div>
+    </div>
+
+    <div id="s3" class="pane hide">
+      <div class="kicker">STEP 4 OF 4</div>
+      <h1>What should ragaudit do?</h1>
+      <p class="lead">Both open the same report when they finish. <a href="#" id="change-setup" class="hide">Change setup</a></p>
+      <div class="cards">
+        <button class="choice" id="pick-check" aria-pressed="true">
+          <span class="t">Quick check</span>
+          <span class="d"><span id="qn">20</span> questions, one report. Good for a first look.</span>
+          <span class="s est">≈ 2 min · ≈ 60 AI calls</span>
+        </button>
+        <button class="choice" id="pick-improve" aria-pressed="false">
+          <span class="t">Improve my app</span>
+          <span class="d">Tries settings on practice questions, keeps the best, scores on the locked exam.</span>
+          <span class="s est">≈ 15 min · stops at your limit</span>
+        </button>
+      </div>
+      <label for="budget">Most AI calls to spend <span class="muted" id="budget-hint">(empty: no limit)</span></label>
+      <div class="row"><input type="number" id="budget" min="1" step="1" inputmode="numeric" class="mono"></div>
+      <label for="note">Note for this run (optional)</label>
+      <div class="row"><input type="text" id="note" placeholder="for example: smaller chunks"></div>
+      <div id="job" class="progress hide">
+        <div class="top"><b id="job-phase">Starting…</b><span class="muted" id="job-calls"></span></div>
+        <div class="track"><div class="fill" id="job-fill"></div></div>
+        <pre class="log mono" id="job-log"></pre>
+        <div class="row" style="margin-top:10px"><button class="btn" id="cancel">Cancel</button></div>
+      </div>
+      <div id="s3-msg"></div>
+    </div>
+
+    <div class="foot">
+      <button class="btn" id="back">Back</button>
+      <button class="btn primary" id="fwd">Continue</button>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var TOKEN = new URLSearchParams(location.search).get('t') || '';
+  var STEPS = [['Pick the AI', 'Ollama or API key'], ['Your documents', 'the files it answers from'], ['Connect your app', 'demo, Python, LangChain…'], ['Run', 'quick check or improve']];
+  var S = { step: 0, ai: null, fw: 'demo', mode: 'check', state: null, ollama: null, done: [false, false, false, false], poll: null };
+  var $ = function (id) { return document.getElementById(id); };
+  $('host').textContent = location.host;
+
+  function api(path, body) {
+    var opts = { headers: { 'X-Ragaudit-Token': TOKEN } };
+    if (body !== undefined) { opts.method = 'POST'; opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+    return fetch(path, opts).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (!r.ok) throw new Error(data.error || ('request failed (' + r.status + ')'));
+        return data;
+      });
+    });
+  }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function say(where, kind, text, fix) {
+    var box = $(where); box.textContent = '';
+    if (!text) return;
+    var m = el('div', 'msg ' + kind, (kind === 'ok' ? '✓ ' : '') + text);
+    if (fix) m.appendChild(el('span', 'fix', 'Fix: ' + fix));
+    box.appendChild(m);
+  }
+  function fail(where) { return function (e) { say(where, 'bad', e.message); }; }
+  function press(ids, on) { ids.forEach(function (id) { $(id).setAttribute('aria-pressed', String(id === on)); }); }
+
+  // --- stepper
+  function renderSteps() {
+    var nav = $('steps'); nav.textContent = '';
+    STEPS.forEach(function (m, k) {
+      var b = el('button', 'step' + (S.done[k] && k !== S.step ? ' done' : ''));
+      if (k === S.step) b.setAttribute('aria-current', 'step');
+      var badge = el('span', 'badge', S.done[k] && k !== S.step ? '✓' : String(k + 1));
+      var txt = el('span'); txt.appendChild(el('b', null, m[0])); txt.appendChild(el('small', null, m[1]));
+      b.appendChild(badge); b.appendChild(txt);
+      b.addEventListener('click', function () { go(k); });
+      nav.appendChild(b);
+    });
+  }
+  function go(k) {
+    S.step = k;
+    for (var i = 0; i < 4; i++) $('s' + i).classList.toggle('hide', i !== k);
+    $('back').disabled = k === 0;
+    renderSteps(); renderFwd();
+    if (k === 0 && !S.ollama) detectOllama();
+    if (k === 2) preview();
+    window.scrollTo(0, 0);
+  }
+  function running() { return S.state && S.state.job && S.state.job.state === 'running'; }
+  function renderFwd() {
+    var f = $('fwd');
+    if (S.step < 3) { f.textContent = 'Continue'; f.disabled = false; return; }
+    f.textContent = running() ? 'Running…' : (S.mode === 'check' ? 'Run quick check' : 'Start improving');
+    f.disabled = !!running();
+  }
+
+  // --- step 1
+  function detectOllama() {
+    $('ollama-status').textContent = 'Looking for Ollama…';
+    return api('/api/ollama').then(function (o) {
+      S.ollama = o;
+      var st = $('ollama-status'); st.classList.toggle('ok', o.found && !o.missing.length);
+      if (!o.found) st.textContent = 'Not found on this computer';
+      else if (!o.models.length) st.textContent = 'Ollama found · no models yet';
+      else st.textContent = (o.missing.length ? 'Ollama found · ' : '✓ Ollama found · ') + o.models.slice(0, 3).join(', ') + (o.models.length > 3 ? ' and more' : '') + (o.missing.length ? '' : ' ready');
+      renderOllama();
+    }).catch(fail('s0-msg'));
+  }
+  function renderOllama() {
+    var o = S.ollama; if (!o) return;
+    $('ollama-missing').classList.toggle('hide', o.found);
+    var models = $('ollama-models'); models.classList.toggle('hide', !o.found);
+    models.textContent = o.found ? (o.models.length ? 'Models on this computer: ' + o.models.join(', ') + '.' : 'Ollama has no models yet.') : '';
+    if (o.found && o.missing.length) {
+      models.appendChild(document.createTextNode(' Recommended: ' + o.missing.join(' and ') + ' (one writes the questions, a different one checks them).'));
+    }
+    $('pull-box').classList.toggle('hide', !(o.found && o.missing.length));
+    $('pull-note').textContent = o.missing.map(function (m) { return m + ' ' + o.sizes[m]; }).join(' · ');
+  }
+  function pickAI(ai) {
+    S.ai = ai; press(['pick-ollama', 'pick-key'], 'pick-' + ai);
+    $('ollama-pane').classList.toggle('hide', ai !== 'ollama');
+    $('key-pane').classList.toggle('hide', ai !== 'key');
+    say('s0-msg');
+  }
+  $('pick-ollama').addEventListener('click', function () { pickAI('ollama'); detectOllama(); });
+  $('pick-key').addEventListener('click', function () { pickAI('key'); });
+  $('ollama-retry').addEventListener('click', detectOllama);
+  $('pull').addEventListener('click', function () {
+    var o = S.ollama; var list = o.missing.map(function (m) { return m + ' (' + o.sizes[m] + ')'; }).join(' and ');
+    if (!confirm('Download ' + list + ' through Ollama? This can take a while on a slow connection.')) return;
+    api('/api/ollama/pull', { models: o.missing }).then(function () { S.returnTo = 0; startPolling(); }).catch(fail('s0-msg'));
+  });
+  function keyBody() { return { provider: 'key', api_key: $('api-key').value, api_base: $('api-base').value, model: $('model').value, verifier_model: $('verifier').value }; }
+  $('test-key').addEventListener('click', function () {
+    say('s0-msg', 'warn', 'Testing…');
+    api('/api/test-key', keyBody()).then(function (r) {
+      if (!r.ok) return say('s0-msg', 'bad', r.message, r.fix);
+      return api('/api/settings', keyBody()).then(function (s) {
+        $('api-key').value = ''; $('api-key').placeholder = 'key saved ✓ (paste a new one to replace it)';
+        $('key-status').textContent = 'key saved ✓'; $('key-status').classList.add('ok');
+        say('s0-msg', 'ok', r.message + ' Settings saved to .env: key saved ✓');
+        S.state.settings = s.settings; markDone();
+      });
+    }).catch(fail('s0-msg'));
+  });
+  function saveStep1() {
+    if (S.state.settings.mock) return Promise.resolve(true);
+    if (S.ai === 'ollama') {
+      return api('/api/settings', { provider: 'ollama' }).then(function (s) {
+        S.state.settings = s.settings; say('s0-msg', 'ok', 'Using Ollama: ' + s.settings.model + (s.settings.verifier_model ? ' writes, ' + s.settings.verifier_model + ' checks.' : '.')); return true;
+      });
+    }
+    if (S.ai === 'key') {
+      if (!$('api-key').value && S.state.settings.key_saved) return api('/api/settings', keyBody()).then(function (s) { S.state.settings = s.settings; return true; });
+      say('s0-msg', 'warn', 'Press Test first: it checks the key works, then saves it.'); return Promise.resolve(false);
+    }
+    if (S.state.settings.ready) return Promise.resolve(true);
+    say('s0-msg', 'warn', 'Pick one of the two options.'); return Promise.resolve(false);
+  }
+
+  // --- step 2
+  function lookDocs(save) {
+    return api('/api/docs', { path: $('docs').value, save: !!save }).then(function (r) {
+      if (!r.ok) { say('s1-msg', 'warn', (r.path ? r.path + ': ' : '') + r.message); return false; }
+      var box = $('s1-msg'); box.textContent = '';
+      var m = el('div', 'msg ok', '✓ Found ' + r.count + ' file' + (r.count === 1 ? '' : 's') + ' in ' + r.path + ' · about ' + r.passages + ' passages');
+      var ul = el('ul', 'files mono'); r.names.forEach(function (n) { ul.appendChild(el('li', null, n)); });
+      if (r.more) ul.appendChild(el('li', null, 'and ' + r.more + ' more'));
+      m.appendChild(ul);
+      if (r.skipped) m.appendChild(el('span', 'fix', r.skipped + ' other file(s) skipped: only .txt and .md are read.'));
+      box.appendChild(m);
+      return true;
+    }).catch(function (e) { say('s1-msg', 'bad', e.message); return false; });
+  }
+  $('docs-look').addEventListener('click', function () { lookDocs(false); });
+  $('docs').addEventListener('keydown', function (e) { if (e.key === 'Enter') lookDocs(false); });
+
+  // --- step 3
+  function renderFws() {
+    var box = $('fws'); box.textContent = '';
+    Object.keys(S.state.frameworks).forEach(function (key) {
+      var c = el('button', 'chip', S.state.frameworks[key]); c.setAttribute('aria-pressed', String(key === S.fw));
+      c.addEventListener('click', function () { S.fw = key; renderFws(); preview(); });
+      box.appendChild(c);
+    });
+  }
+  function preview() {
+    return api('/api/adapter/preview', { framework: S.fw }).then(function (r) {
+      $('code').textContent = r.code;
+      $('adapter-state').textContent = r.same ? 'saved ✓' : (r.exists ? 'a different file is saved' : 'not saved yet');
+    }).catch(fail('s2-msg'));
+  }
+  function writeAdapter(overwrite) {
+    return api('/api/adapter', { framework: S.fw, overwrite: !!overwrite }).then(function (r) {
+      if (r.needs_confirm) { return confirm(r.message + ' Your current file will be lost.') ? writeAdapter(true) : false; }
+      say('s2-msg', 'ok', r.message); preview(); return true;
+    }).catch(fail('s2-msg'));
+  }
+  $('write').addEventListener('click', function () { writeAdapter(false); });
+  $('test-conn').addEventListener('click', function () {
+    say('s2-msg', 'warn', 'Asking your app a sample question…');
+    api('/api/test-connection', {}).then(function (r) { say('s2-msg', r.ok ? 'ok' : 'bad', r.message, r.fix); if (r.ok) markDone(); }).catch(fail('s2-msg'));
+  });
+  $('copy').addEventListener('click', function () {
+    var text = $('code').textContent, b = $('copy');
+    var done = function () { b.textContent = 'Copied ✓'; setTimeout(function () { b.textContent = 'Copy'; }, 1600); };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+    function fallback() { var t = el('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) {} document.body.removeChild(t); }
+  });
+
+  // --- step 4
+  function pickMode(mode) {
+    S.mode = mode; press(['pick-check', 'pick-improve'], 'pick-' + mode);
+    $('budget-hint').textContent = mode === 'check' ? '(empty: no limit)' : '(empty: ' + S.state.improve_budget + ')';
+    $('budget').placeholder = mode === 'check' ? '' : String(S.state.improve_budget);
+    renderFwd();
+  }
+  $('pick-check').addEventListener('click', function () { pickMode('check'); });
+  $('pick-improve').addEventListener('click', function () { pickMode('improve'); });
+  $('change-setup').addEventListener('click', function (e) { e.preventDefault(); go(0); });
+  $('cancel').addEventListener('click', function () { api('/api/job/cancel', {}).catch(fail('s3-msg')); $('cancel').disabled = true; });
+
+  var PHASES = { generate: 'Writing questions…', answer: 'Asking your app…', trial: 'Trying settings on practice questions… trial' };
+  function phaseLabel(job) {
+    var p = job.phase || '';
+    if (p.indexOf('pull ') === 0) return 'Downloading ' + p.slice(5) + '… ' + Math.round(100 * job.done / Math.max(1, job.total)) + '%';
+    var base = PHASES[p] || (p === 'starting' ? 'Starting…' : p.charAt(0).toUpperCase() + p.slice(1) + '…');
+    return job.total ? base + ' ' + job.done + ' of ' + job.total : base;
+  }
+  function renderJob(job) {
+    var box = $('job'), where = job && job.kind === 'pull' ? 's0-msg' : 's3-msg';
+    if (!job) { box.classList.add('hide'); return; }
+    if (job.kind === 'pull') {
+      if (job.state === 'running') say('s0-msg', 'warn', phaseLabel(job));
+    } else {
+      box.classList.remove('hide');
+      $('job-phase').textContent = job.state === 'running' ? phaseLabel(job) : ({ done: 'Finished', cancelled: 'Cancelled', stopped: 'Stopped', error: 'Stopped with an error' })[job.state];
+      $('job-calls').textContent = job.calls ? job.calls + ' AI calls so far' : '';
+      $('job-fill').style.width = (job.state === 'done' ? 100 : Math.round(100 * job.done / Math.max(1, job.total))) + '%';
+      $('job-log').textContent = (job.log || []).join('\n');
+      $('job-log').scrollTop = 1e9;
+      $('cancel').classList.toggle('hide', job.state !== 'running'); $('cancel').disabled = false;
+    }
+    if (job.state === 'running') return;
+    if (job.kind === 'pull') {
+      if (job.state === 'done') { say('s0-msg', 'ok', 'Models downloaded.'); detectOllama(); }
+      else say('s0-msg', job.state === 'error' ? 'bad' : 'warn', job.error || job.message);
+      return;
+    }
+    var m = $(where); m.textContent = '';
+    if (job.state === 'done' || job.has_report) {
+      var ok = el('div', 'msg ok', '✓ ' + (job.state === 'done' ? 'Done in ' + job.elapsed + 's. ' : '') + 'Your report is ready: ');
+      var a = el('a', null, 'Open in browser tab'); a.href = '/report?t=' + encodeURIComponent(TOKEN); a.target = '_blank'; a.rel = 'noopener';
+      ok.appendChild(a); m.appendChild(ok);
+    }
+    if (job.state !== 'done') { var x = el('div', 'msg ' + (job.state === 'error' ? 'bad' : 'warn'), job.error || job.message || ''); m.appendChild(x); }
+  }
+  function startPolling() {
+    clearInterval(S.poll);
+    var tick = function () {
+      api('/api/job').then(function (r) {
+        S.state.job = r.job; renderJob(r.job); renderFwd();
+        if (!r.job || r.job.state !== 'running') { clearInterval(S.poll); refresh(); }
+      }).catch(function (e) { clearInterval(S.poll); say('s3-msg', 'bad', e.message); });
+    };
+    tick(); S.poll = setInterval(tick, 1000);
+  }
+  function startRun() {
+    say('s3-msg');
+    api('/api/run', { mode: S.mode, budget: $('budget').value, note: $('note').value }).then(function (job) { S.state.job = job; renderFwd(); startPolling(); }).catch(fail('s3-msg'));
+  }
+
+  // --- navigation
+  function markDone() {
+    S.done = [S.state.settings.ready, S.state.docs_ok, S.state.adapter_exists, S.state.has_report];
+    renderSteps();
+  }
+  function refresh() { return api('/api/state').then(function (st) { S.state = st; markDone(); return st; }); }
+  $('back').addEventListener('click', function () { if (S.step > 0) go(S.step - 1); });
+  $('fwd').addEventListener('click', function () {
+    var k = S.step;
+    var next = function (ok) { if (ok) refresh().then(function () { go(k + 1); }); };
+    if (k === 0) saveStep1().then(next).catch(fail('s0-msg'));
+    else if (k === 1) lookDocs(true).then(next);
+    else if (k === 2) {
+      if (S.state.adapter_exists) next(true);
+      else writeAdapter(false).then(next);
+    } else startRun();
+  });
+
+  refresh().then(function (st) {
+    $('project').textContent = st.project;
+    $('docs').value = st.docs; $('qn').textContent = st.quick_questions;
+    S.fw = st.framework; renderFws();
+    if (st.settings.mock) { $('mock-note').classList.remove('hide'); $('ai-cards').classList.add('hide'); }
+    else if (st.settings.provider) {
+      pickAI(st.settings.provider);
+      if (st.settings.provider === 'key') {
+        $('api-base').value = st.settings.api_base || ''; $('model').value = st.settings.model || ''; $('verifier').value = st.settings.verifier_model || '';
+        if (st.settings.key_saved) { $('key-status').textContent = 'key saved ✓'; $('key-status').classList.add('ok'); $('api-key').placeholder = 'key saved ✓ (paste a new one to replace it)'; }
+      }
+    }
+    pickMode('check');
+    $('change-setup').classList.toggle('hide', st.start_step !== 3);
+    go(st.start_step);
+    if (st.job) { renderJob(st.job); if (st.job.state === 'running') startPolling(); }
+  }).catch(function (e) {
+    document.querySelector('section.panel-wrap').textContent = 'This page needs the link printed by `ragaudit ui` (it carries a session key). ' + e.message;
+  });
+})();
+</script>
+</body>
+</html>

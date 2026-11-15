@@ -1,5 +1,43 @@
 # ragaudit
 
+ragaudit checks whether your RAG app answers from your documents, or just got
+lucky: it writes a quiz from your docs, asks your app, and shows which correct
+answers came from the right passage and which came from the model's memory.
+
+## Test your RAG in 2 commands
+
+```bash
+pip install ragaudit-cli
+ragaudit ui
+```
+
+`ragaudit ui` opens a setup page in your browser. It runs on this computer only
+(127.0.0.1, with a one-time key in the link) and walks you through four steps:
+
+1. **Pick the AI.** Choose free local Ollama (the page finds it, and offers to
+   download the two models it needs) or paste an OpenAI-compatible API key,
+   which is tested and saved to `.env`.
+2. **Your documents.** Point it at the folder your app answers from; it lists
+   the `.txt` and `.md` files it found and about how many passages they make.
+3. **Connect your app.** Pick Demo (no code), Plain Python, LangChain or
+   LlamaIndex; it writes `ragaudit_adapter.py`, and "Test connection" asks your
+   app one question and shows the exact fix if it fails.
+4. **Run.** "Quick check" asks 20 questions; "Improve my app" tries settings on
+   practice questions and scores the best on a locked exam. Both end in the
+   same report, with history across runs.
+
+**Prefer the terminal?**
+
+```bash
+pip install ragaudit-cli
+ragaudit init --framework demo        # or plain, langchain, llamaindex
+ragaudit check --docs ./docs          # a quick check and a report
+ragaudit improve --docs ./docs        # tune the settings your adapter declares in KNOBS
+ragaudit report --open                # reopen the latest report
+```
+
+The step-by-step version follows.
+
 ## Test your RAG in 5 minutes
 
 You need Python 3.11+, a folder of your documents (`.txt` or `.md`), and an
@@ -236,6 +274,9 @@ Adapters ship for: a raw callable, LangChain, LlamaIndex.
 ## CLI
 
 ```
+ragaudit ui                             # the setup page: pick the AI, docs, app, then run (local only)
+ragaudit improve --docs ./docs          # tune the adapter's KNOBS on practice questions, score on a locked exam
+ragaudit report --open                  # reopen the latest report (--legacy for the old layout)
 ragaudit init --framework plain         # starter adapter (plain|langchain|llamaindex|demo) + .env.example
 ragaudit doctor                         # check Python, RAGAUDIT_* settings, one LLM call, and the adapter
 ragaudit check --docs ./docs --adapter ragaudit_adapter.py   # all of the below in one go, then open the report
@@ -366,9 +407,19 @@ and `report` defaults to the v1 run report.
 
 ### Known limitations
 
-- The real-LLM path was smoke-tested on `generate` with local Ollama models
-  (qwen2.5:7b generator, llama3.1:8b verifier) and its bugs were fixed, but
-  a full real-LLM `evaluate`/`tune` run is still pending.
+- Real-model testing so far: on 15 Nov 2026, `check` (three times, around a
+  docs edit) and `improve --budget-calls 400 --max-trials 4` ran end to end
+  on local Ollama models (qwen2.5:7b writes, answers and judges; llama3.1:8b
+  verifies improve's questions) on the bundled demo docs with the demo
+  adapter. See [docs/sample-report.html](docs/sample-report.html). That run
+  found and fixed two bugs: names counted as copied wording (which rejected
+  most questions), and one malformed judge reply could flip a verdict (the
+  judges now retry once). Hosted APIs and pipelines other than the demo have
+  not been run end to end on 0.4.0.
+- The demo corpus is small and its questions are easy for keyword search
+  (17 of 17 true passes; `improve` found no exam gain on 6 exam questions).
+  Small corpora give few exam questions, so treat a few-point change as noise.
+- Documents are read from `.txt` and `.md` files only.
 
 ## Releasing
 

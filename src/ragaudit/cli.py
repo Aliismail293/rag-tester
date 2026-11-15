@@ -87,10 +87,19 @@ def _cli_safe(func):
     return wrapper
 
 
-@app.callback()
-def _load_settings() -> None:
+WELCOME = """ragaudit tests whether your AI app answers from your documents, or just got lucky.
+
+  Easiest start:  ragaudit ui        (a setup page in your browser, 4 steps)
+  In the terminal: ragaudit init --framework demo, then ragaudit check --docs ./docs
+  All commands:   ragaudit --help"""
+
+
+@app.callback(invoke_without_command=True)
+def _load_settings(ctx: typer.Context) -> None:
     # RAGAUDIT_* settings can live in ./.env (see `ragaudit init`); exported variables win.
     load_dotenv()
+    if ctx.invoked_subcommand is None:
+        typer.echo(WELCOME)
 
 
 @app.command()
@@ -231,6 +240,10 @@ def generate(
     )
 
 
+NOTE_OPTION = typer.Option(
+    None, "--note", help='A note saved with this run in the score history, e.g. --note "tightened prompt".'
+)
+
 MATCH_BY_OPTION = typer.Option(
     "id",
     "--match-by",
@@ -265,6 +278,7 @@ def evaluate(
     judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Correctness judge model."),
     match_by: str = MATCH_BY_OPTION,
     match_threshold: float = MATCH_THRESHOLD_OPTION,
+    note: Optional[str] = NOTE_OPTION,
 ) -> None:
     """v2: evaluate a pipeline on generated questions, with caching and regression sampling."""
     cli_v2.run_evaluate(
@@ -282,6 +296,7 @@ def evaluate(
         full=full,
         match_by=match_by,
         match_threshold=match_threshold,
+        note=note,
     )
 
 
@@ -306,6 +321,7 @@ def tune(
     llm: Optional[str] = LLM_OPTION,
     judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Correctness judge model."),
     proposer_model: Optional[str] = typer.Option(None, "--proposer-model", help="Model for --strategy llm."),
+    note: Optional[str] = NOTE_OPTION,
 ) -> None:
     """v2: search pipeline configs on the dev split; report baseline vs best on the locked test split."""
     cli_v2.run_tune_command(
@@ -323,6 +339,7 @@ def tune(
         llm=llm,
         judge_model=judge_model,
         proposer_model=proposer_model,
+        note=note,
     )
 
 
@@ -347,6 +364,7 @@ def _execute_run(
     run_ablation_flag: bool,
     match_by: str,
     match_threshold: float,
+    on_case=None,
 ) -> Run:
     """Run, score, ablate and save one Run. Shared by `run` and `check`."""
     loaded_adapter = load_adapter(str(adapter_path))
@@ -365,7 +383,9 @@ def _execute_run(
         retrieval_scorer = score_by_id
 
     typer.echo(f"Running {len(test_set.test_cases)} test case(s) through adapter {adapter_path}...")
-    scored_cases = run_test_set(test_set, loaded_adapter, correctness_judge, groundedness_judge, retrieval_scorer)
+    scored_cases = run_test_set(
+        test_set, loaded_adapter, correctness_judge, groundedness_judge, retrieval_scorer, on_case=on_case
+    )
 
     if match_by == "text" and scored_cases and not any(case.response.contexts for case in scored_cases):
         typer.secho(
@@ -410,6 +430,30 @@ def _execute_run(
     return run
 
 
+def _record_v1_run(store_path: Path, run: Run, test_set, note: Optional[str]) -> None:
+    """One history row for `ragaudit run`, in the v2 store (the project history)."""
+    from ragaudit import history
+    from ragaudit.storage.store import Store
+
+    with Store(store_path) as store:
+        history.record_run(
+            store,
+            kind="run",
+            run_id=run.config.run_id,
+            outcomes={case.test_id: case.verdict.value for case in run.scored_cases},
+            adapter_path=run.config.adapter_path,
+            corpus_fingerprint=test_set.corpus_hash,
+            correct_count=sum(case.correctness.is_correct for case in run.scored_cases),
+            retrieval_hits=sum(case.retrieval.hit for case in run.scored_cases),
+            groundedness_pct=(
+                round(run.summary.mean_groundedness * 100, 1) if run.summary.mean_groundedness is not None else None
+            ),
+            models={"judge": run.config.correctness_judge_model, "questions": test_set.generation_model},
+            note=note,
+            extra={"testset_id": test_set.testset_id},
+        )
+
+
 @app.command(name="run")
 @_cli_safe
 def run_cmd(
@@ -421,6 +465,10 @@ def run_cmd(
     no_ablation: bool = typer.Option(False, "--no-ablation", help="Skip the retrieval-disabled ablation step."),
     match_by: str = MATCH_BY_OPTION,
     match_threshold: float = MATCH_THRESHOLD_OPTION,
+    note: Optional[str] = NOTE_OPTION,
+    store: Optional[Path] = typer.Option(
+        None, "--store", help="Store for the score history (default: .ragaudit/store.db next to --db)."
+    ),
 ) -> None:
     """Run the adapter over a test set, score it, ablate lucky passes, and persist the Run."""
     try:
@@ -457,6 +505,7 @@ def run_cmd(
     finally:
         conn.close()
 
+    _record_v1_run(store or db.resolve().parent / ".ragaudit" / "store.db", run, test_set, note)
     typer.echo(
         f"Run '{run.config.run_id}' complete: {run.summary.total_cases} case(s), "
         f"lucky-pass rate {run.summary.lucky_pass_rate:.1%}. Saved to {db}"
@@ -483,11 +532,84 @@ def check(
     db: Path = typer.Option(cli_easy.DEFAULT_CHECK_DB, "--db", help="Working database, recreated on every check."),
     out: Path = typer.Option(cli_easy.DEFAULT_CHECK_REPORT, "--out", help="Where to write the HTML report."),
     llm: Optional[str] = LLM_OPTION,
+    note: Optional[str] = NOTE_OPTION,
+    fresh_questions: bool = typer.Option(
+        False, "--fresh-questions", help="Write a brand-new question set instead of reusing the last one."
+    ),
 ) -> None:
     """Test your RAG end to end: write questions from your docs, run your adapter, score it, open the report."""
     cli_easy.run_check(
-        docs, adapter, questions, match_by, match_threshold, yes, no_open, max_llm_calls, db, out, llm
+        docs, adapter, questions, match_by, match_threshold, yes, no_open, max_llm_calls, db, out, llm,
+        note=note, fresh_questions=fresh_questions,
     )
+
+
+@app.command()
+@_cli_safe
+def improve(
+    docs: Path = typer.Option(..., "--docs", help="Folder of .txt/.md documents your pipeline answers from."),
+    adapter: Path = typer.Option(DEFAULT_ADAPTER_PATH, "--adapter", help="Adapter file with KNOBS and make_adapter(config)."),
+    budget_calls: int = typer.Option(400, "--budget-calls", help="Hard cap on ragaudit's LLM calls; stops cleanly and keeps progress."),
+    max_trials: int = typer.Option(8, "--max-trials", help="Settings to try on practice questions, your current ones included."),
+    note: Optional[str] = NOTE_OPTION,
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
+    no_open: bool = typer.Option(False, "--no-open", help="Don't open the report in the browser."),
+    search_space: Optional[Path] = typer.Option(
+        None, "--search-space", help="YAML file of knobs and values; overrides the adapter's KNOBS."
+    ),
+    strategy: str = typer.Option("random", "--strategy", help="How to pick settings to try: random (seeded), grid or llm."),
+    seed: int = typer.Option(0, "--seed", help="Seed for the random strategy."),
+    generator_model: Optional[str] = typer.Option(None, "--generator-model", help="Model that writes questions (default RAGAUDIT_MODEL)."),
+    verifier_model: Optional[str] = typer.Option(
+        None, "--verifier-model", help="A different model that checks each question (default RAGAUDIT_VERIFIER_MODEL)."
+    ),
+    judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Model that grades answers (default RAGAUDIT_MODEL)."),
+    match_threshold: float = MATCH_THRESHOLD_OPTION,
+    out: Path = typer.Option(cli_easy.DEFAULT_CHECK_REPORT, "--out", help="Where to write the HTML report."),
+    config_out: Path = typer.Option(Path("best_config.yaml"), "--config-out", help="Where to write the best settings."),
+    llm: Optional[str] = LLM_OPTION,
+) -> None:
+    """Make your RAG better on its own: write questions, tune settings on practice, score on a locked exam."""
+    from ragaudit.cli_improve import run_improve
+
+    run_improve(
+        docs, adapter, budget_calls=budget_calls, max_trials=max_trials, note=note, yes=yes, no_open=no_open, llm=llm,
+        generator_model=generator_model, verifier_model=verifier_model, judge_model=judge_model,
+        search_space=search_space, strategy=strategy, seed=seed, match_threshold=match_threshold, out=out,
+        config_out=config_out,
+    )
+
+
+def _history_for_run(db: Path, run_id: str):
+    """The history of the project a run belongs to: the store next to its database, or one level up."""
+    from ragaudit import history
+    from ragaudit.storage.store import Store
+
+    for candidate in (db.resolve().parent / "store.db", db.resolve().parent / ".ragaudit" / "store.db"):
+        if not candidate.is_file():
+            continue
+        with Store(candidate) as store:
+            rows = history.load_history(store)
+        if any(row.run_id == run_id for row in rows):
+            return rows
+    return []
+
+
+def _latest_report_file() -> Optional[Path]:
+    """The newest report recorded in this folder's project history, if it still exists."""
+    from ragaudit import history
+    from ragaudit.storage.store import DEFAULT_STORE_PATH as store_path
+    from ragaudit.storage.store import Store
+
+    if not store_path.is_file():
+        return None
+    with Store(store_path) as store:
+        rows = history.load_history(store)
+    for row in reversed(rows):
+        path = row.extra.get("report_path")
+        if path and Path(path).is_file():
+            return Path(path)
+    return None
 
 
 @app.command()
@@ -501,17 +623,36 @@ def report(
         None, "--run-id", help="Run id to report on (defaults to the most recently run). For v2 kinds, the generate run or tune id."
     ),
     kind: str = typer.Option(
-        "run", "--kind", help="run (v1 run report, the default), generate (v2 generate run) or tune (v2 tune run)."
+        "run", "--kind", help="run (the run report, the default), generate (v2 generate run) or tune (v2 tune run)."
     ),
     store: Path = STORE_OPTION,
+    legacy: bool = typer.Option(False, "--legacy", help="Render the run with the old (v1) report template."),
+    open_report: bool = typer.Option(
+        False, "--open", help="Open the report in the browser. With no ragaudit.db here, re-opens the latest check or improve report."
+    ),
 ) -> None:
     """Render the latest (or specified) Run into a static HTML report. v2: --kind generate|tune."""
+    import webbrowser
+
+    def done(path: Path) -> None:
+        typer.echo(f"Report written to {path}")
+        if open_report:
+            webbrowser.open(path.resolve().as_uri())
+
     if kind in ("generate", "tune"):
-        output_path = cli_v2.run_report(kind, store, out or Path(f"{kind}-report.html"), run_id)
-        typer.echo(f"Report written to {output_path}")
+        done(cli_v2.run_report(kind, store, out or Path(f"{kind}-report.html"), run_id))
         return
     if kind != "run":
         _error_exit(f"--kind must be run, generate or tune, got {kind!r}")
+    if open_report and not db.exists() and out is None and run_id is None:
+        latest = _latest_report_file()
+        if latest is None and Path(cli_easy.DEFAULT_CHECK_REPORT).is_file():
+            latest = Path(cli_easy.DEFAULT_CHECK_REPORT)
+        if latest is None:
+            _error_exit("no report found here — run `ragaudit check --docs <folder>` (or `ragaudit ui`) first.")
+        typer.echo(f"Opening {latest}")
+        webbrowser.open(latest.resolve().as_uri())
+        return
     out = out or Path("report.html")
     if not db.exists():
         _error_exit(f"database not found at {db} — run `ragaudit ingest`, `generate`, and `run` first.")
@@ -529,12 +670,34 @@ def report(
         test_set = repository.load_test_set(conn, run.config.testset_id)
         if test_set is None:
             _error_exit(f"test set '{run.config.testset_id}' referenced by run '{resolved_run_id}' not found.")
+        chunk_texts = {chunk.chunk_id: chunk.text for chunk in repository.load_chunks(conn)}
     finally:
         conn.close()
 
-    output_path = generate_report(run, test_set, out)
-    typer.echo(f"Report written to {output_path}")
+    if legacy:
+        done(generate_report(run, test_set, out))
+        return
+    from ragaudit.report.v3 import render_v1_run
+
+    done(render_v1_run(
+        run, test_set, out, history_rows=_history_for_run(db, run.config.run_id), chunk_texts=chunk_texts, kind="run"
+    ))
 
 
 if __name__ == "__main__":
     app()
+
+
+@app.command()
+def ui(
+    port: int = typer.Option(8765, "--port", help="Port on 127.0.0.1 (a free one is picked if it's busy)."),
+    no_browser: bool = typer.Option(False, "--no-browser", help="Print the link instead of opening the browser."),
+    project: Path = typer.Option(Path("."), "--project", help="Project folder; the page reads and writes only inside it."),
+    llm: str = LLM_OPTION,
+) -> None:
+    """Open the setup page: pick the AI, your docs and your app, then run a check or improve. Local only."""
+    from ragaudit.ui.server import serve
+
+    if not project.is_dir():
+        _error_exit(f"--project {project} is not a folder")
+    serve(project, port=port, llm=llm, open_browser=not no_browser)

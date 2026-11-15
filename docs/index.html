@@ -13,6 +13,7 @@
   <div class="ln-col">
     <a class="ln-brand" href="#top">RAG Tester</a>
     <ul class="ln-nav-links">
+      <li><a href="#start">2 commands</a></li>
       <li><a href="#quickstart">5-minute test</a></li>
       <li><a href="#problem">The problem</a></li>
       <li><a href="#how">How it works</a></li>
@@ -54,7 +55,7 @@
         </p>
 
         <div class="ln-actions">
-          <a class="ln-btn ln-btn--primary" href="#quickstart">Test your RAG in 5 minutes</a>
+          <a class="ln-btn ln-btn--primary" href="#start">Test your RAG in 2 commands</a>
           <a class="ln-btn ln-btn--secondary" href="#reports">View a sample report</a>
         </div>
       </div>
@@ -110,6 +111,31 @@
         </div>
       </div>
 
+    </div>
+  </section>
+
+  <section id="start" class="ln-band">
+    <div class="ln-col">
+      <h2>Test your RAG in 2 commands</h2>
+      <p class="ln-lead">
+        Install it, then open the setup page. It runs on your computer only and walks you through
+        four steps: pick the AI (local Ollama or an API key), point it at your docs, connect your app,
+        and run.
+      </p>
+      <div class="ln-code">
+<pre><code>pip install ragaudit-cli
+ragaudit ui</code></pre>
+        <button type="button" class="ln-copy" aria-label="Copy the two commands">Copy</button>
+      </div>
+      <p class="ln-quick-note">
+        <strong>Then improve it:</strong> <code>ragaudit improve --docs ./docs</code> tries the settings your
+        adapter declares on practice questions, keeps the best and scores it once on a locked exam, so the
+        gain you see is not memorised.
+      </p>
+      <div class="ln-code">
+<pre><code>ragaudit improve --docs ./docs</code></pre>
+        <button type="button" class="ln-copy" aria-label="Copy improve command">Copy</button>
+      </div>
     </div>
   </section>
 
@@ -258,15 +284,19 @@ ragaudit doctor</code></pre>
     <div class="ln-col">
       <h2>Sample reports</h2>
       <p class="ln-lead">
-        Three runs from the bundled demo, rendered by the tool itself. The first two use
+        The first is a real run of the current report on local models. The other three are earlier runs
+        from the bundled demo, rendered by the tool itself. Two of those use
         an invented corpus whose facts exist nowhere else, so a correct answer has to
         have come from retrieval. The third uses facts any model knows cold.
       </p>
 
-      <p class="ln-viewer-desc" id="viewer-desc">Well-known facts, retrieval mostly wrong, every answer correct anyway. 9 of 13 lucky passes, all confirmed by ablation.</p>
+      <p class="ln-viewer-desc" id="viewer-desc">A real run on local Ollama models (qwen2.5:7b, with llama3.1:8b verifying), 15 Nov 2026: four checks and one improve run on the demo docs, with the history chart and a docs edit marked.</p>
 
       <div class="ln-tabs" role="tablist" aria-label="Sample report">
         <button type="button" class="ln-tab" role="tab" aria-selected="true"
+          data-src="sample-report.html"
+          data-desc="A real run on local Ollama models (qwen2.5:7b, with llama3.1:8b verifying), 15 Nov 2026: four checks and one improve run on the demo docs, with the history chart and a docs edit marked.">Real run</button>
+        <button type="button" class="ln-tab" role="tab" aria-selected="false"
           data-src="sample-report-lucky.html"
           data-desc="Well-known facts, retrieval mostly wrong, every answer correct anyway. 9 of 13 lucky passes, all confirmed by ablation.">Lucky pass</button>
         <button type="button" class="ln-tab" role="tab" aria-selected="false"
@@ -277,10 +307,11 @@ ragaudit doctor</code></pre>
           data-desc="The same invented corpus with retrieval working as intended. 18 of 18 true passes.">Healthy</button>
       </div>
 
-      <iframe class="ln-frame" id="report-frame" src="sample-report-lucky.html"
+      <iframe class="ln-frame" id="report-frame" src="sample-report.html"
         title="Sample report" loading="lazy"></iframe>
       <p class="ln-viewer-foot">
         Open directly:
+        <a href="sample-report.html">real run</a> &middot;
         <a href="sample-report-lucky.html">lucky</a> &middot;
         <a href="sample-report-degraded.html">degraded</a> &middot;
         <a href="sample-report-healthy.html">healthy</a>.

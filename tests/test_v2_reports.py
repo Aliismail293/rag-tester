@@ -181,7 +181,7 @@ def v1_db(tmp_path_factory):
 
 
 def test_v1_report_command_output_is_unchanged(tmp_path, v1_db):
-    """The default `report` path renders exactly what the v1 generator renders."""
+    """`report --legacy` renders exactly what the v1 generator renders (v3 made the new report the default)."""
     db = v1_db
     conn = db_module.get_connection(db)
     try:
@@ -191,7 +191,7 @@ def test_v1_report_command_output_is_unchanged(tmp_path, v1_db):
         conn.close()
     expected = generate_report(run, test_set, tmp_path / "direct.html").read_bytes()
 
-    result = CliRunner().invoke(app, ["report", "--db", str(db), "--out", str(tmp_path / "cli.html")])
+    result = CliRunner().invoke(app, ["report", "--legacy", "--db", str(db), "--out", str(tmp_path / "cli.html")])
     assert result.exit_code == 0, result.output
     assert (tmp_path / "cli.html").read_bytes() == expected
     assert b"v2-" not in expected  # no v2 styles leak into v1 reports
@@ -218,7 +218,7 @@ def test_v2_demo_script_runs_end_to_end_offline(tmp_path):
 
 def test_run_report_opens_with_the_plain_english_summary(tmp_path, v1_db):
     db = v1_db
-    result = CliRunner().invoke(app, ["report", "--db", str(db), "--out", str(tmp_path / "r.html")])
+    result = CliRunner().invoke(app, ["report", "--legacy", "--db", str(db), "--out", str(tmp_path / "r.html")])
     assert result.exit_code == 0, result.output
     page = (tmp_path / "r.html").read_text()
     box = page.index('class="summary-box summary-needs_work"')
@@ -236,7 +236,7 @@ def test_docs_sample_reports_show_the_summary_box():
 
 def test_run_report_case_table_stacks_on_phones(tmp_path, v1_db):
     """At phone width each case becomes a card, so the page never scrolls sideways."""
-    CliRunner().invoke(app, ["report", "--db", str(v1_db), "--out", str(tmp_path / "r.html")])
+    CliRunner().invoke(app, ["report", "--legacy", "--db", str(v1_db), "--out", str(tmp_path / "r.html")])
     page = (tmp_path / "r.html").read_text()
     phone_css = page[page.index("@media (max-width: 600px)"):]
     assert "table#case-table thead" in phone_css and "display: block" in phone_css

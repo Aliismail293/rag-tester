@@ -65,8 +65,10 @@ def judge_groundedness(client: Completer, answer: str, contexts: list[str]) -> G
     On unparseable judge output, conservatively returns is_grounded=False
     with a rationale noting the parse failure, rather than raising.
     """
-    raw = client.complete(SYSTEM_PROMPT, _build_user_prompt(answer, contexts))
-    parsed = parse_groundedness_response(raw)
+    prompt = _build_user_prompt(answer, contexts)
+    parsed = parse_groundedness_response(client.complete(SYSTEM_PROMPT, prompt))
+    if parsed is None:  # one malformed reply must not flip a score: ask once more
+        parsed = parse_groundedness_response(client.complete(SYSTEM_PROMPT, prompt))
 
     if parsed is None:
         logger.warning("Groundedness judge returned unparseable JSON for answer: %s", answer)

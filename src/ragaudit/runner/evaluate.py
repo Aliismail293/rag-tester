@@ -158,6 +158,7 @@ def evaluate_question(
         split=question.split.value,
         answer=response.answer,
         retrieved_chunk_ids=response.retrieved_chunk_ids[:k],
+        contexts=list(response.contexts[:k]),
         recall_at_k=recall,
         reciprocal_rank=reciprocal_rank,
         retrieval_hit=hit,

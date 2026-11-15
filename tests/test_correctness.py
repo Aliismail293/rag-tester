@@ -52,3 +52,27 @@ def test_judge_correctness_falls_back_safely_on_malformed_json():
     assert result.judge_model == "judge-model"
     assert "unparseable" in result.rationale
     assert result.judge_parse_failed is True
+
+
+class SequenceClient(StubClient):
+    def __init__(self, responses: list[str]):
+        super().__init__(responses[0])
+        self._responses = list(responses)
+
+    def complete(self, system: str, user: str) -> str:
+        self.calls.append((system, user))
+        return self._responses.pop(0)
+
+
+def test_one_malformed_reply_is_retried_before_failing_the_answer():
+    # Found in a real Ollama run: one bad judge reply turned a correct answer into a "regression".
+    client = SequenceClient(["Sure! The answer is correct.", '{"is_correct": true, "score": 1.0}'])
+    result = judge_correctness(client, "Q?", "20", "20")
+    assert result.is_correct and not result.judge_parse_failed and len(client.calls) == 2
+    assert client.calls[0] == client.calls[1]
+
+
+def test_two_malformed_replies_still_fail_safely():
+    client = SequenceClient(["nope", "still nope"])
+    result = judge_correctness(client, "Q?", "20", "20")
+    assert not result.is_correct and result.judge_parse_failed and len(client.calls) == 2

@@ -38,3 +38,11 @@ def test_judge_groundedness_falls_back_safely_on_malformed_json():
     assert result.is_grounded is False
     assert "unparseable" in result.rationale
     assert result.judge_parse_failed is True
+
+
+def test_one_malformed_reply_is_retried():
+    replies = ["garbage", '{"is_grounded": true, "score": 1.0}']
+    client = StubClient("unused")
+    client.complete = lambda system, user: replies.pop(0)
+    result = judge_groundedness(client, "some answer", ["context a"])
+    assert result.is_grounded and not result.judge_parse_failed and replies == []

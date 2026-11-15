@@ -326,12 +326,49 @@ def run_check(
     db: Path,
     out: Path,
     llm: str | None,
+    note: str | None = None,
+    fresh_questions: bool = False,
+    legacy: bool = False,
+    progress=None,
 ) -> list[str]:
-    """ingest -> generate -> run (with ablation) -> report, in one command."""
+    """ingest -> generate (reusing earlier questions) -> run (with ablation) -> history -> report, in one command."""
     with _adapter_env(llm, docs if docs.is_dir() else None):
         return _run_check(
-            docs, adapter_path, questions, match_by, match_threshold, yes, no_open, max_llm_calls, db, out, llm
+            docs, adapter_path, questions, match_by, match_threshold, yes, no_open, max_llm_calls, db, out, llm,
+            note, fresh_questions, legacy, progress,
         )
+
+
+def stable_chunks(docs: Path, documents: list) -> list[tuple]:
+    """(stable-id chunk, v1 chunk) pairs: the same text under v2's `relative/path.md#position` id and v1's content-hash id.
+
+    The pool keys questions by the stable id, so an edit elsewhere never
+    orphans them; the run itself keeps v1 ids so --match-by id behaves as before.
+    """
+    from ragaudit.ingest import chunker
+
+    pairs = []
+    for document in documents:
+        relative = Path(document.source_path).relative_to(docs).as_posix()
+        for chunk in chunker.chunk_document(document):
+            stable = chunk.model_copy(update={"chunk_id": f"{relative}#{chunk.position}", "doc_id": relative})
+            pairs.append((stable, chunk))
+    return pairs
+
+
+def _describe_plan(plan) -> str:
+    if plan.fresh:
+        return f"Questions: writing a new set of {plan.new_questions} ({plan.fresh_reason})."
+    text = f"Questions: reusing {len(plan.reused)} from earlier checks, so scores stay comparable"
+    if plan.new_questions:
+        counts = plan.counts
+        text += (
+            f"; writing {plan.new_questions} for new or edited passages "
+            f"({counts['new']} new, {counts['changed']} edited, {counts['deleted']} deleted)"
+        )
+    if plan.retire:
+        text += f"; retiring {len(plan.retire)} from edited or deleted passages"
+    return text + ". (--fresh-questions writes a brand-new set.)"
 
 
 def _run_check(
@@ -346,19 +383,28 @@ def _run_check(
     db: Path,
     out: Path,
     llm: str | None,
+    note: str | None,
+    fresh_questions: bool,
+    legacy: bool,
+    progress,
 ) -> list[str]:
     import webbrowser
 
+    from ragaudit import check_questions, history
     from ragaudit.cli import _execute_run
     from ragaudit.generate.testset_generator import generate_test_cases_for_chunk, generate_test_set
-    from ragaudit.ingest import chunker
     from ragaudit.ingest.loader import load_documents
+    from ragaudit.ingest.versioning import compute_index_version
     from ragaudit.llm.factory import BudgetedCompleter, CallBudget, LLMBudgetExceeded, make_client
-    from ragaudit.report.generator import generate_report
     from ragaudit.report.plain_summary import build_plain_summary
     from ragaudit.scoring.text_match import validate_match_by
     from ragaudit.storage import db as db_module
     from ragaudit.storage import repository
+    from ragaudit.storage.store import Store
+
+    def report_progress(phase: str, done: int, total: int, calls: int = 0) -> None:
+        if progress is not None:
+            progress(phase, done, total, calls)
 
     try:
         validate_match_by(match_by)
@@ -374,9 +420,12 @@ def _run_check(
     documents = load_documents(docs)
     if not documents:
         _fail(f"no .txt or .md files found under {docs}")
-    chunks = [chunk for document in documents for chunk in chunker.chunk_document(document)]
-    if not chunks:
+    pairs = stable_chunks(docs, documents)
+    if not pairs:
         _fail(f"the files under {docs} are empty")
+    chunks = [v1 for _, v1 in pairs]
+    stable = [s for s, _ in pairs]
+    v1_by_stable = {s.chunk_id: v1 for s, v1 in pairs}
     try:
         adapter = load_adapter(str(adapter_path))
     except AdapterLoadError as exc:
@@ -388,71 +437,150 @@ def _run_check(
     if problems:
         _fail(f"{problems[0].name}. Fix: {problems[0].fix}")
 
-    plan = plan_check(chunks, questions)
-    cap = max_llm_calls if max_llm_calls is not None else plan.max_calls
-    typer.echo(f"Docs: {len(documents)} file(s), {len(chunks)} chunk(s). Questions: {questions}, from {plan.generate_calls} chunk(s).")
-    typer.echo(
-        f"Estimated LLM calls: about {plan.expected_calls} ({plan.generate_calls} to write questions, "
-        f"{JUDGE_CALLS_PER_QUESTION * questions} to judge answers), up to {plan.max_calls} if every answer needs "
-        f"the lucky-pass check. Budget cap: {cap} call(s) (--max-llm-calls)."
-    )
-    own_calls = adapter_llm_calls(adapter)
-    if own_calls:
-        typer.echo(
-            f"The demo adapter answers through the same LLM: {own_calls * questions} more call(s), outside the cap "
-            f"(1 was made just now to test it)."
-        )
-    else:
-        typer.echo(f"Your adapter will be called {questions} more time(s); its own LLM calls are not counted here.")
-    if provider == "mock":
-        typer.echo("LLM: mock (offline, free; its scores say nothing about a real pipeline).")
-    if not yes and not typer.confirm("Continue?", default=True):
-        if own_calls:
-            typer.echo("Cancelled. Only the adapter's one test call was sent to the LLM.")
-        else:
-            typer.echo("Cancelled. Nothing was sent to the LLM.")
-        raise typer.Exit(code=0)
-
-    budget = CallBudget(cap)
-    client = BudgetedCompleter(make_client(provider), budget)
-
-    db.parent.mkdir(parents=True, exist_ok=True)
-    if db.exists():
-        db.unlink()  # each check starts clean; the HTML report is the record
-    conn = db_module.get_connection(db)
-    phase = "writing questions"
+    store_path = history.store_path_for_docs(docs)
+    store = Store(store_path)
     try:
-        repository.save_documents(conn, documents)
-        repository.save_chunks(conn, chunks)
-        typer.echo(f"Writing {questions} question(s) from your docs...")
-        test_set = generate_test_set(client, documents, [], n_per_chunk=1)
-        cases = []
-        for chunk, n in zip(plan.chunks, plan.per_chunk):
-            cases.extend(generate_test_cases_for_chunk(client, chunk, n=n)[:n])
-        test_set = test_set.model_copy(update={"test_cases": cases})
-        if not cases:
-            _fail("the LLM did not return any usable questions; check RAGAUDIT_MODEL with `ragaudit doctor`.")
-        if len(cases) < questions:
-            typer.echo(f"Got {len(cases)} of {questions} question(s); some passages gave fewer than asked.")
-        repository.save_test_set(conn, test_set)
-        phase = "scoring answers"
-        run = _execute_run(
-            conn, test_set, adapter_path, client,
-            run_ablation_flag=True, match_by=match_by, match_threshold=match_threshold,
+        plan = check_questions.plan_questions(store, stable, questions, fresh=fresh_questions)
+        estimate = CheckPlan([chunk for chunk, _ in plan.to_generate], [n for _, n in plan.to_generate])
+        n_total = plan.questions
+        judge_calls = JUDGE_CALLS_PER_QUESTION * n_total
+        expected = estimate.generate_calls + judge_calls
+        upper = expected + ABLATION_CALLS_PER_QUESTION * n_total
+        cap = max_llm_calls if max_llm_calls is not None else upper
+        typer.echo(f"Docs: {len(documents)} file(s), {len(chunks)} chunk(s). Questions: {n_total}, from {estimate.generate_calls} chunk(s)." if plan.fresh else f"Docs: {len(documents)} file(s), {len(chunks)} chunk(s). Questions: {n_total}.")
+        typer.echo(_describe_plan(plan))
+        typer.echo(
+            f"Estimated LLM calls: about {expected} ({estimate.generate_calls} to write questions, "
+            f"{judge_calls} to judge answers), up to {upper} if every answer needs "
+            f"the lucky-pass check. Budget cap: {cap} call(s) (--max-llm-calls)."
         )
-    except LLMBudgetExceeded:
-        _fail(
-            f"stopped while {phase}: the budget of {cap} LLM call(s) was used up. "
-            f"Raise --max-llm-calls or lower --questions (now {questions})."
-        )
-    finally:
-        conn.close()
+        own_calls = adapter_llm_calls(adapter)
+        if own_calls:
+            typer.echo(
+                f"The demo adapter answers through the same LLM: {own_calls * n_total} more call(s), outside the cap "
+                f"(1 was made just now to test it)."
+            )
+        else:
+            typer.echo(f"Your adapter will be called {n_total} more time(s); its own LLM calls are not counted here.")
+        if provider == "mock":
+            typer.echo("LLM: mock (offline, free; its scores say nothing about a real pipeline).")
+        if not yes and not typer.confirm("Continue?", default=True):
+            if own_calls:
+                typer.echo("Cancelled. Only the adapter's one test call was sent to the LLM.")
+            else:
+                typer.echo("Cancelled. Nothing was sent to the LLM.")
+            raise typer.Exit(code=0)
 
-    report_path = generate_report(run, test_set, out)
+        budget = CallBudget(cap)
+        client = BudgetedCompleter(make_client(provider), budget)
+
+        db.parent.mkdir(parents=True, exist_ok=True)
+        if db.exists():
+            db.unlink()  # the working database starts clean; questions and history live in the project store
+        conn = db_module.get_connection(db)
+        phase = "writing questions"
+        try:
+            repository.save_documents(conn, documents)
+            repository.save_chunks(conn, chunks)
+            check_questions.commit_plan(store, plan, stable, questions)
+            pooled = list(plan.reused)
+            if plan.to_generate:
+                typer.echo(f"Writing {plan.new_questions} question(s) from your docs...")
+            for index, (chunk, n) in enumerate(plan.to_generate, start=1):
+                written = generate_test_cases_for_chunk(client, chunk, n=n)[:n]
+                pooled.extend(check_questions.add_generated(store, chunk, written))
+                report_progress("generate", index, len(plan.to_generate), budget.used)
+                typer.echo(f"  generate {index}/{len(plan.to_generate)}")
+            seen, unique = set(), []
+            for q in pooled:
+                if q.key not in seen and q.chunk_id in v1_by_stable:
+                    seen.add(q.key)
+                    unique.append(q)
+            cases = [check_questions.to_test_case(q, v1_by_stable[q.chunk_id]) for q in unique]
+            test_set = generate_test_set(client, documents, [], n_per_chunk=1)
+            test_set = test_set.model_copy(update={"test_cases": cases})
+            if not cases:
+                _fail("the LLM did not return any usable questions; check RAGAUDIT_MODEL with `ragaudit doctor`.")
+            if len(cases) < n_total:
+                typer.echo(f"Got {len(cases)} of {n_total} question(s); some passages gave fewer than asked.")
+            repository.save_test_set(conn, test_set)
+            phase = "scoring answers"
+            run = _execute_run(
+                conn, test_set, adapter_path, client,
+                run_ablation_flag=True, match_by=match_by, match_threshold=match_threshold,
+                on_case=(lambda done, total: report_progress("answer", done, total, budget.used)),
+            )
+        except LLMBudgetExceeded:
+            _fail(
+                f"stopped while {phase}: the budget of {cap} LLM call(s) was used up. "
+                f"Raise --max-llm-calls or lower --questions (now {questions}). Questions written so far are saved "
+                "and reused next time."
+            )
+        finally:
+            conn.close()
+
+        corpus_fingerprint = compute_index_version({s.chunk_id: chunk_hash_of(s) for s in stable})
+        row = history.record_run(
+            store,
+            kind="check",
+            run_id=run.config.run_id,
+            outcomes={case.test_id: case.verdict.value for case in run.scored_cases},
+            adapter_path=str(adapter_path),
+            corpus_fingerprint=corpus_fingerprint,
+            correct_count=sum(case.correctness.is_correct for case in run.scored_cases),
+            retrieval_hits=sum(case.retrieval.hit for case in run.scored_cases),
+            groundedness_pct=round(run.summary.mean_groundedness * 100, 1) if run.summary.mean_groundedness is not None else None,
+            models={"judge": client.model, "questions": test_set.generation_model},
+            note=note,
+            corpus_changed=plan.corpus_changed,
+            extra={
+                "llm_calls": budget.used,
+                "match_by": match_by,
+                "match_threshold": match_threshold,
+                "docs": str(docs),
+                "report_path": str(out.resolve()),
+                "reused_questions": len(plan.reused),
+                "new_questions": len(cases) - len(plan.reused),
+            },
+        )
+        rows = history.load_history(store)
+    finally:
+        store.close()
+
+    report_path = render_run_report(
+        run, test_set, out, legacy=legacy, history_rows=rows, docs=docs, llm_calls=budget.used,
+        chunk_texts={c.chunk_id: c.text for c in chunks}, project_store=store_path,
+    )
     typer.echo(f"Used {budget.used} LLM call(s). Report: {report_path}")
+    if row.prev_run_id is not None:
+        if row.shared_questions:
+            typer.echo(
+                f"vs the previous check: {row.delta_true_pass:+.1f} true-pass points on the "
+                f"{row.shared_questions} question(s) both runs share."
+            )
+        else:
+            typer.echo("vs the previous check: no shared questions, so no like-for-like delta.")
     if not no_open:
         webbrowser.open(report_path.resolve().as_uri())
 
     lines = build_plain_summary(run.summary, run.scored_cases).lines()
     print_summary_box(lines)
     return lines
+
+
+def chunk_hash_of(chunk) -> str:
+    from ragaudit.ingest.corpus import chunk_hash
+
+    return chunk_hash(chunk)
+
+
+def render_run_report(run, test_set, out: Path, *, legacy: bool = False, **kwargs) -> Path:
+    """The run report: the v3 report by default, the v1 template with legacy=True."""
+    from ragaudit.report.generator import generate_report
+
+    if legacy:
+        return generate_report(run, test_set, out)
+    from ragaudit.report.v3 import render_v1_run
+
+    kwargs.pop("project_store", None)
+    return render_v1_run(run, test_set, out, **kwargs)

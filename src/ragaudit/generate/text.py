@@ -46,14 +46,50 @@ def content_tokens(text: str) -> set[str]:
     return {_normalize(t) for t in _TOKEN_RE.findall(text.lower()) if t not in STOPWORDS}
 
 
+_WORD_RE = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
+_SENTENCE_END_RE = re.compile(r"[.!?:;]['\")\]]*$")
+
+
+def name_tokens(source_text: str) -> set[str]:
+    """Tokens that are names in the source: capitalised mid-sentence and never written in lower case there.
+
+    "Redwatch Protocol", "Thistlewick Robotics", "EL-7". A question about a
+    named thing has to use its name, so names don't count as reused wording.
+    Words at the start of a sentence, a line or a list item, and Markdown
+    headings, are ignored, so ordinary capitalised words don't qualify.
+    """
+    capitalised, lower = set(), set()
+    sentence_start = True
+    for line in source_text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            sentence_start = True  # a new paragraph or a heading
+            continue
+        item = re.sub(r"^([-*+>]|\d+[.)])\s+", "", stripped)
+        if item != stripped:
+            sentence_start = True  # a list item starts a sentence; a wrapped line continues one
+        stripped = item
+        for match in _WORD_RE.finditer(stripped):
+            word = match.group(0)
+            tokens = {_normalize(t) for t in _TOKEN_RE.findall(word.lower())}
+            if word[0].isupper() and not sentence_start:
+                capitalised |= tokens
+            elif word.islower():
+                lower |= tokens
+            following = stripped[match.end():match.end() + 3]
+            sentence_start = bool(_SENTENCE_END_RE.match(following.split(" ")[0])) if following else False
+    return capitalised - lower
+
+
 def lexical_overlap(question: str, source_text: str) -> float:
     """Fraction of the question's distinct content tokens that also appear in the source text.
 
     High overlap means the question reuses the chunk's wording, which makes
-    keyword retrieval trivially easy and inflates retrieval scores. A
-    question with no content tokens at all scores 0.0.
+    keyword retrieval trivially easy and inflates retrieval scores. Names
+    from the source (see name_tokens) are left out: they can't be reworded.
+    A question with no other content tokens scores 0.0.
     """
-    question_tokens = content_tokens(question)
+    question_tokens = content_tokens(question) - name_tokens(source_text)
     if not question_tokens:
         return 0.0
     return len(question_tokens & content_tokens(source_text)) / len(question_tokens)

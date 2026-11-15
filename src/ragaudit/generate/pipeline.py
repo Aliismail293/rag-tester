@@ -417,8 +417,13 @@ def generate_questions(
     verifier: Completer,
     options: GenerateOptions | None = None,
     budget: CallBudget | None = None,
+    on_chunk=None,
 ) -> GenerateSummary:
-    """Generate, check and verify questions for every chunk that needs them, saving as it goes."""
+    """Generate, check and verify questions for every chunk that needs them, saving as it goes.
+
+    on_chunk(done, total), if given, is called after each chunk; total is
+    the chunks this run will process (pending, capped by max_chunks).
+    """
     options = options or GenerateOptions()
     budget = budget or CallBudget()
     gen = BudgetedCompleter(generator, budget)
@@ -442,6 +447,7 @@ def generate_questions(
 
     pending = [chunk for chunk in chunks if source_key([chunk]) not in done]
     summary.chunks_skipped = len(chunks) - len(pending)
+    planned = len(pending) if options.max_chunks is None else min(len(pending), options.max_chunks)
 
     for index, chunk in enumerate(pending):
         if options.max_chunks is not None and summary.chunks_processed >= options.max_chunks:
@@ -455,6 +461,8 @@ def generate_questions(
             summary.chunks_remaining = len(pending) - index
             break
         summary.chunks_processed += 1
+        if on_chunk is not None:
+            on_chunk(summary.chunks_processed, planned)
         if results is None:
             summary.chunks_unparseable += 1
             continue

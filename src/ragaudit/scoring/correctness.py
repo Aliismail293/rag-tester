@@ -69,12 +69,14 @@ def judge_correctness(
 ) -> CorrectnessResult:
     """Judge whether candidate_answer correctly answers question, vs expected_answer.
 
-    On unparseable judge output, conservatively returns is_correct=False
+    Unparseable judge output is retried once; if it is still unparseable, returns is_correct=False
     with a rationale noting the parse failure, rather than raising — one
     bad judge call must not crash a run.
     """
-    raw = client.complete(SYSTEM_PROMPT, _build_user_prompt(question, expected_answer, candidate_answer))
-    parsed = parse_correctness_response(raw)
+    prompt = _build_user_prompt(question, expected_answer, candidate_answer)
+    parsed = parse_correctness_response(client.complete(SYSTEM_PROMPT, prompt))
+    if parsed is None:  # one malformed reply must not flip a verdict: ask once more
+        parsed = parse_correctness_response(client.complete(SYSTEM_PROMPT, prompt))
 
     if parsed is None:
         logger.warning("Correctness judge returned unparseable JSON for question: %s", question)

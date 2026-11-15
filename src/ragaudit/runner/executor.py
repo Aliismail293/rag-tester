@@ -58,6 +58,7 @@ def run_test_set(
     correctness_judge: CorrectnessJudge,
     groundedness_judge: GroundednessJudge,
     retrieval_scorer: RetrievalScorer = score_by_id,
+    on_case=None,
 ) -> list[ScoredCase]:
     """Run every TestCase in test_set through adapter and score it.
 
@@ -68,10 +69,15 @@ def run_test_set(
     A TestCase whose adapter.query() call raises is recorded as a failed
     ScoredCase (correctness/groundedness both False) instead of aborting
     the run — one broken question must not kill a 500-case run.
+
+    on_case(done, total), if given, is called after each case.
     """
     scored_cases: list[ScoredCase] = []
+    total = len(test_set.test_cases)
 
     for test_case in test_set.test_cases:
+        if on_case is not None and scored_cases:
+            on_case(len(scored_cases), total)
         try:
             response = adapter.query(test_case.question)
         except Exception as exc:
@@ -95,4 +101,6 @@ def run_test_set(
             )
         )
 
+    if on_case is not None:
+        on_case(len(scored_cases), total)
     return scored_cases

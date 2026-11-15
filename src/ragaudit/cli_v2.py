@@ -297,8 +297,11 @@ def run_evaluate(
     full: bool,
     match_by: str = "id",
     match_threshold: float = DEFAULT_MATCH_THRESHOLD,
+    note: str | None = None,
 ) -> EvalSummary:
+    from ragaudit import history
     from ragaudit.cli import NO_CONTEXT_SYSTEM_PROMPT
+    from ragaudit.runner.locked import test_split_outcomes
 
     try:
         validate_match_by(match_by)
@@ -344,8 +347,14 @@ def run_evaluate(
         typer.echo(f"Evaluating the {split} split with adapter {adapter_path}, judge {judge_client.model}...")
         if split_enum == Split.TEST:
             summary = evaluate_test_split(store, adapter, judge, **kwargs)
+            outcomes = test_split_outcomes(store, config_hash, index_version)
         else:
-            summary, _ = run_evaluation(store, store.dev_questions(), Split.DEV, adapter, judge, **kwargs)
+            summary, results = run_evaluation(store, store.dev_questions(), Split.DEV, adapter, judge, **kwargs)
+            outcomes = {r.question_id: r.verdict.value for r in results}
+        history.record_eval_summary(
+            store, summary, kind="evaluate", outcomes=outcomes, adapter_path=str(adapter_path), note=note,
+            models={"judge": judge_client.model}, extra={"split": split, "mode": summary.mode, "match_by": match_by},
+        )
     finally:
         store.close()
 
@@ -418,7 +427,11 @@ def run_tune_command(
     llm: str | None,
     judge_model: str | None,
     proposer_model: str | None,
+    note: str | None = None,
 ) -> TuneResult:
+    from ragaudit import history
+    from ragaudit.runner.locked import test_split_outcomes
+
     if strategy not in ("grid", "random", "llm"):
         _fail(f"--strategy must be grid, random or llm, got {strategy!r}")
     provider = _resolve_provider(llm)
@@ -474,6 +487,12 @@ def run_tune_command(
             _fail(str(exc))
         result.best_config_path = str(write_best_config(result, out))
         store.finish_tune_run(result.tune_id, result.finished_at, result.model_dump_json())
+        history.record_eval_summary(
+            store, result.best_test, kind="tune", run_id=result.tune_id,
+            outcomes=test_split_outcomes(store, result.best_test.config_hash, index_version),
+            adapter_path=str(adapter_path), note=note, models={"judge": judge_client.model},
+            extra=history.tune_extra(result),
+        )
     finally:
         store.close()
 

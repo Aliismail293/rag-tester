@@ -231,6 +231,10 @@ def generate(
     )
 
 
+NOTE_OPTION = typer.Option(
+    None, "--note", help='A note saved with this run in the score history, e.g. --note "tightened prompt".'
+)
+
 MATCH_BY_OPTION = typer.Option(
     "id",
     "--match-by",
@@ -265,6 +269,7 @@ def evaluate(
     judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Correctness judge model."),
     match_by: str = MATCH_BY_OPTION,
     match_threshold: float = MATCH_THRESHOLD_OPTION,
+    note: Optional[str] = NOTE_OPTION,
 ) -> None:
     """v2: evaluate a pipeline on generated questions, with caching and regression sampling."""
     cli_v2.run_evaluate(
@@ -282,6 +287,7 @@ def evaluate(
         full=full,
         match_by=match_by,
         match_threshold=match_threshold,
+        note=note,
     )
 
 
@@ -306,6 +312,7 @@ def tune(
     llm: Optional[str] = LLM_OPTION,
     judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Correctness judge model."),
     proposer_model: Optional[str] = typer.Option(None, "--proposer-model", help="Model for --strategy llm."),
+    note: Optional[str] = NOTE_OPTION,
 ) -> None:
     """v2: search pipeline configs on the dev split; report baseline vs best on the locked test split."""
     cli_v2.run_tune_command(
@@ -323,6 +330,7 @@ def tune(
         llm=llm,
         judge_model=judge_model,
         proposer_model=proposer_model,
+        note=note,
     )
 
 
@@ -347,6 +355,7 @@ def _execute_run(
     run_ablation_flag: bool,
     match_by: str,
     match_threshold: float,
+    on_case=None,
 ) -> Run:
     """Run, score, ablate and save one Run. Shared by `run` and `check`."""
     loaded_adapter = load_adapter(str(adapter_path))
@@ -365,7 +374,9 @@ def _execute_run(
         retrieval_scorer = score_by_id
 
     typer.echo(f"Running {len(test_set.test_cases)} test case(s) through adapter {adapter_path}...")
-    scored_cases = run_test_set(test_set, loaded_adapter, correctness_judge, groundedness_judge, retrieval_scorer)
+    scored_cases = run_test_set(
+        test_set, loaded_adapter, correctness_judge, groundedness_judge, retrieval_scorer, on_case=on_case
+    )
 
     if match_by == "text" and scored_cases and not any(case.response.contexts for case in scored_cases):
         typer.secho(
@@ -410,6 +421,30 @@ def _execute_run(
     return run
 
 
+def _record_v1_run(store_path: Path, run: Run, test_set, note: Optional[str]) -> None:
+    """One history row for `ragaudit run`, in the v2 store (the project history)."""
+    from ragaudit import history
+    from ragaudit.storage.store import Store
+
+    with Store(store_path) as store:
+        history.record_run(
+            store,
+            kind="run",
+            run_id=run.config.run_id,
+            outcomes={case.test_id: case.verdict.value for case in run.scored_cases},
+            adapter_path=run.config.adapter_path,
+            corpus_fingerprint=test_set.corpus_hash,
+            correct_count=sum(case.correctness.is_correct for case in run.scored_cases),
+            retrieval_hits=sum(case.retrieval.hit for case in run.scored_cases),
+            groundedness_pct=(
+                round(run.summary.mean_groundedness * 100, 1) if run.summary.mean_groundedness is not None else None
+            ),
+            models={"judge": run.config.correctness_judge_model, "questions": test_set.generation_model},
+            note=note,
+            extra={"testset_id": test_set.testset_id},
+        )
+
+
 @app.command(name="run")
 @_cli_safe
 def run_cmd(
@@ -421,6 +456,10 @@ def run_cmd(
     no_ablation: bool = typer.Option(False, "--no-ablation", help="Skip the retrieval-disabled ablation step."),
     match_by: str = MATCH_BY_OPTION,
     match_threshold: float = MATCH_THRESHOLD_OPTION,
+    note: Optional[str] = NOTE_OPTION,
+    store: Optional[Path] = typer.Option(
+        None, "--store", help="Store for the score history (default: .ragaudit/store.db next to --db)."
+    ),
 ) -> None:
     """Run the adapter over a test set, score it, ablate lucky passes, and persist the Run."""
     try:
@@ -457,6 +496,7 @@ def run_cmd(
     finally:
         conn.close()
 
+    _record_v1_run(store or db.resolve().parent / ".ragaudit" / "store.db", run, test_set, note)
     typer.echo(
         f"Run '{run.config.run_id}' complete: {run.summary.total_cases} case(s), "
         f"lucky-pass rate {run.summary.lucky_pass_rate:.1%}. Saved to {db}"
@@ -483,10 +523,15 @@ def check(
     db: Path = typer.Option(cli_easy.DEFAULT_CHECK_DB, "--db", help="Working database, recreated on every check."),
     out: Path = typer.Option(cli_easy.DEFAULT_CHECK_REPORT, "--out", help="Where to write the HTML report."),
     llm: Optional[str] = LLM_OPTION,
+    note: Optional[str] = NOTE_OPTION,
+    fresh_questions: bool = typer.Option(
+        False, "--fresh-questions", help="Write a brand-new question set instead of reusing the last one."
+    ),
 ) -> None:
     """Test your RAG end to end: write questions from your docs, run your adapter, score it, open the report."""
     cli_easy.run_check(
-        docs, adapter, questions, match_by, match_threshold, yes, no_open, max_llm_calls, db, out, llm
+        docs, adapter, questions, match_by, match_threshold, yes, no_open, max_llm_calls, db, out, llm,
+        note=note, fresh_questions=fresh_questions,
     )
 
 

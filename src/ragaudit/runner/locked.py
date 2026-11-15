@@ -35,3 +35,18 @@ def evaluate_test_split(store: Store, adapter: Adapter, judge: CorrectnessJudge,
 def count_test_questions(store: Store) -> int:
     """Number of active test questions (ids only, no unlock needed)."""
     return len(store.question_ids(Split.TEST))
+
+
+def test_split_outcomes(store: Store, config_hash: str, index_version: str) -> dict[str, str]:
+    """question_id -> verdict for the cached test results of one config: ids and verdicts only, for run history.
+
+    Never returns question text, answers or judge rationales, so it tells a
+    caller no more than the aggregate score already does, per question.
+    """
+    outcomes = {}
+    with _unlock_test_split():
+        for question_id in store.question_ids(Split.TEST):
+            result = store.load_result(question_id, config_hash, index_version)
+            if result is not None:
+                outcomes[question_id] = result.verdict.value
+    return outcomes

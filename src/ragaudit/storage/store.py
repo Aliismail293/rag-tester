@@ -3,8 +3,12 @@
 A separate SQLite file from v1's `ragaudit.db` (default `.ragaudit/store.db`)
 so v1 tables and behaviour are never touched. Uses the stdlib `sqlite3`
 module only, with a one-row `schema_version` table so a future schema
-change can tell old stores apart from new ones. Opening a schema-1 store
-migrates it (see `_migrate_v1_to_v2`).
+change can tell old stores apart from new ones. Opening an older store
+migrates it in place (see `_migrate_v1_to_v2` and `_migrate_v2_to_v3`).
+
+Schema 3 adds run history (`history`, one summary row per check, run,
+evaluate, tune or improve; see ragaudit.history) and the reusable question
+pool of `ragaudit check` (`check_questions`, see ragaudit.check_questions).
 
 Every read that could return test-split questions or results goes through
 a guard: unless the final evaluation path in `ragaudit.runner.locked` has
@@ -25,8 +29,8 @@ from ragaudit.models.tune import Trial, TuneResult
 from ragaudit.storage.lock import LockedTestSetError, is_test_split_unlocked
 
 DEFAULT_STORE_PATH = Path(".ragaudit") / "store.db"
-SCHEMA_VERSION = 2
-"""2: splits are per chunk, and `questions.split` is NULL for cross-split rejects."""
+SCHEMA_VERSION = 3
+"""2: splits are per chunk, and `questions.split` is NULL for cross-split rejects. 3: run history and check's question pool."""
 
 _QUESTIONS_TABLE = """
 CREATE TABLE IF NOT EXISTS questions (
@@ -116,6 +120,31 @@ CREATE TABLE IF NOT EXISTS tune_trials (
     data_json TEXT NOT NULL,
     PRIMARY KEY (tune_id, trial_index)
 );
+
+CREATE TABLE IF NOT EXISTS history (
+    run_id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    data_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_history_created ON history (created_at);
+
+CREATE TABLE IF NOT EXISTS check_questions (
+    question_key TEXT PRIMARY KEY,
+    chunk_id TEXT NOT NULL,
+    chunk_hash TEXT NOT NULL,
+    question TEXT NOT NULL,
+    expected_answer TEXT NOT NULL,
+    generation_model TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    status TEXT NOT NULL,
+    retired_reason TEXT
+);
+
+CREATE TABLE IF NOT EXISTS store_meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 _QUESTION_COLUMNS = (
@@ -197,13 +226,21 @@ class Store:
         row = self._conn.execute("SELECT version FROM schema_version").fetchone()
         if row is None:
             self._conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
-        elif row[0] == 1:
-            self._migrate_v1_to_v2()
         elif row[0] > SCHEMA_VERSION:
             raise StoreSchemaError(
                 f"store {self.path} has schema version {row[0]}, but this ragaudit only understands "
                 f"up to {SCHEMA_VERSION}. Upgrade ragaudit."
             )
+        else:
+            if row[0] == 1:
+                self._migrate_v1_to_v2()
+            if self.schema_version == 2:
+                self._migrate_v2_to_v3()
+
+    def _migrate_v2_to_v3(self) -> None:
+        """Schema 3 only adds tables (created by SCHEMA above), so the migration just records the version."""
+        self._conn.execute("UPDATE schema_version SET version = 3")
+        self._conn.commit()
 
     def _migrate_v1_to_v2(self) -> None:
         """Re-split a schema-1 store per chunk.
@@ -240,7 +277,7 @@ class Store:
                 conn.execute(f"INSERT INTO questions ({_QUESTION_COLUMNS}) VALUES ({', '.join('?' * 16)})", row)
             conn.execute("DROP TABLE questions_v1")
             conn.executemany("DELETE FROM eval_results WHERE question_id = ?", [(qid,) for qid in moved])
-            conn.execute("UPDATE schema_version SET version = ?", (SCHEMA_VERSION,))
+            conn.execute("UPDATE schema_version SET version = 2")
             conn.execute("COMMIT")
         except BaseException:
             conn.execute("ROLLBACK")
@@ -534,3 +571,53 @@ class Store:
             "SELECT data_json FROM tune_trials WHERE tune_id = ? ORDER BY trial_index", (tune_id,)
         ).fetchall()
         return [Trial.model_validate_json(r[0]) for r in rows]
+
+    # --- run history (schema 3; see ragaudit.history) -----------------------
+
+    def save_history_row(self, run_id: str, kind: str, created_at: datetime, data_json: str) -> None:
+        self._conn.execute(
+            "INSERT OR REPLACE INTO history (run_id, kind, created_at, data_json) VALUES (?, ?, ?, ?)",
+            (run_id, kind, created_at.isoformat(), data_json),
+        )
+        self._conn.commit()
+
+    def load_history_rows(self) -> list[str]:
+        """Every history row's JSON, oldest first."""
+        rows = self._conn.execute("SELECT data_json FROM history ORDER BY created_at, rowid").fetchall()
+        return [r[0] for r in rows]
+
+    # --- check's question pool (schema 3; see ragaudit.check_questions) -----
+
+    def save_check_questions(self, rows: Iterable[tuple]) -> None:
+        """Insert (question_key, chunk_id, chunk_hash, question, expected_answer, generation_model, created_at) as active."""
+        for row in rows:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO check_questions (question_key, chunk_id, chunk_hash, question, expected_answer, "
+                "generation_model, created_at, status, retired_reason) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', NULL)",
+                tuple(row),
+            )
+        self._conn.commit()
+
+    def load_check_questions(self) -> list[tuple]:
+        """Active pool questions, oldest first: (question_key, chunk_id, chunk_hash, question, expected_answer, generation_model, created_at)."""
+        return self._conn.execute(
+            "SELECT question_key, chunk_id, chunk_hash, question, expected_answer, generation_model, created_at "
+            "FROM check_questions WHERE status = 'active' ORDER BY created_at, rowid"
+        ).fetchall()
+
+    def retire_check_questions(self, keys: Iterable[str], reason: str) -> int:
+        changed = 0
+        for key in keys:
+            changed += self._conn.execute(
+                "UPDATE check_questions SET status = 'retired', retired_reason = ? WHERE question_key = ?", (reason, key)
+            ).rowcount
+        self._conn.commit()
+        return changed
+
+    def get_meta(self, key: str) -> str | None:
+        row = self._conn.execute("SELECT value FROM store_meta WHERE key = ?", (key,)).fetchone()
+        return row[0] if row else None
+
+    def set_meta(self, key: str, value: str) -> None:
+        self._conn.execute("INSERT OR REPLACE INTO store_meta (key, value) VALUES (?, ?)", (key, value))
+        self._conn.commit()

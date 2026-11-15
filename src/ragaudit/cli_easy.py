@@ -220,3 +220,168 @@ def run_doctor(adapter_path: Path, llm: str | None = None) -> list[Check]:
         f"All checks passed. Next: ragaudit check --docs ./your-docs --adapter {adapter_path}", fg=typer.colors.GREEN
     )
     return checks
+
+
+# --- check -------------------------------------------------------------------
+
+DEFAULT_CHECK_QUESTIONS = 20
+MAX_CHECK_QUESTIONS = 500
+DEFAULT_CHECK_DB = Path(".ragaudit") / "check.db"
+DEFAULT_CHECK_REPORT = Path("ragaudit-report.html")
+JUDGE_CALLS_PER_QUESTION = 2  # correctness + groundedness
+ABLATION_CALLS_PER_QUESTION = 2  # no-context answer + its correctness judgment, for lucky passes only
+
+
+@dataclass
+class CheckPlan:
+    chunks: list
+    """The chunks questions will be written from."""
+    per_chunk: list[int]
+    """Questions to ask of each chunk, in the same order."""
+
+    @property
+    def questions(self) -> int:
+        return sum(self.per_chunk)
+
+    @property
+    def generate_calls(self) -> int:
+        return len(self.chunks)
+
+    @property
+    def expected_calls(self) -> int:
+        return self.generate_calls + JUDGE_CALLS_PER_QUESTION * self.questions
+
+    @property
+    def max_calls(self) -> int:
+        return self.expected_calls + ABLATION_CALLS_PER_QUESTION * self.questions
+
+
+def plan_check(chunks: list, questions: int) -> CheckPlan:
+    """Spread `questions` evenly over the corpus: one each from evenly spaced chunks, or more per chunk when there are few."""
+    if questions <= len(chunks):
+        selected = [chunks[(i * len(chunks)) // questions] for i in range(questions)]
+        return CheckPlan(selected, [1] * questions)
+    base, extra = divmod(questions, len(chunks))
+    return CheckPlan(list(chunks), [base + 1 if i < extra else base for i in range(len(chunks))])
+
+
+def print_summary_box(lines: list[str]) -> None:
+    typer.echo("")
+    typer.secho("ragaudit check: summary", bold=True)
+    for line in lines:
+        typer.echo(f"  {line}")
+
+
+def run_check(
+    docs: Path,
+    adapter_path: Path,
+    questions: int,
+    match_by: str,
+    match_threshold: float,
+    yes: bool,
+    no_open: bool,
+    max_llm_calls: int | None,
+    db: Path,
+    out: Path,
+    llm: str | None,
+) -> list[str]:
+    """ingest -> generate -> run (with ablation) -> report, in one command."""
+    import webbrowser
+
+    from ragaudit.cli import _execute_run
+    from ragaudit.generate.testset_generator import generate_test_cases_for_chunk, generate_test_set
+    from ragaudit.ingest import chunker
+    from ragaudit.ingest.loader import load_documents
+    from ragaudit.llm.factory import BudgetedCompleter, CallBudget, LLMBudgetExceeded, make_client
+    from ragaudit.report.generator import generate_report
+    from ragaudit.report.plain_summary import build_plain_summary
+    from ragaudit.scoring.text_match import validate_match_by
+    from ragaudit.storage import db as db_module
+    from ragaudit.storage import repository
+
+    try:
+        validate_match_by(match_by)
+        provider = resolve_provider(llm)
+    except ValueError as exc:
+        _fail(str(exc))
+    if not 1 <= questions <= MAX_CHECK_QUESTIONS:
+        _fail(f"--questions must be between 1 and {MAX_CHECK_QUESTIONS}, got {questions}")
+    if max_llm_calls is not None and max_llm_calls < 1:
+        _fail("--max-llm-calls must be at least 1")
+    if not docs.exists():
+        _fail(f"docs folder not found: {docs}")
+    documents = load_documents(docs)
+    if not documents:
+        _fail(f"no .txt or .md files found under {docs}")
+    chunks = [chunk for document in documents for chunk in chunker.chunk_document(document)]
+    if not chunks:
+        _fail(f"the files under {docs} are empty")
+    try:
+        adapter = load_adapter(str(adapter_path))
+    except AdapterLoadError as exc:
+        _fail(f"{exc} Run `ragaudit doctor --adapter {adapter_path}` for the exact fix.")
+    # One sample question before any LLM spend, so a broken adapter costs nothing.
+    problems = [c for c in check_adapter_response(adapter, adapter_path) if not c.ok]
+    if match_by == "id":  # empty contexts only block text matching
+        problems = [c for c in problems if "`contexts`" not in c.name]
+    if problems:
+        _fail(f"{problems[0].name}. Fix: {problems[0].fix}")
+
+    plan = plan_check(chunks, questions)
+    cap = max_llm_calls if max_llm_calls is not None else plan.max_calls
+    typer.echo(f"Docs: {len(documents)} file(s), {len(chunks)} chunk(s). Questions: {questions}, from {plan.generate_calls} chunk(s).")
+    typer.echo(
+        f"Estimated LLM calls: about {plan.expected_calls} ({plan.generate_calls} to write questions, "
+        f"{JUDGE_CALLS_PER_QUESTION * questions} to judge answers), up to {plan.max_calls} if every answer needs "
+        f"the lucky-pass check. Budget cap: {cap} call(s) (--max-llm-calls)."
+    )
+    typer.echo(f"Your adapter will be called {questions} more time(s); its own LLM calls are not counted here.")
+    if provider == "mock":
+        typer.echo("LLM: mock (offline, free; its scores say nothing about a real pipeline).")
+    if not yes and not typer.confirm("Continue?", default=True):
+        typer.echo("Cancelled. Nothing was sent to the LLM.")
+        raise typer.Exit(code=0)
+
+    budget = CallBudget(cap)
+    client = BudgetedCompleter(make_client(provider), budget)
+
+    db.parent.mkdir(parents=True, exist_ok=True)
+    if db.exists():
+        db.unlink()  # each check starts clean; the HTML report is the record
+    conn = db_module.get_connection(db)
+    phase = "writing questions"
+    try:
+        repository.save_documents(conn, documents)
+        repository.save_chunks(conn, chunks)
+        typer.echo(f"Writing {questions} question(s) from your docs...")
+        test_set = generate_test_set(client, documents, [], n_per_chunk=1)
+        cases = []
+        for chunk, n in zip(plan.chunks, plan.per_chunk):
+            cases.extend(generate_test_cases_for_chunk(client, chunk, n=n)[:n])
+        test_set = test_set.model_copy(update={"test_cases": cases})
+        if not cases:
+            _fail("the LLM did not return any usable questions; check RAGAUDIT_MODEL with `ragaudit doctor`.")
+        if len(cases) < questions:
+            typer.echo(f"Got {len(cases)} of {questions} question(s); some passages gave fewer than asked.")
+        repository.save_test_set(conn, test_set)
+        phase = "scoring answers"
+        run = _execute_run(
+            conn, test_set, adapter_path, client,
+            run_ablation_flag=True, match_by=match_by, match_threshold=match_threshold,
+        )
+    except LLMBudgetExceeded:
+        _fail(
+            f"stopped while {phase}: the budget of {cap} LLM call(s) was used up. "
+            f"Raise --max-llm-calls or lower --questions (now {questions})."
+        )
+    finally:
+        conn.close()
+
+    report_path = generate_report(run, test_set, out)
+    typer.echo(f"Used {budget.used} LLM call(s). Report: {report_path}")
+    if not no_open:
+        webbrowser.open(report_path.resolve().as_uri())
+
+    lines = build_plain_summary(run.summary, run.scored_cases).lines()
+    print_summary_box(lines)
+    return lines

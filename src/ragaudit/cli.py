@@ -459,6 +459,33 @@ def run_cmd(
 
 @app.command()
 @_cli_safe
+def check(
+    docs: Path = typer.Option(..., "--docs", help="Folder of .txt/.md documents your pipeline answers from."),
+    adapter: Path = typer.Option(DEFAULT_ADAPTER_PATH, "--adapter", help="Adapter file (see `ragaudit init`)."),
+    questions: int = typer.Option(
+        cli_easy.DEFAULT_CHECK_QUESTIONS, "--questions", help="How many test questions to write in total."
+    ),
+    match_by: str = typer.Option(
+        "text", "--match-by", help="text (default: compare returned contexts with the source passage) or id."
+    ),
+    match_threshold: float = MATCH_THRESHOLD_OPTION,
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
+    no_open: bool = typer.Option(False, "--no-open", help="Don't open the report in the browser."),
+    max_llm_calls: Optional[int] = typer.Option(
+        None, "--max-llm-calls", help="Hard cap on LLM calls (default: the estimate's upper bound)."
+    ),
+    db: Path = typer.Option(cli_easy.DEFAULT_CHECK_DB, "--db", help="Working database, recreated on every check."),
+    out: Path = typer.Option(cli_easy.DEFAULT_CHECK_REPORT, "--out", help="Where to write the HTML report."),
+    llm: Optional[str] = LLM_OPTION,
+) -> None:
+    """Test your RAG end to end: write questions from your docs, run your adapter, score it, open the report."""
+    cli_easy.run_check(
+        docs, adapter, questions, match_by, match_threshold, yes, no_open, max_llm_calls, db, out, llm
+    )
+
+
+@app.command()
+@_cli_safe
 def report(
     out: Optional[Path] = typer.Option(
         None, "--out", help="Output HTML file path (default report.html; generate-report.html / tune-report.html for v2 kinds)."

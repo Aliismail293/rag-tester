@@ -179,10 +179,6 @@ def test_chart_caps_at_30_runs():
     assert len(chart["runs"]) == 30 and chart["older"] == 5 and chart["runs"][-1]["name"] == "Run 35"
 
 
-PENDING_COMMANDS = {"ui"}
-"""Added in later v3 phases; until then their copy commands are not parsed. Removed once both exist."""
-
-
 def _registered(group) -> set[str]:
     return set(group.commands)
 
@@ -195,8 +191,6 @@ def validate_command(command: str) -> None:
         return
     assert argv[0] == "ragaudit", command
     group = typer.main.get_command(app)
-    if argv[1] in PENDING_COMMANDS and argv[1] not in _registered(group):
-        return
     assert argv[1] in _registered(group), f"{argv[1]} is not a ragaudit command"
     sub = group.commands[argv[1]]
     ctx = sub.make_context(argv[1], argv[2:], resilient_parsing=False)

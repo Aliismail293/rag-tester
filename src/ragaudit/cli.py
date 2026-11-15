@@ -87,10 +87,19 @@ def _cli_safe(func):
     return wrapper
 
 
-@app.callback()
-def _load_settings() -> None:
+WELCOME = """ragaudit tests whether your AI app answers from your documents, or just got lucky.
+
+  Easiest start:  ragaudit ui        (a setup page in your browser, 4 steps)
+  In the terminal: ragaudit init --framework demo, then ragaudit check --docs ./docs
+  All commands:   ragaudit --help"""
+
+
+@app.callback(invoke_without_command=True)
+def _load_settings(ctx: typer.Context) -> None:
     # RAGAUDIT_* settings can live in ./.env (see `ragaudit init`); exported variables win.
     load_dotenv()
+    if ctx.invoked_subcommand is None:
+        typer.echo(WELCOME)
 
 
 @app.command()
@@ -677,3 +686,18 @@ def report(
 
 if __name__ == "__main__":
     app()
+
+
+@app.command()
+def ui(
+    port: int = typer.Option(8765, "--port", help="Port on 127.0.0.1 (a free one is picked if it's busy)."),
+    no_browser: bool = typer.Option(False, "--no-browser", help="Print the link instead of opening the browser."),
+    project: Path = typer.Option(Path("."), "--project", help="Project folder; the page reads and writes only inside it."),
+    llm: str = LLM_OPTION,
+) -> None:
+    """Open the setup page: pick the AI, your docs and your app, then run a check or improve. Local only."""
+    from ragaudit.ui.server import serve
+
+    if not project.is_dir():
+        _error_exit(f"--project {project} is not a folder")
+    serve(project, port=port, llm=llm, open_browser=not no_browser)

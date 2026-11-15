@@ -5,6 +5,7 @@ Registered in cli.py like the v2 commands in cli_v2.py.
 
 import os
 import sys
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from ragaudit.adapters.base import AdapterLoadError, load_adapter
 from ragaudit.llm.client import LLMClient, LLMClientError
 from ragaudit.llm.factory import PROVIDER_ENV, resolve_provider
 from ragaudit.models.adapter import RAGResponse
-from ragaudit.scaffold import ENV_EXAMPLE_NAME, FRAMEWORKS, write_starter_files
+from ragaudit.scaffold import DEFAULT_DEMO_DOCS, DEMO_DOCS_ENV, ENV_EXAMPLE_NAME, FRAMEWORKS, write_starter_files
 
 
 def _fail(message: str) -> None:
@@ -23,18 +24,58 @@ def _fail(message: str) -> None:
     raise typer.Exit(code=1)
 
 
+@contextmanager
+def _adapter_env(llm: str | None, demo_docs: Path | None = None):
+    """Expose --llm (and check's --docs) to adapters that call ragaudit's LLM, like the demo one.
+
+    Sets RAGAUDIT_LLM only when --llm was passed, and restores the
+    environment afterwards.
+    """
+    updates = {}
+    if llm:
+        updates[PROVIDER_ENV] = llm
+    if demo_docs is not None:
+        updates[DEMO_DOCS_ENV] = str(demo_docs.resolve())
+    saved = {name: os.environ.get(name) for name in updates}
+    os.environ.update(updates)
+    try:
+        yield
+    finally:
+        for name, value in saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+
+def adapter_llm_calls(adapter) -> int:
+    """LLM calls the adapter itself makes per question through ragaudit's LLM (the demo adapter: 1)."""
+    fn = getattr(adapter, "_fn", None)  # a query() function wrapped by CallableAdapter
+    flagged = getattr(adapter, "USES_RAGAUDIT_LLM", False) or getattr(fn, "__globals__", {}).get("USES_RAGAUDIT_LLM", False)
+    return 1 if flagged else 0
+
+
 # --- init --------------------------------------------------------------------
 
 
-def run_init(framework: str, out: Path, force: bool) -> list[Path]:
+def run_init(framework: str, out: Path, force: bool, docs: Path = DEFAULT_DEMO_DOCS) -> list[Path]:
     if framework not in FRAMEWORKS:
         _fail(f"--framework must be one of {', '.join(FRAMEWORKS)}, got {framework!r}")
     try:
-        written = write_starter_files(framework, out, force=force)
+        written = write_starter_files(framework, out, force=force, docs=docs)
     except FileExistsError as exc:
         _fail(str(exc))
     env_example = out.parent / ENV_EXAMPLE_NAME
     env_file = out.parent / ".env"
+    if framework == "demo":
+        typer.echo(f"Wrote {out} (a ready-to-run demo pipeline: keyword search over {docs}) and {env_example}.")
+        if not docs.is_dir():
+            typer.echo(f"  Note: {docs} does not exist yet; put a few .txt or .md files in it.")
+        typer.echo("Next:")
+        typer.echo(f"  1. cp {env_example} {env_file}   and fill in your API settings (OpenAI-compatible or local Ollama).")
+        typer.echo(f"  2. ragaudit check --docs {docs} --adapter {out}")
+        typer.echo("     (add --llm mock to try it offline with a fake LLM first)")
+        return written
     typer.echo(f"Wrote {out} ({framework} adapter template) and {env_example}.")
     typer.echo("Next:")
     typer.echo(f"  1. cp {env_example} {env_file}   and fill in your API settings (OpenAI-compatible or local Ollama).")
@@ -202,9 +243,10 @@ def run_doctor(adapter_path: Path, llm: str | None = None) -> list[Check]:
     env_checks = check_env_vars(mock)
     checks += env_checks
     checks.append(check_api(mock, all(c.ok for c in env_checks)))
-    import_check, adapter = check_adapter_import(adapter_path)
-    checks.append(import_check)
-    checks += check_adapter_response(adapter, adapter_path)
+    with _adapter_env(llm):
+        import_check, adapter = check_adapter_import(adapter_path)
+        checks.append(import_check)
+        checks += check_adapter_response(adapter, adapter_path)
 
     for check in checks:
         if check.ok:
@@ -286,6 +328,25 @@ def run_check(
     llm: str | None,
 ) -> list[str]:
     """ingest -> generate -> run (with ablation) -> report, in one command."""
+    with _adapter_env(llm, docs if docs.is_dir() else None):
+        return _run_check(
+            docs, adapter_path, questions, match_by, match_threshold, yes, no_open, max_llm_calls, db, out, llm
+        )
+
+
+def _run_check(
+    docs: Path,
+    adapter_path: Path,
+    questions: int,
+    match_by: str,
+    match_threshold: float,
+    yes: bool,
+    no_open: bool,
+    max_llm_calls: int | None,
+    db: Path,
+    out: Path,
+    llm: str | None,
+) -> list[str]:
     import webbrowser
 
     from ragaudit.cli import _execute_run
@@ -335,11 +396,21 @@ def run_check(
         f"{JUDGE_CALLS_PER_QUESTION * questions} to judge answers), up to {plan.max_calls} if every answer needs "
         f"the lucky-pass check. Budget cap: {cap} call(s) (--max-llm-calls)."
     )
-    typer.echo(f"Your adapter will be called {questions} more time(s); its own LLM calls are not counted here.")
+    own_calls = adapter_llm_calls(adapter)
+    if own_calls:
+        typer.echo(
+            f"The demo adapter answers through the same LLM: {own_calls * questions} more call(s), outside the cap "
+            f"(1 was made just now to test it)."
+        )
+    else:
+        typer.echo(f"Your adapter will be called {questions} more time(s); its own LLM calls are not counted here.")
     if provider == "mock":
         typer.echo("LLM: mock (offline, free; its scores say nothing about a real pipeline).")
     if not yes and not typer.confirm("Continue?", default=True):
-        typer.echo("Cancelled. Nothing was sent to the LLM.")
+        if own_calls:
+            typer.echo("Cancelled. Only the adapter's one test call was sent to the LLM.")
+        else:
+            typer.echo("Cancelled. Nothing was sent to the LLM.")
         raise typer.Exit(code=0)
 
     budget = CallBudget(cap)

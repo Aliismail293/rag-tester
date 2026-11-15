@@ -26,15 +26,18 @@ def test_init_writes_adapter_and_env_example(tmp_path, framework):
     adapter = (tmp_path / "ragaudit_adapter.py").read_text()
     env = (tmp_path / ".env.example").read_text()
 
-    assert adapter.count("# TODO") == 1  # one place to edit (error messages point at it)
+    if framework == "demo":
+        assert "TODO" not in adapter  # works with no edits
+    else:
+        assert adapter.count("# TODO") == 1  # one place to edit (error messages point at it)
+        assert "ragaudit doctor --adapter ragaudit_adapter.py" in adapter
     compile(adapter, "ragaudit_adapter.py", "exec")
-    assert "ragaudit doctor --adapter ragaudit_adapter.py" in adapter
     assert "RAGAUDIT_API_BASE=http://localhost:11434/v1" in env and "RAGAUDIT_API_KEY=ollama" in env
     assert "RAGAUDIT_API_BASE=https://api.openai.com/v1" in env and "RAGAUDIT_MODEL=" in env
-    assert "ragaudit doctor" in result.output and "cp " in result.output
+    assert ("ragaudit check" if framework == "demo" else "ragaudit doctor") in result.output and "cp " in result.output
 
 
-@pytest.mark.parametrize("framework", FRAMEWORKS)
+@pytest.mark.parametrize("framework", [f for f in FRAMEWORKS if f != "demo"])
 def test_unfilled_template_loads_and_explains_what_to_fill_in(tmp_path, framework):
     init(tmp_path, "--framework", framework)
     adapter = load_adapter(str(tmp_path / "ragaudit_adapter.py"))  # importable without the framework installed

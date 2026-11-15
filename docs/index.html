@@ -122,6 +122,21 @@
         not re-indexed.
       </p>
 
+      <div class="ln-quick-demo">
+        <p><strong>No pipeline yet?</strong> Use <code>--framework demo</code> to see a full report in 2 minutes.</p>
+        <div class="ln-code">
+<pre><code>pip install ragaudit-cli
+ragaudit init --framework demo
+ragaudit check --docs ./docs --adapter ragaudit_adapter.py --questions 5</code></pre>
+          <button type="button" class="ln-copy" aria-label="Copy demo commands">Copy</button>
+        </div>
+        <p class="ln-quick-note">
+          The demo adapter is a small keyword-search pipeline over your <code>./docs</code> folder, answered
+          by the same LLM ragaudit uses: nothing to edit. Set the <code>RAGAUDIT_*</code> settings from step 2
+          first, or add <code>--llm mock</code> to try it offline.
+        </p>
+      </div>
+
       <ol class="ln-quick">
         <li>
           <strong>Install</strong>
@@ -145,7 +160,7 @@ ragaudit doctor</code></pre>
         <li>
           <strong>Create an adapter</strong>
           <div class="ln-code">
-<pre><code>ragaudit init --framework plain   # or langchain, llamaindex</code></pre>
+<pre><code>ragaudit init --framework plain   # or langchain, llamaindex (demo: no pipeline needed)</code></pre>
             <button type="button" class="ln-copy" aria-label="Copy init command">Copy</button>
           </div>
           <p class="ln-quick-note">Writes <code>ragaudit_adapter.py</code> and a <code>.env.example</code> for your settings.</p>

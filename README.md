@@ -6,6 +6,20 @@ You need Python 3.11+, a folder of your documents (`.txt` or `.md`), and an
 LLM for ragaudit to write questions and judge answers: any OpenAI-compatible
 API, or a local [Ollama](https://ollama.com). Your pipeline is not re-indexed.
 
+**0. No pipeline yet? Use `--framework demo` to see a full report in 2 minutes.**
+
+```bash
+pip install ragaudit-cli
+mkdir docs && cp ~/notes/*.md docs/   # any few .txt or .md files
+ragaudit init --framework demo
+ragaudit check --docs ./docs --adapter ragaudit_adapter.py --questions 5
+```
+
+The demo adapter is a small, complete pipeline (paragraphs from `./docs`, top 3
+by word overlap, answered by the same LLM ragaudit uses), so there is nothing to
+edit. Set the three `RAGAUDIT_*` settings from step 2 first, or add `--llm mock`
+to try it offline with a fake LLM. Then follow steps 1 to 5 for your own pipeline.
+
 **1. Install**
 
 ```bash
@@ -222,7 +236,7 @@ Adapters ship for: a raw callable, LangChain, LlamaIndex.
 ## CLI
 
 ```
-ragaudit init --framework plain         # starter adapter (plain|langchain|llamaindex) + .env.example
+ragaudit init --framework plain         # starter adapter (plain|langchain|llamaindex|demo) + .env.example
 ragaudit doctor                         # check Python, RAGAUDIT_* settings, one LLM call, and the adapter
 ragaudit check --docs ./docs --adapter ragaudit_adapter.py   # all of the below in one go, then open the report
 ragaudit ingest ./docs                  # load, chunk, and persist a corpus

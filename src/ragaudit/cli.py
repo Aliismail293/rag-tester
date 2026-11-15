@@ -96,12 +96,18 @@ def _load_settings() -> None:
 @app.command()
 @_cli_safe
 def init(
-    framework: str = typer.Option("plain", "--framework", help="Adapter template: plain, langchain or llamaindex."),
+    framework: str = typer.Option(
+        "plain", "--framework",
+        help="Adapter template: plain, langchain, llamaindex, or demo (a ready-to-run toy pipeline, no edits needed).",
+    ),
     out: Path = typer.Option(DEFAULT_ADAPTER_PATH, "--out", help="Where to write the adapter template."),
     force: bool = typer.Option(False, "--force", help="Overwrite existing files."),
+    docs: Path = typer.Option(
+        cli_easy.DEFAULT_DEMO_DOCS, "--docs", help="demo only: the docs folder the demo pipeline searches."
+    ),
 ) -> None:
-    """Write a starter adapter (one TODO: plug in your pipeline) and a .env.example."""
-    cli_easy.run_init(framework, out, force)
+    """Write a starter adapter (one TODO: plug in your pipeline) and a .env.example. --framework demo needs no edits."""
+    cli_easy.run_init(framework, out, force, docs)
 
 
 @app.command()

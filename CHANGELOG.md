@@ -18,6 +18,12 @@ are unchanged.
 - `ragaudit init --framework plain|langchain|llamaindex`: a commented
   adapter with one TODO where the pipeline plugs in, plus a `.env.example`
   for OpenAI-compatible APIs and local Ollama.
+- `ragaudit init --framework demo`: a ready-to-run toy pipeline (keyword
+  search over the docs folder, top 3 paragraphs, answered by the configured
+  `RAGAUDIT_*` LLM) for seeing a full report before wiring up your own.
+  `check` points it at its `--docs` folder and counts its answer calls in
+  the estimate. `--llm` is now passed on to adapters that use ragaudit's
+  LLM, in `check` and `doctor`.
 - `ragaudit doctor`: PASS/FAIL with an exact fix for the Python version,
   the `RAGAUDIT_*` settings (whether set, never their values), one test
   call to the API, the adapter import, and a valid `RAGResponse` on a

@@ -106,6 +106,16 @@ def init(
 
 @app.command()
 @_cli_safe
+def doctor(
+    adapter: Path = typer.Option(DEFAULT_ADAPTER_PATH, "--adapter", help="Adapter file to check."),
+    llm: Optional[str] = LLM_OPTION,
+) -> None:
+    """Check your setup: Python, RAGAUDIT_* settings, one LLM call, and the adapter. Prints a fix for each failure."""
+    cli_easy.run_doctor(adapter, llm)
+
+
+@app.command()
+@_cli_safe
 def ingest(
     path: Path = typer.Argument(..., help="Directory containing .txt/.md documents to ingest."),
     db: Path = DB_OPTION,

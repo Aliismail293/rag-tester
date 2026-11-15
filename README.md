@@ -153,6 +153,7 @@ Adapters ship for: a raw callable, LangChain, LlamaIndex.
 
 ```
 ragaudit init --framework plain         # starter adapter (plain|langchain|llamaindex) + .env.example
+ragaudit doctor                         # check Python, RAGAUDIT_* settings, one LLM call, and the adapter
 ragaudit ingest ./docs                  # load, chunk, and persist a corpus
 ragaudit generate --n 100               # generate a test set (n questions/chunk)
 ragaudit run --adapter my_adapter.py    # run + score + ablate against the latest test set

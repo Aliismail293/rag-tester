@@ -260,17 +260,25 @@ def _run_improve(
         )
         if summary.stopped_reason == "max_llm_calls":
             typer.echo("Stopped writing questions at the budget; the rest are written next time.")
+        store_note = "Questions written so far are saved and reused next time."
+        done_keys = store.active_source_keys() | store.attempted_source_keys()
+        untried = sum(1 for c in chunks if source_key([c]) not in done_keys)
+        budget_limited = summary.stopped_reason == "max_llm_calls" or budget.remaining == 0 or untried > 0
         if n_dev == 0:
-            store_note = "Questions written so far are saved and reused next time."
-            done_keys = store.active_source_keys() | store.attempted_source_keys()
-            untried = sum(1 for c in chunks if source_key([c]) not in done_keys)
-            if summary.stopped_reason == "max_llm_calls" or budget.remaining == 0 or untried:
+            if budget_limited:
                 typer.echo(
                     f"Stopped: no practice question passed the checks yet, and {untried} passage(s) were not tried "
                     f"within the budget of {budget_calls} LLM call(s). {store_note} Raise --budget-calls."
                 )
                 raise typer.Exit(code=0)
             _fail("no practice questions could be written from these docs; check RAGAUDIT_MODEL with `ragaudit doctor`.")
+        if space is not None and n_test == 0 and budget_limited:
+            typer.echo(
+                f"Stopped: no exam question passed the checks yet, and {untried} passage(s) were not tried within "
+                f"the budget of {budget_calls} LLM call(s). Settings can only be compared fairly on exam questions. "
+                f"{store_note} Raise --budget-calls."
+            )
+            raise typer.Exit(code=0)
 
         remaining = budget.remaining
         adapter_sha = file_sha256(adapter_path)
@@ -357,10 +365,12 @@ def _run_improve(
                 extra={"split": "dev", "report_path": str(out.resolve()), "docs": str(docs), "llm_calls": budget.used,
                        "match_by": "text", "match_threshold": match_threshold},
             )
-            scope = f"Current settings on {len(results)} practice question(s); nothing was tuned (no KNOBS)."
+            why = "no KNOBS" if space is None else "no exam questions"
+            scope = f"Current settings on {len(results)} practice question(s); nothing was tuned ({why})."
             lines = [
                 f"Practice score with your current settings: {eval_summary.score:.0f} on {eval_summary.n_questions} question(s).",
-                "Nothing was tuned: add KNOBS and make_adapter(config) to your adapter (see above).",
+                "Nothing was tuned: add KNOBS and make_adapter(config) to your adapter (see above)." if space is None
+                else "Nothing was tuned: these docs gave no exam questions, so settings can't be compared fairly.",
                 f"Questions are saved; the next run reuses them ({n_dev} practice, {n_test} exam).",
             ]
         rows = history.load_history(store)

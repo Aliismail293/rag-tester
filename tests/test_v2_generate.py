@@ -384,3 +384,34 @@ def test_cli_generate_with_real_llm_requires_a_verifier_model(tmp_path, monkeypa
     result = runner.invoke(app, ["generate", "--corpus", str(DEMO_CORPUS), "--store", str(tmp_path / "s.db")])
     assert result.exit_code != 0
     assert "verifier model is required" in result.output
+
+
+# --- names don't count as reused wording (found in the first real Ollama run) ---------
+
+NAMED_SOURCE = """# Redwatch Protocol
+
+The Redwatch Protocol is run by a rotating group of eight engineers. For an Inferno-tier
+incident the on-call engineer must respond within 12 minutes. It was adopted by Thistlewick Robotics
+in 2019. Their EL-7 units follow the protocol and are tested by Ledgerfox.
+- Expense reports go through Ledgerfox."""
+
+
+def test_name_tokens_are_mid_sentence_capitals_never_written_lower():
+    from ragaudit.generate.text import name_tokens
+
+    names = name_tokens(NAMED_SOURCE)
+    assert {"redwatch", "inferno", "thistlewick", "robotic", "el", "ledgerfox"} <= names
+    assert "protocol" not in names  # also written in lower case: an ordinary word
+    assert "for" not in names and "expense" not in names and "their" not in names  # sentence / list-item starts
+    assert "incident" not in names  # a wrapped line continues its sentence
+
+
+def test_lexical_overlap_ignores_names_but_still_catches_copied_wording():
+    from ragaudit.generate.text import lexical_overlap
+
+    # Only the names and generic words are shared: a fair question.
+    assert lexical_overlap("Which team looks after the Redwatch Protocol?", NAMED_SOURCE) <= 0.5
+    # Copies the passage's wording around the name: still too lexical.
+    copied = "Under the Redwatch Protocol, how quickly must the on-call engineer respond to an Inferno-tier incident?"
+    assert lexical_overlap(copied, NAMED_SOURCE) > 0.5
+    assert lexical_overlap("Redwatch Thistlewick?", NAMED_SOURCE) == 0.0

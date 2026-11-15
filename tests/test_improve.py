@@ -123,6 +123,7 @@ def test_budget_stop_is_clean_and_keeps_progress(project):
     result = improve("--no-open", "--budget-calls", "30")
     assert result.exit_code == 0, result.output
     assert "Stopped" in result.output and "--budget-calls" in result.output and "Traceback" not in result.output
+    assert "add KNOBS" not in result.output  # the adapter has KNOBS; the budget is what stopped it
     assert not (tmp_path / "ragaudit-report.html").exists()
     with store_of(tmp_path) as store:
         saved = len(store.question_ids(Split.DEV)) + len(store.question_ids(Split.TEST))

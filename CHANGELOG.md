@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.4.0
+
+A setup page, a new report with history, and a command that improves your
+pipeline. Existing commands and flags keep working; the 0.3 report is still
+available with `report --legacy`.
+
+### Added
+
+- `ragaudit ui`: a local setup page in the browser (127.0.0.1 only, a random
+  session key in the link, same-origin checks, reads and writes only inside
+  the project folder). Four steps: pick the AI (detects Ollama and its
+  models, offers to download qwen2.5:7b and llama3.1:8b with a progress
+  bar, or tests and saves an API key to `.env` without ever showing it
+  again), your documents (file list and passage count), connect your app
+  (writes the adapter for Demo, Plain Python, LangChain or LlamaIndex, never
+  overwrites without a confirm, and tests the connection with doctor's
+  checks), and run (quick check or improve, with a call budget, live
+  progress and Cancel). Options: `--port`, `--no-browser`, `--project`,
+  `--llm`.
+- `ragaudit improve --docs DIR`: writes practice and exam questions (reused
+  on later runs), tries the settings your adapter declares in `KNOBS` on the
+  practice questions, keeps the best and scores it once on the locked exam.
+  Writes `best_config.yaml`. `--budget-calls` (default 400) stops cleanly
+  and keeps progress; `--max-trials` (default 8). Without `KNOBS` it
+  evaluates only and explains how to add them.
+- Run history in `.ragaudit/store.db` for `check`, `run`, `evaluate`,
+  `tune` and `improve`, with `--note` on each. Each run is compared with the
+  previous one of the same kind on the questions they share, and runs after
+  a docs change are marked.
+- `check` reuses its questions across runs: unchanged passages keep theirs,
+  edited ones get new questions, deleted ones are retired.
+  `--fresh-questions` writes a new set.
+- A new report, written by `check`, `improve` and `report`: eight tabs
+  (overview, history chart, verdicts, what failed with the passage it should have found, the improvement loop,
+  every question, how it works as slides, and copyable commands), a
+  first-visit welcome, phone layout and reduced-motion support.
+  `report --open` reopens the latest one. The v2 `evaluate`/`tune` reports
+  are unchanged.
+- Bare `ragaudit` prints a short welcome pointing to `ragaudit ui`.
+- `ragaudit init` templates declare `KNOBS` and `make_adapter(config)`; the
+  demo adapter has chunk size, top-k and prompt knobs.
+
+### Changed
+
+- `report` renders the new layout; `--legacy` gives the 0.3 one.
+- `run` records history in a store next to its `--db` (`--store` to change).
+- The store schema is now version 3; older stores migrate automatically.
+
+### Fixed
+
+- Question generation no longer counts names from the passage (product,
+  team and process names) as copied wording. In a real run on local models
+  this rejected 22 of 30 questions as `too_lexical`.
+- The correctness and groundedness judges retry once when a reply isn't
+  valid JSON, so a single malformed reply can't flip a verdict.
+
 ## 0.3.0
 
 Easy mode: a first-time user can test their own pipeline in a few

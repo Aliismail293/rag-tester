@@ -90,7 +90,23 @@ def run_tune(
     k: int = 5,
     overfit_threshold: float = DEFAULT_OVERFIT_THRESHOLD,
     on_trial: Callable[[Trial, Trial], None] | None = None,
+    chunk_texts: dict[str, str] | None = None,
+    match_threshold: float | None = None,
+    on_question: Callable[[int, int], None] | None = None,
 ) -> TuneResult:
+    """Search configs on dev, then score baseline and best once on the locked test split.
+
+    chunk_texts (chunk_id -> text) switches retrieval scoring to text
+    matching (`--match-by text`), for adapters that return passages rather
+    than ragaudit chunk ids; match_threshold is then part of each config's
+    cache key. on_question(done, total) reports progress inside each evaluation.
+    """
+    from ragaudit.scoring.text_match import DEFAULT_MATCH_THRESHOLD
+
+    text_threshold = (match_threshold if match_threshold is not None else DEFAULT_MATCH_THRESHOLD) if chunk_texts else None
+    match_kwargs = {"chunk_texts": chunk_texts}
+    if text_threshold is not None:
+        match_kwargs["match_threshold"] = text_threshold
     dev = DevSet(store)
     if not dev.questions:
         raise TuneError("no active dev questions; run `ragaudit generate --corpus <path>` first.")
@@ -128,7 +144,7 @@ def run_tune(
     store.save_tune_run(result.tune_id, result.created_at, strategy, space.knobs)
 
     def config_hash(config: dict) -> str:
-        return compute_config_hash(config, adapter_sha256, judge_client.model, k)
+        return compute_config_hash(config, adapter_sha256, judge_client.model, k, text_threshold)
 
     def evaluate_dev(config: dict) -> tuple:
         return run_evaluation(
@@ -142,6 +158,8 @@ def run_tune(
             index_version=index_version,
             k=k,
             full=True,
+            on_progress=on_question,
+            **match_kwargs,
         )
 
     trials: list[Trial] = []
@@ -194,6 +212,8 @@ def run_tune(
             index_version=index_version,
             k=k,
             full=True,
+            on_progress=on_question,
+            **match_kwargs,
         )
 
     result.baseline_test = evaluate_test(result.baseline.config)

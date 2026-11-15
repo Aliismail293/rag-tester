@@ -535,6 +535,42 @@ def check(
     )
 
 
+@app.command()
+@_cli_safe
+def improve(
+    docs: Path = typer.Option(..., "--docs", help="Folder of .txt/.md documents your pipeline answers from."),
+    adapter: Path = typer.Option(DEFAULT_ADAPTER_PATH, "--adapter", help="Adapter file with KNOBS and make_adapter(config)."),
+    budget_calls: int = typer.Option(400, "--budget-calls", help="Hard cap on ragaudit's LLM calls; stops cleanly and keeps progress."),
+    max_trials: int = typer.Option(8, "--max-trials", help="Settings to try on practice questions, your current ones included."),
+    note: Optional[str] = NOTE_OPTION,
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
+    no_open: bool = typer.Option(False, "--no-open", help="Don't open the report in the browser."),
+    search_space: Optional[Path] = typer.Option(
+        None, "--search-space", help="YAML file of knobs and values; overrides the adapter's KNOBS."
+    ),
+    strategy: str = typer.Option("random", "--strategy", help="How to pick settings to try: random (seeded), grid or llm."),
+    seed: int = typer.Option(0, "--seed", help="Seed for the random strategy."),
+    generator_model: Optional[str] = typer.Option(None, "--generator-model", help="Model that writes questions (default RAGAUDIT_MODEL)."),
+    verifier_model: Optional[str] = typer.Option(
+        None, "--verifier-model", help="A different model that checks each question (default RAGAUDIT_VERIFIER_MODEL)."
+    ),
+    judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Model that grades answers (default RAGAUDIT_MODEL)."),
+    match_threshold: float = MATCH_THRESHOLD_OPTION,
+    out: Path = typer.Option(cli_easy.DEFAULT_CHECK_REPORT, "--out", help="Where to write the HTML report."),
+    config_out: Path = typer.Option(Path("best_config.yaml"), "--config-out", help="Where to write the best settings."),
+    llm: Optional[str] = LLM_OPTION,
+) -> None:
+    """Make your RAG better on its own: write questions, tune settings on practice, score on a locked exam."""
+    from ragaudit.cli_improve import run_improve
+
+    run_improve(
+        docs, adapter, budget_calls=budget_calls, max_trials=max_trials, note=note, yes=yes, no_open=no_open, llm=llm,
+        generator_model=generator_model, verifier_model=verifier_model, judge_model=judge_model,
+        search_space=search_space, strategy=strategy, seed=seed, match_threshold=match_threshold, out=out,
+        config_out=config_out,
+    )
+
+
 def _history_for_run(db: Path, run_id: str):
     """The history of the project a run belongs to: the store next to its database, or one level up."""
     from ragaudit import history

@@ -179,7 +179,7 @@ def test_chart_caps_at_30_runs():
     assert len(chart["runs"]) == 30 and chart["older"] == 5 and chart["runs"][-1]["name"] == "Run 35"
 
 
-PENDING_COMMANDS = {"improve", "ui"}
+PENDING_COMMANDS = {"ui"}
 """Added in later v3 phases; until then their copy commands are not parsed. Removed once both exist."""
 
 

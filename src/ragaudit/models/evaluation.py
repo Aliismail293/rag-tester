@@ -24,6 +24,8 @@ class QuestionResult(BaseModel):
     split: str
     answer: str
     retrieved_chunk_ids: list[str] = Field(default_factory=list)
+    contexts: list[str] = Field(default_factory=list)
+    """The passages the adapter returned (top k), so a report can show what the search found."""
     recall_at_k: float
     """Share of the gold chunk_ids found in the top k (0 or 1 for single-chunk questions)."""
     reciprocal_rank: float

@@ -649,3 +649,74 @@ def render_v1_run(
         match_threshold=extra.get("match_threshold") if match and match.match_by == "text" else None,
     )
     return write_report(view, out)
+
+
+def cases_from_v2(questions, results, chunk_texts: dict[str, str] | None = None) -> list[dict]:
+    """Report cases from v2 dev-split results (`improve`): Question objects plus their QuestionResults."""
+    by_id = {q.question_id: q for q in questions}
+    cases = []
+    for result in results:
+        q = by_id.get(result.question_id)
+        if q is None:
+            continue
+        rank = round(1 / result.reciprocal_rank) if result.reciprocal_rank > 0 else None
+        gold = "\n\n".join((chunk_texts or {}).get(cid, "") for cid in q.chunk_ids).strip() or None
+        cases.append(
+            make_case(
+                case_id=q.question_id,
+                question=q.question,
+                key=q.gold_answer,
+                answer=result.answer,
+                verdict=result.verdict.value,
+                contexts=list(result.contexts),
+                rank=rank if result.retrieval_hit else None,
+                hit=result.retrieval_hit,
+                gold_text=gold,
+                rationale=None if result.adapter_error else result.correctness.rationale,
+                ablation=(
+                    {"answer": result.ablation.answer, "confirms": result.ablation.confirms_lucky_pass}
+                    if result.ablation is not None
+                    else None
+                ),
+                error=result.adapter_error,
+                judge_failed=result.correctness.judge_parse_failed,
+            )
+        )
+    return cases
+
+
+def render_improve(
+    *,
+    questions,
+    results,
+    out: str | Path,
+    run_id: str,
+    created_at: datetime,
+    adapter_path: str,
+    history_rows: list[HistoryRow],
+    docs: str,
+    chunk_texts: dict[str, str],
+    llm_calls: int,
+    match_threshold: float,
+    scope_note: str,
+    kind: str = "improve",
+) -> Path:
+    """Render an `improve` run: the cases are the chosen settings on practice questions; exam scores are in the loop tab."""
+    view = build_view(
+        cases=cases_from_v2(questions, results, chunk_texts),
+        run_id=run_id,
+        created_at=created_at,
+        adapter_path=adapter_path,
+        kind=kind,
+        history_rows=history_rows,
+        docs=docs,
+        groundedness_pct=None,
+        grounded_note="not measured by improve",
+        llm_calls=llm_calls,
+        judge_failures=sum(r.correctness.judge_parse_failed for r in results),
+        match_by="text",
+        match_threshold=match_threshold,
+        ablation_note="Ablation: not run by improve",
+        scope_note=scope_note,
+    )
+    return write_report(view, out)

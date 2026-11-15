@@ -123,16 +123,17 @@ def query(question: str) -> RAGResponse:
 _DEMO = r'''"""ragaudit demo adapter: a tiny, complete RAG pipeline that works with no edits.
 
 Retrieval: every .txt/.md file under the docs folder is split into
-paragraphs, and the 3 paragraphs sharing the most words with the
-question are returned. Generation: the configured ragaudit LLM
+passages (paragraphs by default), and the passages sharing the most words
+with the question are returned. Generation: the configured ragaudit LLM
 (RAGAUDIT_API_BASE / RAGAUDIT_API_KEY / RAGAUDIT_MODEL, or --llm mock)
-answers from those paragraphs.
+answers from those passages.
 
 It exists to show what a ragaudit report looks like. Keyword search is
 deliberately simple, so expect some retrieval failures and lucky passes.
 To test your own pipeline: ragaudit init --framework plain --force
 
-Run it:  ragaudit check --docs __DOCS__ --adapter __FILENAME__
+Run it:      ragaudit check --docs __DOCS__ --adapter __FILENAME__
+Improve it:  ragaudit improve --docs __DOCS__ --adapter __FILENAME__
 """
 
 import os
@@ -143,24 +144,43 @@ from pathlib import Path
 from ragaudit.llm.factory import make_client
 from ragaudit.models.adapter import RAGResponse
 
-USES_RAGAUDIT_LLM = True  # tells `ragaudit check` that each answer costs one call to its LLM
-TOP_K = 3
+USES_RAGAUDIT_LLM = True  # tells ragaudit that each answer costs one call to its LLM
+
+# Settings `ragaudit improve` tries, current value first. make_adapter()
+# below builds the pipeline with one value of each.
+KNOBS = {
+    "chunk_size": ["paragraph", 300, 800],  # one passage per paragraph, or ~N characters
+    "top_k": [3, 5, 8],  # passages handed to the model
+    "prompt": ["strict", "brief", "quote"],  # how the model is told to answer
+}
+DEFAULTS = {knob: values[0] for knob, values in KNOBS.items()}
 
 # `ragaudit check --docs X` points this at X; otherwise the folder below
 # (relative to this file) is used.
 DOCS = Path(os.environ.get("__DOCS_ENV__") or Path(__file__).parent / "__DOCS__")
 
-SYSTEM_PROMPT = (
-    "Answer the question using only the context. If the context does not contain the answer, "
-    "say you don't know. Answer in one or two sentences."
-)
+PROMPTS = {
+    "strict": (
+        "Answer the question using only the context. If the context does not contain the answer, "
+        "say you don't know. Answer in one or two sentences."
+    ),
+    "brief": (
+        "Using only the context, answer in as few words as possible. If the context does not contain "
+        "the answer, say you don't know."
+    ),
+    "quote": (
+        "Find the sentence in the context that answers the question and answer with its exact words. "
+        "If no sentence does, say you don't know."
+    ),
+}
+SYSTEM_PROMPT = PROMPTS["strict"]
 STOPWORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "does", "for", "from", "how", "in", "is", "it",
     "of", "on", "or", "that", "the", "this", "to", "was", "what", "when", "where", "which", "who",
     "why", "with",
 }
 
-_paragraphs: list[str] | None = None
+_passages: dict = {}
 _llm = None
 
 
@@ -168,40 +188,119 @@ def words(text: str) -> set[str]:
     return {word for word in re.findall(r"[a-z0-9]+", text.lower()) if word not in STOPWORDS}
 
 
+def _files() -> list[Path]:
+    if not DOCS.is_dir():
+        raise FileNotFoundError(f"docs folder not found: {DOCS}. Put your .txt/.md files there.")
+    return sorted(p for p in DOCS.rglob("*") if p.suffix.lower() in (".txt", ".md") and p.is_file())
+
+
+def _pack(blocks: list[str], size: int) -> list[str]:
+    """Join paragraphs into passages of up to `size` characters, splitting long ones at sentences."""
+    pieces = []
+    for block in blocks:
+        if len(block) <= size:
+            pieces.append(block)
+            continue
+        for sentence in re.split(r"(?<=[.!?])\s+", block):
+            pieces.extend(sentence[i : i + size] for i in range(0, len(sentence), size))
+    passages, current = [], ""
+    for piece in pieces:
+        if current and len(current) + 1 + len(piece) > size:
+            passages.append(current)
+            current = piece
+        else:
+            current = f"{current} {piece}".strip()
+    if current:
+        passages.append(current)
+    return passages
+
+
+def passages(chunk_size="paragraph") -> list[str]:
+    """Every passage of every .txt/.md file under DOCS, read once per chunk size."""
+    if chunk_size not in _passages:
+        result = []
+        for path in _files():
+            text = path.read_text(encoding="utf-8", errors="replace")
+            blocks = [" ".join(block.split()) for block in re.split(r"\n\s*\n", text) if block.strip()]
+            result.extend(blocks if chunk_size == "paragraph" else _pack(blocks, int(chunk_size)))
+        _passages[chunk_size] = result
+    return _passages[chunk_size]
+
+
 def paragraphs() -> list[str]:
-    """Every paragraph of every .txt/.md file under DOCS, read once."""
-    global _paragraphs
-    if _paragraphs is None:
-        if not DOCS.is_dir():
-            raise FileNotFoundError(f"docs folder not found: {DOCS}. Put your .txt/.md files there.")
-        files = sorted(p for p in DOCS.rglob("*") if p.suffix.lower() in (".txt", ".md") and p.is_file())
-        _paragraphs = [
-            " ".join(block.split())
-            for path in files
-            for block in re.split(r"\n\s*\n", path.read_text(encoding="utf-8", errors="replace"))
-            if block.strip()
-        ]
-    return _paragraphs
+    return passages("paragraph")
 
 
-def retrieve(question: str, k: int = TOP_K) -> list[str]:
+def retrieve(question: str, k: int = 3, chunk_size="paragraph") -> list[str]:
     asked = words(question)
-    scored = [(len(asked & words(text)), -i, text) for i, text in enumerate(paragraphs())]
+    scored = [(len(asked & words(text)), -i, text) for i, text in enumerate(passages(chunk_size))]
     return [text for _, _, text in sorted(scored, reverse=True)[:k]]  # like any search: always the top k
 
 
-def query(question: str) -> RAGResponse:
+def answer(question: str, config: dict | None = None) -> RAGResponse:
     global _llm
+    config = {**DEFAULTS, **(config or {})}
     started = time.perf_counter()
-    contexts = retrieve(question)
+    contexts = retrieve(question, int(config["top_k"]), config["chunk_size"])
     if _llm is None:
         _llm = make_client(mock_model="mock-answerer")
     context_block = "\n---\n".join(contexts) or "(no context retrieved)"
-    answer = _llm.complete(SYSTEM_PROMPT, f"Context:\n{context_block}\n\nQuestion: {question}")
-    return RAGResponse(answer=answer.strip(), contexts=contexts, latency_ms=(time.perf_counter() - started) * 1000)
+    reply = _llm.complete(PROMPTS[config["prompt"]], f"Context:\n{context_block}\n\nQuestion: {question}")
+    return RAGResponse(answer=reply.strip(), contexts=contexts, latency_ms=(time.perf_counter() - started) * 1000)
+
+
+def query(question: str) -> RAGResponse:
+    return answer(question)
+
+
+class DemoPipeline:
+    USES_RAGAUDIT_LLM = True
+
+    def __init__(self, config: dict) -> None:
+        unknown = set(config) - set(KNOBS)
+        if unknown:
+            raise ValueError(f"unknown setting(s): {sorted(unknown)}")
+        self.config = dict(config)
+
+    def query(self, question: str) -> RAGResponse:
+        return answer(question, self.config)
+
+
+def make_adapter(config: dict) -> DemoPipeline:
+    """`ragaudit improve` calls this with one value per KNOBS entry."""
+    return DemoPipeline(config)
 '''
 
-_BODIES = {"plain": _PLAIN, "langchain": _LANGCHAIN, "llamaindex": _LLAMAINDEX}
+_KNOBS_FOOTER = '''
+
+# --- Settings `ragaudit improve` may try (optional) -------------------------
+# List each setting your pipeline can change and the values to try, your
+# current value first. `ragaudit improve` tries combinations on practice
+# questions and keeps what scores better. Leave KNOBS empty to only evaluate.
+# Example:
+#     KNOBS = {{"top_k": [4, 2, 8], "chunk_size": [800, 400]}}
+# then read the value being tried in your pipeline, e.g. CONFIG.get("top_k", 4).
+KNOBS: dict[str, list] = {{}}
+CONFIG: dict = {{}}
+"""The settings being tried right now (empty means your defaults)."""
+
+
+class _ConfiguredPipeline:
+    def __init__(self, config: dict) -> None:
+        self.config = dict(config)
+
+    def query(self, question: str) -> RAGResponse:
+        CONFIG.clear()
+        CONFIG.update(self.config)
+        return query(question)
+
+
+def make_adapter(config: dict) -> _ConfiguredPipeline:
+    """`ragaudit improve` (and `evaluate --config`) call this with one value per KNOBS entry."""
+    return _ConfiguredPipeline(config)
+'''
+
+_BODIES = {"plain": _PLAIN + _KNOBS_FOOTER, "langchain": _LANGCHAIN + _KNOBS_FOOTER, "llamaindex": _LLAMAINDEX + _KNOBS_FOOTER}
 
 ENV_EXAMPLE = """# ragaudit reads these settings from the environment, or from a .env file in
 # the folder you run it from. Copy this file to .env and keep ONE block:

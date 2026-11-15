@@ -21,6 +21,15 @@
     </div>
   </header>
 
+  <section class="summary-box summary-{{ plain_summary.status }}" aria-label="Summary">
+    <h2>In plain English</h2>
+    <ul class="summary-lines">
+      {% for label, text in summary_lines %}
+      <li><strong>{{ label }}:</strong> {{ text }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
   <section class="headline">
     <h2>The headline finding</h2>
     <p class="headline-sentence">

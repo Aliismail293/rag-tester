@@ -75,6 +75,45 @@ section h2 {
   font-size: 1.15rem;
 }
 
+.report-header .meta code {
+  overflow-wrap: anywhere;
+}
+
+.summary-box {
+  border-left: 4px solid var(--accent);
+}
+
+.summary-box.summary-healthy {
+  border-left-color: var(--true-pass);
+}
+
+.summary-box.summary-needs_work {
+  border-left-color: var(--lucky-pass);
+}
+
+.summary-box.summary-empty {
+  border-left-color: var(--retrieval-failure);
+}
+
+.summary-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summary-lines li {
+  padding: 0.35rem 0;
+  line-height: 1.5;
+}
+
+.summary-lines li:first-child {
+  font-size: 1.1rem;
+}
+
+.summary-lines strong {
+  color: var(--text);
+}
+
 .headline-sentence {
   font-size: 1.15rem;
   line-height: 1.6;

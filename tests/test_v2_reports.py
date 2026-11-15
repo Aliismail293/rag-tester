@@ -179,3 +179,21 @@ def test_v2_demo_script_runs_end_to_end_offline(tmp_path):
     assert "mode regression" in result.stdout and "mode cached" in result.stdout
     for name in ("generate-report.html", "tune-report.html", "best_config.yaml"):
         assert (tmp_path / "out" / name).is_file()
+
+
+def test_run_report_opens_with_the_plain_english_summary(tmp_path):
+    db = ROOT / "demo" / "output" / "ragaudit-lucky.db"
+    result = CliRunner().invoke(app, ["report", "--db", str(db), "--out", str(tmp_path / "r.html")])
+    assert result.exit_code == 0, result.output
+    page = (tmp_path / "r.html").read_text()
+    box = page.index('class="summary-box summary-needs_work"')
+    assert box < page.index('class="headline"')
+    text = visible_text(page[box:page.index("</section>", box)])
+    for label in ("Verdict: NEEDS WORK", "Retrieval hit rate: 31%", "Answer correctness: 100%", "Lucky passes: 9", "Most useful fix:"):
+        assert label in text
+
+
+def test_docs_sample_reports_show_the_summary_box():
+    for name in ("healthy", "degraded", "lucky"):
+        page = (ROOT / "docs" / f"sample-report-{name}.html").read_text()
+        assert "In plain English" in page and "Most useful fix:" in page

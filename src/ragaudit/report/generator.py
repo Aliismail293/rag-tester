@@ -13,6 +13,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from ragaudit.models.run import Run
 from ragaudit.models.scoring import ScoredCase, Verdict
 from ragaudit.models.testset import TestSet
+from ragaudit.report.plain_summary import build_plain_summary
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
@@ -132,7 +133,10 @@ def generate_report(run: Run, test_set: TestSet, output_path: str | Path) -> Pat
     }
     lucky_pass_count = verdict_matrix["lucky_pass"]
 
+    plain_summary = build_plain_summary(summary, run.scored_cases)
     html = template.render(
+        plain_summary=plain_summary,
+        summary_lines=[tuple(line.split(": ", 1)) for line in plain_summary.lines()],
         run=run,
         summary=summary,
         style_css=_load_style_css(),

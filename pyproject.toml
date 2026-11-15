@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ragaudit"
-version = "0.2.0"
+version = "0.3.0"
 description = "Test a RAG pipeline in minutes: catch correct answers that retrieval didn't earn (lucky passes), without re-indexing."
 readme = { file = "README.md", content-type = "text/markdown" }
 license = "MIT"

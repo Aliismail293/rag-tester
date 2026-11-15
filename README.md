@@ -1,5 +1,74 @@
 # ragaudit
 
+## Test your RAG in 5 minutes
+
+You need Python 3.11+, a folder of your documents (`.txt` or `.md`), and an
+LLM for ragaudit to write questions and judge answers: any OpenAI-compatible
+API, or a local [Ollama](https://ollama.com). Your pipeline is not re-indexed.
+
+**1. Install**
+
+```bash
+pip install ragaudit
+```
+
+(Until the first PyPI release: `pip install git+https://github.com/Aliismail293/rag-tester`.)
+
+**2. Check your setup**
+
+```bash
+export RAGAUDIT_API_BASE=https://api.openai.com/v1  # Ollama: http://localhost:11434/v1
+export RAGAUDIT_API_KEY=sk-...                      # Ollama: ollama
+export RAGAUDIT_MODEL=gpt-4o-mini                   # Ollama: llama3.1:8b
+ragaudit doctor
+```
+
+Each check prints PASS or FAIL with the exact fix. The adapter check fails
+until step 4. Settings can also go in a `.env` file (step 3 writes an example).
+
+**3. Create an adapter**
+
+```bash
+ragaudit init --framework plain   # or langchain, llamaindex
+```
+
+This writes `ragaudit_adapter.py` and `.env.example`.
+
+**4. Fill in the adapter**
+
+Open `ragaudit_adapter.py` and connect your pipeline at the one `TODO`: return
+its answer and the text of the passages it retrieved. Run `ragaudit doctor`
+again until every line says PASS.
+
+**5. Run the check**
+
+```bash
+ragaudit check --docs ./docs --adapter ragaudit_adapter.py
+```
+
+It shows how many LLM calls it will make (about 3 per question, 20 questions
+by default) and asks before starting. Then it writes questions from your docs,
+runs them through your pipeline, opens an HTML report, and prints a summary
+like this:
+
+```
+ragaudit check: summary
+  Verdict: NEEDS WORK. Only 4 of 13 answers were correct and from the right passage; main problem: ...
+  Retrieval hit rate: 31% (4 of 13 found the passage the question came from, matched by text)
+  Answer correctness: 100% (13 of 13 judged correct)
+  Lucky passes: 9 (correct answer, but the right passage was not retrieved); ...
+  Most useful fix: don't trust the correct answers yet. ...
+```
+
+**Reading the four verdicts.** Every question gets one:
+
+| Verdict | Answer | Right passage retrieved? | What it means |
+|---|---|---|---|
+| `TRUE_PASS` | correct | yes | The pipeline worked. This is the number to protect. |
+| `LUCKY_PASS` | correct | no | The model answered from memory; retrieval did nothing. Other evals count this as a pass. |
+| `GENERATION_FAILURE` | wrong | yes | Retrieval worked; the prompt or model didn't use it. |
+| `RETRIEVAL_FAILURE` | wrong | no | Retrieval missed. Raise top-k, add keyword/hybrid search, or change chunking. |
+
 ## Try it in 60 seconds
 
 Requires Docker and an OpenAI-compatible API key.

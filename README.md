@@ -286,6 +286,14 @@ and `report` defaults to the v1 run report.
   (qwen2.5:7b generator, llama3.1:8b verifier) and its bugs were fixed, but
   a full real-LLM `evaluate`/`tune` run is still pending.
 
+## Releasing
+
+Pushing a tag `vX.Y.Z` that matches `version` in `pyproject.toml` runs
+`.github/workflows/publish.yml`: tests, build, `twine check`, then upload
+to PyPI through trusted publishing (no API token in GitHub). It needs a
+one-time trusted publisher on pypi.org for this repository, workflow
+`publish.yml`, environment `pypi`.
+
 ## License
 
 MIT

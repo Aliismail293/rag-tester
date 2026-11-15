@@ -134,6 +134,24 @@ def test_docs_listing(served):
     assert client.get("/api/state").json()["docs_ok"]
 
 
+def test_try_the_demo_docs_copies_the_bundled_corpus(served):
+    from ragaudit.scaffold import bundled_demo_docs
+
+    tmp_path, _, client = served
+    source = bundled_demo_docs()
+    assert source is not None and len(list(source.glob("*.md"))) >= 15
+    assert "Try the demo docs" in client.get("/").text
+    r = post(client, "/api/demo-docs", {}).json()
+    assert r["ok"] and r["demo"] and r["path"] == "./demo-docs" and r["count"] == len(list(source.glob("*.md")))
+    assert client.get("/api/state").json()["docs"] == "./demo-docs"
+    again = post(client, "/api/demo-docs", {}).json()  # running it twice is fine
+    assert again["ok"]
+    (tmp_path / "demo-docs" / "mine.md").write_text("my own notes")
+    refused = post(client, "/api/demo-docs", {}).json()
+    assert not refused["ok"] and "nothing was copied" in refused["message"]
+    assert (tmp_path / "demo-docs" / "mine.md").read_text() == "my own notes"
+
+
 def test_adapter_preview_write_and_overwrite_confirm(served):
     tmp_path, _, client = served
     for fw in ui.FRAMEWORKS:

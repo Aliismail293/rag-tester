@@ -120,6 +120,8 @@ ul.files{margin:6px 0 0;padding-left:18px}
       <p class="lead">The same files your AI app answers from. Text (.txt) and Markdown (.md) files work.</p>
       <label for="docs">Folder, inside <span class="mono" id="project"></span></label>
       <div class="row"><input type="text" id="docs" class="mono" value="./docs" spellcheck="false"><button class="btn" id="docs-look">Look</button></div>
+      <p class="muted" style="margin:12px 0 0">No documents handy? <button class="btn" id="docs-demo">Try the demo docs</button></p>
+      <p class="muted" style="margin:6px 0 0;font-size:13px">21 short made-up files about an invented coastal survey office, with look-alike pages that trip up a simple search. They are copied into ./demo-docs. Pick the "demo" app in step 3 to see the improve loop work on them.</p>
       <div id="s1-msg"></div>
     </div>
 
@@ -312,6 +314,13 @@ ul.files{margin:6px 0 0;padding-left:18px}
     }).catch(function (e) { say('s1-msg', 'bad', e.message); return false; });
   }
   $('docs-look').addEventListener('click', function () { lookDocs(false); });
+  $('docs-demo').addEventListener('click', function () {
+    api('/api/demo-docs', {}).then(function (r) {
+      if (!r.ok) { say('s1-msg', 'warn', (r.path ? r.path + ': ' : '') + r.message); return; }
+      $('docs').value = r.path; S.fw = 'demo';
+      return lookDocs(true);
+    }).catch(function (e) { say('s1-msg', 'bad', e.message); });
+  });
   $('docs').addEventListener('keydown', function (e) { if (e.key === 'Enter') lookDocs(false); });
 
   // --- step 3

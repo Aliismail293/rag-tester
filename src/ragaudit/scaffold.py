@@ -18,6 +18,20 @@ DEMO_DOCS_ENV = "RAGAUDIT_DEMO_DOCS"
 """`ragaudit check` sets this so the demo adapter searches the same folder it writes questions from."""
 DEFAULT_DEMO_DOCS = Path("docs")
 DEFAULT_ADAPTER_PATH = Path("ragaudit_adapter.py")
+DEMO_DOCS_FOLDER = "demo-docs"
+"""Where `ragaudit ui` copies the bundled demo docs inside the project."""
+
+
+def bundled_demo_docs() -> Path | None:
+    """The demo docs shipped with ragaudit (an invented coastal survey office), or None if missing.
+
+    Wheels carry them as ragaudit/demo_docs; a source checkout reads demo/v3/docs.
+    """
+    here = Path(__file__).resolve().parent
+    for candidate in (here / "demo_docs", here.parent.parent / "demo" / "v3" / "docs"):
+        if candidate.is_dir() and any(candidate.glob("*.md")):
+            return candidate
+    return None
 ENV_EXAMPLE_NAME = ".env.example"
 
 _HEADER = '''"""ragaudit adapter: connects ragaudit to your RAG pipeline ({framework}).

@@ -19,6 +19,7 @@ import io
 import json
 import os
 import secrets
+import shutil
 import sys
 import threading
 import time
@@ -372,6 +373,27 @@ class SetupApp:
             self.save_state(docs=result["path"])
         return result
 
+    def demo_docs(self, body: dict) -> dict:
+        """Copy the bundled demo docs into ./demo-docs and use them as the docs folder."""
+        from ragaudit.scaffold import DEMO_DOCS_FOLDER, bundled_demo_docs
+
+        source = bundled_demo_docs()
+        if source is None:
+            return {"ok": False, "message": "This copy of ragaudit has no demo docs bundled."}
+        target = self.inside(DEMO_DOCS_FOLDER, "docs folder")
+        bundled = {p.name for p in source.glob("*.md")}
+        if target.exists():
+            others = [p.name for p in target.iterdir() if not p.name.startswith(".") and p.name not in bundled]
+            if not target.is_dir() or others:
+                return {"ok": False, "path": self.rel(target),
+                        "message": "A folder with other files is already there, so nothing was copied. Move it or pick it with Look."}
+        target.mkdir(parents=True, exist_ok=True)
+        for name in sorted(bundled):
+            shutil.copyfile(source / name, target / name)
+        result = self.docs({"path": self.rel(target), "save": True})
+        result["demo"] = True
+        return result
+
     def adapter_preview(self, body: dict) -> dict:
         from ragaudit.scaffold import adapter_template
 
@@ -645,6 +667,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/settings": app.save_settings,
             "/api/test-key": app.test_key,
             "/api/docs": app.docs,
+            "/api/demo-docs": app.demo_docs,
             "/api/adapter/preview": app.adapter_preview,
             "/api/adapter": app.write_adapter,
             "/api/test-connection": app.test_connection,

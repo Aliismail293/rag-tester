@@ -66,9 +66,13 @@ include = [
     "src/ragaudit/ui/*.html",
 ]
 
+[tool.hatch.build.targets.wheel.force-include]
+"demo/v3/docs" = "ragaudit/demo_docs"
+
 [tool.hatch.build.targets.sdist]
 include = [
     "src/ragaudit",
+    "demo/v3/docs",
     "tests",
     "CHANGELOG.md",
     "README.md",

@@ -1,527 +1,431 @@
 <!DOCTYPE html>
-<html lang="en" class="ln" data-theme="dark">
+<html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RAG Tester</title>
-<meta name="description" content="Audits RAG pipelines by checking whether retrieval actually did the work, not just whether the answer was correct.">
-<link rel="stylesheet" href="style.css">
+<title>ragaudit · a quiz for your document-answering AI</title>
+<meta name="description" content="ragaudit quizzes your RAG app on your own documents, checks separately whether it found the right page and gave the right answer, and tunes it on practice questions with a locked final exam.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<link rel="stylesheet" href="assets/ragaudit.css">
+<link rel="stylesheet" href="assets/site.css">
 </head>
-<body class="ln-page">
+<body>
+<a class="skip" href="#main">Skip to content</a>
 
-<nav class="ln-nav" aria-label="Site">
-  <div class="ln-col">
-    <a class="ln-brand" href="#top">RAG Tester</a>
-    <ul class="ln-nav-links">
-      <li><a href="#start">2 commands</a></li>
-      <li><a href="#quickstart">5-minute test</a></li>
-      <li><a href="#problem">The problem</a></li>
-      <li><a href="#how">How it works</a></li>
-      <li><a href="#reports">Reports</a></li>
-      <li><a href="#install">Install</a></li>
-      <li><a href="#v2">Generate &amp; tune</a></li>
-      <li><a class="ln-nav-gh" href="https://github.com/Aliismail293/rag-tester">GitHub</a></li>
-    </ul>
+<header class="site-top">
+  <div class="wrap">
+    <a class="wordmark" href="#top" aria-label="ragaudit, back to top">
+      <svg class="wordmark-mark" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#4338CA"></rect><path d="M7 13.5l4 4 8-9" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      ragaudit
+    </a>
+    <nav class="site-nav" aria-label="Site">
+      <ul>
+        <li><a href="#what">What it is</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#reports">Sample report</a></li>
+        <li><a href="#get-started">Get started</a></li>
+        <li><a href="https://github.com/Aliismail293/rag-tester">GitHub ↗</a></li>
+      </ul>
+    </nav>
   </div>
-</nav>
+</header>
 
-<main>
-
-  <section id="top" class="ln-hero">
-    <div class="ln-col ln-hero-grid">
-
-      <div>
-        <h1>RAG Tester</h1>
-        <p class="ln-desc">
-          Audits RAG pipelines by checking whether retrieval actually did the work,
-          not just whether the final answer was correct.
-        </p>
-
-        <div class="ln-stats">
-          <div class="ln-stat">
-            <span class="value">100%</span>
-            <span class="label">answer correctness</span>
+<main id="main">
+  <section class="hero-band" id="top" aria-labelledby="hero-title">
+    <div class="wrap">
+      <div class="hero-copy">
+        <div class="eyebrow">RAGAUDIT · OPEN SOURCE · RUNS ON YOUR COMPUTER</div>
+        <h1 id="hero-title">A quiz for your document-answering AI.</h1>
+        <p class="hero-lede">ragaudit writes questions from your own documents and checks two things separately: did your app find the right page, and was its answer right? Then it improves itself, tuning your settings on practice questions and scoring them once on a locked final exam.</p>
+        <div class="hero-cmds">
+          <div>
+            <span class="hero-cmd-what">1 · Install once</span>
+            <div class="cmd-easy"><div class="cmd-easy-body"><code><span class="prompt" aria-hidden="true">$ </span>pip install ragaudit-cli</code><button type="button" class="copy copy-dark" data-copy="pip install ragaudit-cli" aria-label="Copy command: pip install ragaudit-cli">Copy</button></div></div>
           </div>
-          <div class="ln-stat ln-stat--lucky">
-            <span class="value">30.8%</span>
-            <span class="label">retrieval hit rate</span>
+          <div>
+            <span class="hero-cmd-what">2 · Open the setup page in your browser</span>
+            <div class="cmd-easy"><div class="cmd-easy-body"><code><span class="prompt" aria-hidden="true">$ </span>ragaudit ui</code><button type="button" class="copy copy-dark" data-copy="ragaudit ui" aria-label="Copy command: ragaudit ui">Copy</button></div></div>
           </div>
         </div>
-        <p class="ln-stats-note">
-          Same run, same 13 questions. Every answer was right, and retrieval found the
-          relevant passage for fewer than a third of them. The model was answering from
-          what it already knew. A correctness-only eval would have called this pipeline
-          perfect.
-        </p>
-
-        <div class="ln-actions">
-          <a class="ln-btn ln-btn--primary" href="#start">Test your RAG in 2 commands</a>
-          <a class="ln-btn ln-btn--secondary" href="#reports">View a sample report</a>
+        <div class="hero-actions">
+          <a class="btn btn-on-deep btn-lilac-big" href="#reports">See a real report</a>
+          <a class="btn btn-on-deep btn-outline-deep" href="https://github.com/Aliismail293/rag-tester">GitHub ↗</a>
         </div>
       </div>
-
-      <div>
-        <div class="ln-matrix" role="group" aria-label="The four verdicts">
-          <div></div>
-          <div class="axis axis--col">Retrieved the right chunk</div>
-          <div class="axis axis--col">Did not</div>
-
-          <div class="axis">Correct</div>
-          <button type="button" class="ln-cell ln-cell--true" data-verdict="true" aria-pressed="false">
-            <span class="verdict">TRUE_PASS</span>
-            <span class="explain">Retrieval found the source and the model used it.</span>
-          </button>
-          <button type="button" class="ln-cell ln-cell--lucky" data-verdict="lucky" aria-pressed="true">
-            <span class="verdict">LUCKY_PASS</span>
-            <span class="explain">The answer is right and retrieval had nothing to do with it.</span>
-          </button>
-
-          <div class="axis">Wrong</div>
-          <button type="button" class="ln-cell ln-cell--gen" data-verdict="gen" aria-pressed="false">
-            <span class="verdict">GENERATION_FAILURE</span>
-            <span class="explain">The right context was there and the model still got it wrong.</span>
-          </button>
-          <button type="button" class="ln-cell ln-cell--ret" data-verdict="ret" aria-pressed="false">
-            <span class="verdict">RETRIEVAL_FAILURE</span>
-            <span class="explain">Wrong context, wrong answer.</span>
-          </button>
-        </div>
-
-        <div class="ln-cell-detail" id="cell-detail" aria-live="polite">
-          <div data-detail="lucky" class="is-active">
-            <span class="ln-detail-title">LUCKY_PASS</span>
-            <p>Every other eval scores this as a pass. It is the case this tool exists to find: the answer is correct, but the chunk it should have come from was never retrieved, so retrieval contributed nothing.</p>
-            <p>What to do: check the ablation column. If the answer is still right with retrieval disabled entirely, your test set is answerable from pretraining and isn't measuring your pipeline. Regenerate it from a corpus the model can't already know.</p>
-          </div>
-          <div data-detail="true">
-            <span class="ln-detail-title">TRUE_PASS</span>
-            <p>The pipeline worked end to end. The right chunk was retrieved and the answer is grounded in it.</p>
-            <p>What to do: nothing. This is the number to protect. Re-run after any change to chunking, embeddings, or top-k and make sure it doesn't move.</p>
-          </div>
-          <div data-detail="gen">
-            <span class="ln-detail-title">GENERATION_FAILURE</span>
-            <p>Retrieval did its job. The correct passage was in the context and the model still produced a wrong answer.</p>
-            <p>What to do: the retriever is not the problem. Look at the prompt, where in the context window the chunk landed, and whether the chunk is too long for the model to use.</p>
-          </div>
-          <div data-detail="ret">
-            <span class="ln-detail-title">RETRIEVAL_FAILURE</span>
-            <p>The wrong context came back and the answer was wrong. This is the honest failure, and the easy one to catch.</p>
-            <p>What to do: open the report's retrieval rank column. If the right chunk is ranked 2 or 3, raise top-k. If it's absent entirely, the problem is chunking or embeddings.</p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <section id="start" class="ln-band">
-    <div class="ln-col">
-      <h2>Test your RAG in 2 commands</h2>
-      <p class="ln-lead">
-        Install it, then open the setup page. It runs on your computer only and walks you through
-        four steps: pick the AI (local Ollama or an API key), point it at your docs, connect your app,
-        and run.
-      </p>
-      <div class="ln-code">
-<pre><code>pip install ragaudit-cli
-ragaudit ui</code></pre>
-        <button type="button" class="ln-copy" aria-label="Copy the two commands">Copy</button>
-      </div>
-      <p class="ln-quick-note">
-        <strong>Then improve it:</strong> <code>ragaudit improve --docs ./docs</code> tries the settings your
-        adapter declares on practice questions, keeps the best and scores it once on a locked exam, so the
-        gain you see is not memorised.
-      </p>
-      <div class="ln-code">
-<pre><code>ragaudit improve --docs ./docs</code></pre>
-        <button type="button" class="ln-copy" aria-label="Copy improve command">Copy</button>
-      </div>
-    </div>
-  </section>
-
-  <section id="quickstart" class="ln-band">
-    <div class="ln-col">
-      <h2>Test your RAG in 5 minutes</h2>
-      <p class="ln-lead">
-        Python 3.11+, a folder of your <code>.txt</code> or <code>.md</code> docs, and an LLM to
-        write and judge questions: any OpenAI-compatible API, or local Ollama. Your pipeline is
-        not re-indexed.
-      </p>
-
-      <div class="ln-quick-demo">
-        <p><strong>No pipeline yet?</strong> Use <code>--framework demo</code> to see a full report in 2 minutes.</p>
-        <div class="ln-code">
-<pre><code>pip install ragaudit-cli
-ragaudit init --framework demo
-ragaudit check --docs ./docs --adapter ragaudit_adapter.py --questions 5</code></pre>
-          <button type="button" class="ln-copy" aria-label="Copy demo commands">Copy</button>
-        </div>
-        <p class="ln-quick-note">
-          The demo adapter is a small keyword-search pipeline over your <code>./docs</code> folder, answered
-          by the same LLM ragaudit uses: nothing to edit. Set the <code>RAGAUDIT_*</code> settings from step 2
-          first, or add <code>--llm mock</code> to try it offline.
-        </p>
-      </div>
-
-      <ol class="ln-quick">
-        <li>
-          <strong>Install</strong>
-          <div class="ln-code">
-<pre><code>pip install ragaudit-cli</code></pre>
-            <button type="button" class="ln-copy" aria-label="Copy install command">Copy</button>
-          </div>
-          <p class="ln-quick-note">Until the first PyPI release: <code>pip install git+https://github.com/Aliismail293/rag-tester</code></p>
-        </li>
-        <li>
-          <strong>Check your setup</strong>
-          <div class="ln-code">
-<pre><code>export RAGAUDIT_API_BASE=https://api.openai.com/v1  # Ollama: http://localhost:11434/v1
-export RAGAUDIT_API_KEY=sk-...                      # Ollama: ollama
-export RAGAUDIT_MODEL=gpt-4o-mini                   # Ollama: llama3.1:8b
-ragaudit doctor</code></pre>
-            <button type="button" class="ln-copy" aria-label="Copy doctor commands">Copy</button>
-          </div>
-          <p class="ln-quick-note">Each check prints PASS or FAIL with the exact fix. The adapter check fails until step 4.</p>
-        </li>
-        <li>
-          <strong>Create an adapter</strong>
-          <div class="ln-code">
-<pre><code>ragaudit init --framework plain   # or langchain, llamaindex (demo: no pipeline needed)</code></pre>
-            <button type="button" class="ln-copy" aria-label="Copy init command">Copy</button>
-          </div>
-          <p class="ln-quick-note">Writes <code>ragaudit_adapter.py</code> and a <code>.env.example</code> for your settings.</p>
-        </li>
-        <li>
-          <strong>Fill in the adapter</strong>
-          <p class="ln-quick-note">
-            Open <code>ragaudit_adapter.py</code> and connect your pipeline at the one <code>TODO</code>:
-            return its answer and the text of the passages it retrieved. Run <code>ragaudit doctor</code>
-            again until every line says PASS.
-          </p>
-        </li>
-        <li>
-          <strong>Run the check</strong>
-          <div class="ln-code">
-<pre><code>ragaudit check --docs ./docs --adapter ragaudit_adapter.py</code></pre>
-            <button type="button" class="ln-copy" aria-label="Copy check command">Copy</button>
-          </div>
-          <p class="ln-quick-note">
-            It shows how many LLM calls it will make and asks first, then writes 20 questions from your
-            docs, runs them through your pipeline, opens the report and prints a six-line summary with
-            the most useful fix.
-          </p>
-        </li>
-      </ol>
-
-      <h3 class="ln-quick-h">Reading the four verdicts</h3>
-      <div class="ln-table-wrap">
-        <table class="ln-verdicts">
-          <thead>
-            <tr><th>Verdict</th><th>Answer</th><th>Right passage retrieved?</th><th>What it means</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><span class="cell-true-pass ln-tag">TRUE_PASS</span></td><td>correct</td><td>yes</td><td>The pipeline worked. This is the number to protect.</td></tr>
-            <tr><td><span class="cell-lucky-pass ln-tag">LUCKY_PASS</span></td><td>correct</td><td>no</td><td>The model answered from memory; retrieval did nothing. Other evals count this as a pass.</td></tr>
-            <tr><td><span class="cell-generation-failure ln-tag">GENERATION_FAILURE</span></td><td>wrong</td><td>yes</td><td>Retrieval worked; the prompt or model didn't use it.</td></tr>
-            <tr><td><span class="cell-retrieval-failure ln-tag">RETRIEVAL_FAILURE</span></td><td>wrong</td><td>no</td><td>Retrieval missed. Raise top-k, add keyword/hybrid search, or change chunking.</td></tr>
-          </tbody>
-        </table>
+      <div class="hero-art">
+<!-- ragaudit:slides:start (generated by scripts/sync_site.py; do not edit) -->
+<div class="slides slides-dark" data-slides id="hero-slides">
+<div class="slides-inner">
+<div class="slides-top">
+<div class="eyebrow muted">HOW IT WORKS · <span data-slide-label>1 / 6</span></div>
+<button type="button" class="btn btn-small slides-fs" data-slide-fs aria-label="Open pictures full screen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"></path></svg><span data-slide-fs-text>Full screen</span></button>
+</div>
+<div class="slides-stage">
+<figure class="slide" data-slide="0">
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Three document pages turn into three quiz cards, each pinned to a page number">
+<rect x="94" y="54" width="150" height="196" rx="10" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<rect x="82" y="66" width="150" height="196" rx="10" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<rect x="70" y="78" width="150" height="196" rx="10" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<rect x="90" y="102" width="90" height="10" rx="5" fill="#A5B4FC"></rect>
+<rect x="90" y="126" width="110" height="7" rx="3.5" fill="#4A4785"></rect>
+<rect x="90" y="142" width="100" height="7" rx="3.5" fill="#4A4785"></rect>
+<rect x="90" y="158" width="112" height="7" rx="3.5" fill="#4A4785"></rect>
+<rect x="90" y="174" width="80" height="7" rx="3.5" fill="#4A4785"></rect>
+<rect x="90" y="198" width="106" height="7" rx="3.5" fill="#4A4785"></rect>
+<rect x="90" y="214" width="94" height="7" rx="3.5" fill="#4A4785"></rect>
+<text x="145" y="304" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#EEF0FF">your docs</text>
+<path d="M268 170h66" stroke="#A5B4FC" stroke-width="4" stroke-linecap="round"></path>
+<path d="M322 158l14 12-14 12" fill="none" stroke="#A5B4FC" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="370" y="58" width="210" height="64" rx="12" fill="#2E2B6B"></rect>
+<text x="390" y="96" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#A5B4FC">Q1</text>
+<rect x="426" y="84" width="86" height="8" rx="4" fill="#6E74D8"></rect>
+<rect x="522" y="78" width="44" height="22" rx="11" fill="#A5B4FC"></rect>
+<text x="544" y="94" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#13122B">p.2</text>
+<rect x="370" y="138" width="210" height="64" rx="12" fill="#2E2B6B"></rect>
+<text x="390" y="176" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#A5B4FC">Q2</text>
+<rect x="426" y="164" width="70" height="8" rx="4" fill="#6E74D8"></rect>
+<rect x="522" y="158" width="44" height="22" rx="11" fill="#A5B4FC"></rect>
+<text x="544" y="174" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#13122B">p.5</text>
+<rect x="370" y="218" width="210" height="64" rx="12" fill="#2E2B6B"></rect>
+<text x="390" y="256" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#A5B4FC">Q3</text>
+<rect x="426" y="244" width="80" height="8" rx="4" fill="#6E74D8"></rect>
+<rect x="522" y="238" width="44" height="22" rx="11" fill="#A5B4FC"></rect>
+<text x="544" y="254" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#13122B">p.9</text>
+<text x="475" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#EEF0FF">a quiz, each answer pinned to its page</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Your documents become a quiz</span><span class="slide-body">ragaudit writes questions from your files and pins each answer to the page it came from.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="1" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A magnifying glass finds the pinned page among five pages and marks it with a check">
+<rect x="54" y="96" width="84" height="112" rx="8" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<rect x="160" y="96" width="84" height="112" rx="8" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<rect x="266" y="96" width="84" height="112" rx="8" fill="#2E2B6B" stroke="#A5B4FC" stroke-width="3"></rect>
+<rect x="372" y="96" width="84" height="112" rx="8" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<rect x="478" y="96" width="84" height="112" rx="8" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<rect x="280" y="116" width="44" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="280" y="134" width="56" height="6" rx="3" fill="#6E74D8"></rect>
+<rect x="280" y="148" width="50" height="6" rx="3" fill="#6E74D8"></rect>
+<rect x="280" y="162" width="54" height="6" rx="3" fill="#6E74D8"></rect>
+<text x="308" y="196" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="800" fill="#A5B4FC">p.5</text>
+<circle cx="308" cy="152" r="76" fill="none" stroke="#EEF0FF" stroke-width="8"></circle>
+<path d="M362 206l52 52" stroke="#EEF0FF" stroke-width="16" stroke-linecap="round"></path>
+<circle cx="368" cy="86" r="20" fill="#A5B4FC"></circle>
+<path d="M359 86l6 7 12-14" fill="none" stroke="#13122B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="150" y="282" width="340" height="38" rx="19" fill="#1A1838" stroke="#34316A" stroke-width="2"></rect>
+<text x="320" y="307" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#EEF0FF">Q2 pinned to p.5 · search returned p.5 ✓</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 1: did it find the right page?</span><span class="slide-body">We look at what your search returned. If the pinned page is in there, that is a hit.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="2" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="The answer key says 20, the pipeline said 5, and the judge marks it wrong">
+<rect x="60" y="66" width="220" height="132" rx="18" fill="#2E2B6B"></rect>
+<path d="M110 198l-6 30 30-30z" fill="#2E2B6B"></path>
+<text x="84" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#A5B4FC">answer key</text>
+<text x="84" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#A5B4FC">20</text>
+<rect x="360" y="66" width="220" height="132" rx="18" fill="#3A2A0E" stroke="#FBBF24" stroke-width="3"></rect>
+<path d="M530 198l6 30-30-30z" fill="#3A2A0E"></path>
+<text x="384" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#FCD34D">your pipeline said</text>
+<text x="384" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#FCD34D">5</text>
+<text x="320" y="152" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="44" font-weight="800" fill="#BCC0E8">≠</text>
+<rect x="200" y="258" width="240" height="44" rx="22" fill="#EEF0FF"></rect>
+<text x="320" y="286" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="700" fill="#13122B">judge model: wrong ✕</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 2: was the answer right?</span><span class="slide-body">A separate judge model compares your pipeline’s answer to the answer key.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="3" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A two by two grid: true pass, lucky pass highlighted, generation failure and retrieval failure">
+<text x="250" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#BCC0E8">found the page</text>
+<text x="440" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#BCC0E8">missed the page</text>
+<text x="148" y="116" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#BCC0E8">right</text>
+<text x="148" y="246" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#BCC0E8">wrong</text>
+<rect x="160" y="56" width="180" height="118" rx="14" fill="#2E2B6B"></rect>
+<text x="250" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#A5B4FC">true pass</text>
+<text x="250" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#A5B4FC">it worked</text>
+<rect x="350" y="56" width="180" height="118" rx="14" fill="#3A2A0E" stroke="#FBBF24" stroke-width="3"></rect>
+<text x="440" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#FCD34D">lucky pass</text>
+<text x="440" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#FCD34D">guessed from memory</text>
+<path d="M520 46l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="#FBBF24"></path>
+<rect x="160" y="184" width="180" height="118" rx="14" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<text x="250" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#EEF0FF">generation fail</text>
+<text x="250" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#BCC0E8">fix the prompt</text>
+<rect x="350" y="184" width="180" height="118" rx="14" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<text x="440" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#EEF0FF">retrieval fail</text>
+<text x="440" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#BCC0E8">fix the search</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Two checks, four verdicts</span><span class="slide-body">A lucky pass is a right answer from the wrong page. Most tests count it as a win; ragaudit flags it.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="4" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Practice questions feed a tuning loop that keeps better settings, while a locked final exam is opened once at the end">
+<rect x="66" y="96" width="140" height="96" rx="12" fill="#2E2B6B" stroke="#6E74D8" stroke-width="2"></rect>
+<rect x="58" y="108" width="140" height="96" rx="12" fill="#2E2B6B" stroke="#6E74D8" stroke-width="2"></rect>
+<rect x="50" y="120" width="140" height="96" rx="12" fill="#22204A" stroke="#A5B4FC" stroke-width="2"></rect>
+<text x="120" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#A5B4FC">practice</text>
+<text x="120" y="186" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#BCC0E8">7 of 10 questions</text>
+<path d="M200 168h44" stroke="#A5B4FC" stroke-width="4" stroke-linecap="round"></path>
+<circle cx="320" cy="168" r="62" fill="none" stroke="#A5B4FC" stroke-width="6" stroke-dasharray="300 90"></circle>
+<path d="M366 120l14 -4 -4 14" fill="none" stroke="#A5B4FC" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+<text x="320" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="800" fill="#EEF0FF">try a setting</text>
+<text x="320" y="184" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#BCC0E8">keep it if better</text>
+<text x="320" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#BCC0E8">chunk size · top-k · re-rank</text>
+<rect x="444" y="96" width="140" height="132" rx="14" fill="#EEF0FF"></rect>
+<rect x="497" y="144" width="34" height="28" rx="5" fill="#FBBF24"></rect>
+<path d="M503 144v-10a11 11 0 0 1 22 0v10" fill="none" stroke="#FBBF24" stroke-width="5"></path>
+<text x="514" y="200" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#13122B">final exam</text>
+<text x="514" y="218" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#13122B">locked · 3 of 10</text>
+<text x="514" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#BCC0E8">opened once, at the end</text>
+<rect x="130" y="290" width="380" height="36" rx="18" fill="#1A1838" stroke="#34316A" stroke-width="2"></rect>
+<text x="320" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#EEF0FF">practice high, exam low = it memorised, alarm rings</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Then it gets better on its own</span><span class="slide-body">ragaudit tune tries settings on practice questions and keeps what scores better. A locked final exam is opened once, so the score can’t be faked.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="5" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="New pages get new questions, old pages get a few spot checks, deleted pages have their questions retired">
+<rect x="70" y="40" width="56" height="70" rx="7" fill="#2E2B6B" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="140" y="40" width="56" height="70" rx="7" fill="#2E2B6B" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="74" y="30" width="40" height="18" rx="9" fill="#A5B4FC"></rect>
+<text x="94" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#13122B">NEW</text>
+<rect x="144" y="30" width="40" height="18" rx="9" fill="#A5B4FC"></rect>
+<text x="164" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#13122B">NEW</text>
+<path d="M224 75h70" stroke="#A5B4FC" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="52" width="270" height="46" rx="23" fill="#2E2B6B"></rect>
+<text x="445" y="81" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#A5B4FC">new questions written</text>
+<rect x="70" y="135" width="56" height="70" rx="7" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<rect x="140" y="135" width="56" height="70" rx="7" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<path d="M224 170h70" stroke="#4A4785" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="147" width="270" height="46" rx="23" fill="#22204A" stroke="#4A4785" stroke-width="2"></rect>
+<text x="445" y="176" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#EEF0FF">a few old ones spot-checked</text>
+<rect x="105" y="230" width="56" height="70" rx="7" fill="none" stroke="#BCC0E8" stroke-width="2" stroke-dasharray="5 4"></rect>
+<path d="M115 240l36 50M151 240l-36 50" stroke="#BCC0E8" stroke-width="3" stroke-linecap="round"></path>
+<path d="M224 265h70" stroke="#4A4785" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="242" width="270" height="46" rx="23" fill="#13122B" stroke="#4A4785" stroke-width="2" stroke-dasharray="5 4"></rect>
+<text x="445" y="271" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#BCC0E8">its questions retired</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Only re-test what changed</span><span class="slide-body">Add or edit documents and only those get new questions. Old ones are spot-checked, and deleted pages retire theirs.</span></figcaption>
+</figure>
+</div>
+<div class="slides-nav">
+<div class="slide-dots">
+<button type="button" class="slide-dot" data-slide-dot="0" aria-label="Picture 1: Your documents become a quiz" aria-current="true"></button>
+<button type="button" class="slide-dot" data-slide-dot="1" aria-label="Picture 2: Check 1: did it find the right page?"></button>
+<button type="button" class="slide-dot" data-slide-dot="2" aria-label="Picture 3: Check 2: was the answer right?"></button>
+<button type="button" class="slide-dot" data-slide-dot="3" aria-label="Picture 4: Two checks, four verdicts"></button>
+<button type="button" class="slide-dot" data-slide-dot="4" aria-label="Picture 5: Then it gets better on its own"></button>
+<button type="button" class="slide-dot" data-slide-dot="5" aria-label="Picture 6: Only re-test what changed"></button>
+</div>
+<div class="slides-arrows"><button type="button" class="btn btn-arrow" data-slide-prev aria-label="Previous picture">←</button><button type="button" class="btn btn-arrow btn-primary" data-slide-next aria-label="Next picture">→</button></div>
+</div>
+</div>
+</div>
+<!-- ragaudit:slides:end -->
       </div>
     </div>
   </section>
 
-  <section id="problem" class="ln-band ln-band--alt">
-    <div class="ln-col">
-      <h2>The problem</h2>
-      <p class="ln-lead">A correct answer is not evidence that retrieval worked.</p>
-      <p>
-        A RAG system can answer a question correctly while retrieving nothing useful for
-        it. The model already knew the answer from its training data and never needed
-        the context. Existing evaluation tools check only whether the final answer is
-        correct, so they score this as a pass, and the retriever can quietly stop
-        contributing without anyone noticing.
-      </p>
-      <p>
-        That failure is invisible until the questions move to something the model
-        doesn't already know, which is usually the moment the system reaches real users.
-      </p>
-    </div>
-  </section>
-
-  <section id="how" class="ln-band">
-    <div class="ln-col">
-      <h2>How it works</h2>
-      <p class="ln-lead">
-        Ground truth for retrieval comes from the corpus itself, so correctness and
-        retrieval can be judged independently and then crossed.
-      </p>
-      <div class="ln-steps">
-        <div class="ln-step">
-          <span class="k">01 &middot; ingest</span>
-          <strong>Chunk the corpus</strong>
-          <p>Each chunk gets a stable ID derived from its content. Same corpus in, same IDs out.</p>
-        </div>
-        <div class="ln-step">
-          <span class="k">02 &middot; generate</span>
-          <strong>Write the test set</strong>
-          <p>An LLM writes questions per chunk, answerable only from that chunk. The chunk ID is recorded as the expected retrieval.</p>
-        </div>
-        <div class="ln-step">
-          <span class="k">03 &middot; run</span>
-          <strong>Run your pipeline</strong>
-          <p>Your adapter returns the answer plus the chunk IDs it retrieved. Correctness and retrieval are scored separately.</p>
-        </div>
-        <div class="ln-step">
-          <span class="k">04 &middot; ablate</span>
-          <strong>Confirm the lucky ones</strong>
-          <p>Every LUCKY_PASS candidate is re-asked with retrieval off. Still correct means retrieval was never needed.</p>
-        </div>
+  <section class="strip" aria-labelledby="strip-label">
+    <div class="wrap">
+      <div class="strip-label" id="strip-label">FROM A REAL RUN · QWEN2.5:7B + LLAMA3.1:8B ON LOCAL OLLAMA · 15 NOV 2026 · <a href="sample-report.html">open the report ↗</a></div>
+      <div class="stats">
+        <div class="stat" data-source="sample-report.html" data-evidence="17 of 17 judged correct"><div class="stat-label">True passes</div><div class="stat-value">17 / 17</div><div class="stat-note">right page and right answer</div></div>
+        <div class="stat" data-source="sample-report.html" data-evidence="17 of 17 found the source page"><div class="stat-label">Retrieval hit</div><div class="stat-value">100%</div><div class="stat-note">17 of 17 found the source page</div></div>
+        <div class="stat" data-source="sample-report.html" data-evidence="none answered from memory"><div class="stat-label">Lucky passes</div><div class="stat-value">0</div><div class="stat-note">none answered from memory</div></div>
+        <div class="stat" data-source="sample-report.html" data-evidence="Driftline response time changed to 36 hours"><div class="stat-label">Runs in its history</div><div class="stat-value">4</div><div class="stat-note">a docs edit is marked on the chart</div></div>
       </div>
     </div>
   </section>
 
-  <section id="reports" class="ln-band ln-band--alt">
-    <div class="ln-col">
-      <h2>Sample reports</h2>
-      <p class="ln-lead">
-        The first is a real run of the current report on local models. The other three are earlier runs
-        from the bundled demo, rendered by the tool itself. Two of those use
-        an invented corpus whose facts exist nowhere else, so a correct answer has to
-        have come from retrieval. The third uses facts any model knows cold.
-      </p>
-
-      <p class="ln-viewer-desc" id="viewer-desc">A real run on local Ollama models (qwen2.5:7b, with llama3.1:8b verifying), 15 Nov 2026: four checks and one improve run on the demo docs, with the history chart and a docs edit marked.</p>
-
-      <div class="ln-tabs" role="tablist" aria-label="Sample report">
-        <button type="button" class="ln-tab" role="tab" aria-selected="true"
-          data-src="sample-report.html"
-          data-desc="A real run on local Ollama models (qwen2.5:7b, with llama3.1:8b verifying), 15 Nov 2026: four checks and one improve run on the demo docs, with the history chart and a docs edit marked.">Real run</button>
-        <button type="button" class="ln-tab" role="tab" aria-selected="false"
-          data-src="sample-report-lucky.html"
-          data-desc="Well-known facts, retrieval mostly wrong, every answer correct anyway. 9 of 13 lucky passes, all confirmed by ablation.">Lucky pass</button>
-        <button type="button" class="ln-tab" role="tab" aria-selected="false"
-          data-src="sample-report-degraded.html"
-          data-desc="Invented facts and a retriever that returns the wrong chunk 30% of the time. 6 of 18 retrieval failures, none hidden.">Degraded</button>
-        <button type="button" class="ln-tab" role="tab" aria-selected="false"
-          data-src="sample-report-healthy.html"
-          data-desc="The same invented corpus with retrieval working as intended. 18 of 18 true passes.">Healthy</button>
+  <section class="band" aria-labelledby="reports-title">
+    <span class="anchor" id="reports"></span>
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow indigo">SAMPLE REPORTS</div>
+        <h2 id="reports-title">The report you get, from real runs.</h2>
+        <p>Each tab is a complete report file, the same one ragaudit opens on your computer. Real-model runs and mock runs are labelled, with models and dates.</p>
       </div>
-
-      <iframe class="ln-frame" id="report-frame" src="sample-report.html"
-        title="Sample report" loading="lazy"></iframe>
-      <p class="ln-viewer-foot">
-        Open directly:
-        <a href="sample-report.html">real run</a> &middot;
-        <a href="sample-report-lucky.html">lucky</a> &middot;
-        <a href="sample-report-degraded.html">degraded</a> &middot;
-        <a href="sample-report-healthy.html">healthy</a>.
-        Each report is a single self-contained HTML file.
-      </p>
-    </div>
-  </section>
-
-  <section id="install" class="ln-band">
-    <div class="ln-col">
-      <h2>Install and run</h2>
-      <p class="ln-lead">Python 3.11 or newer. Any OpenAI-compatible API works for the judge and generator.</p>
-
-      <div class="ln-install-grid">
-        <div>
-          <div class="ln-code">
-<pre><code>pip install git+https://github.com/Aliismail293/rag-tester.git</code></pre>
-            <button type="button" class="ln-copy" aria-label="Copy install command">Copy</button>
+      <div class="viewer" data-viewer>
+        <div class="viewer-bar">
+          <div class="tabs" role="tablist" aria-label="Sample reports">
+            <button type="button" class="tab" role="tab" id="st-real" aria-controls="sp-real" aria-selected="true" tabindex="0">Real run (Ollama)</button>
+            <button type="button" class="tab" role="tab" id="st-lucky" aria-controls="sp-lucky" aria-selected="false" tabindex="-1">Lucky pass demo</button>
+            <button type="button" class="tab" role="tab" id="st-healthy" aria-controls="sp-healthy" aria-selected="false" tabindex="-1">Healthy</button>
+            <button type="button" class="tab" role="tab" id="st-degraded" aria-controls="sp-degraded" aria-selected="false" tabindex="-1">Degraded</button>
+            <button type="button" class="tab" role="tab" id="st-tune" aria-controls="sp-tune" aria-selected="false" tabindex="-1">Tune (mock)</button>
           </div>
-
-          <p>Against your own corpus and adapter:</p>
-          <div class="ln-code">
-<pre><code>ragaudit ingest ./docs
-ragaudit generate --n 100
-ragaudit run --adapter my_adapter.py
-ragaudit report --out report.html</code></pre>
-            <button type="button" class="ln-copy" aria-label="Copy CLI commands">Copy</button>
-          </div>
-
-          <p>Or run the whole bundled demo, three reports included:</p>
-          <div class="ln-code">
-<pre><code>docker compose up --build</code></pre>
-            <button type="button" class="ln-copy" aria-label="Copy docker command">Copy</button>
+          <div class="tab-nav">
+            <span class="tab-pos" data-tab-pos>1 / 5</span>
+            <button type="button" class="btn btn-arrow" data-tab-prev aria-label="Previous sample report">←</button>
+            <button type="button" class="btn btn-arrow btn-primary" data-tab-next aria-label="Next sample report">→</button>
           </div>
         </div>
 
-        <aside class="ln-aside">
-          <p>
-            An adapter is one function, <code>query(question) -&gt; RAGResponse</code>,
-            returning the answer, the retrieved chunk IDs, and the contexts it used.
-          </p>
-          <p>
-            By default <code>run</code> matches retrieval by chunk ID, so your pipeline must be
-            indexed against the chunks <code>ragaudit ingest</code> produced. If it chunks the
-            docs itself, pass <code>--match-by text</code> (the default in <code>ragaudit check</code>)
-            to match the returned passages by their text instead. The README covers the trade-off.
-          </p>
-        </aside>
+        <div class="viewer-panel" role="tabpanel" id="sp-real" aria-labelledby="st-real">
+          <div class="viewer-meta"><span class="kind kind-real">REAL MODELS</span><span class="viewer-source">qwen2.5:7b writes, answers and judges · llama3.1:8b verifies questions · local Ollama · 15 Nov 2026</span></div>
+          <p class="viewer-desc">The bundled demo docs and demo app, checked four times around one improve run and a docs edit. Every answer came from the right page; the history chart marks the edit.</p>
+          <iframe class="frame" src="sample-report.html" title="Sample report: real run on Ollama" loading="lazy"></iframe>
+          <div class="viewer-foot"><span>One self-contained HTML file.</span><a class="ext" href="sample-report.html">Open full report ↗</a></div>
+        </div>
+        <div class="viewer-panel" role="tabpanel" id="sp-lucky" aria-labelledby="st-lucky" hidden>
+          <div class="viewer-meta"><span class="kind kind-demo">DEMO APP · REAL JUDGE</span><span class="viewer-source">gpt-4o-mini via the OpenAI API · 17 Sep 2026 · re-rendered with the current report</span></div>
+          <p class="viewer-desc">Well-known facts and an app that ignores what it retrieves. Most answers are right anyway, from the model's memory: 9 of 13 are lucky passes, each confirmed by re-asking with no pages.</p>
+          <iframe class="frame" src="sample-report-lucky.html" title="Sample report: lucky pass demo" loading="lazy"></iframe>
+          <div class="viewer-foot"><span>One self-contained HTML file.</span><a class="ext" href="sample-report-lucky.html">Open full report ↗</a></div>
+        </div>
+        <div class="viewer-panel" role="tabpanel" id="sp-healthy" aria-labelledby="st-healthy" hidden>
+          <div class="viewer-meta"><span class="kind kind-demo">DEMO APP · REAL JUDGE</span><span class="viewer-source">gpt-4o-mini via the OpenAI API · 17 Sep 2026 · re-rendered with the current report</span></div>
+          <p class="viewer-desc">Invented facts no model knows, and a retriever that works: 18 of 18 true passes.</p>
+          <iframe class="frame" src="sample-report-healthy.html" title="Sample report: healthy demo" loading="lazy"></iframe>
+          <div class="viewer-foot"><span>One self-contained HTML file.</span><a class="ext" href="sample-report-healthy.html">Open full report ↗</a></div>
+        </div>
+        <div class="viewer-panel" role="tabpanel" id="sp-degraded" aria-labelledby="st-degraded" hidden>
+          <div class="viewer-meta"><span class="kind kind-demo">DEMO APP · REAL JUDGE</span><span class="viewer-source">gpt-4o-mini via the OpenAI API · 17 Sep 2026 · re-rendered with the current report</span></div>
+          <p class="viewer-desc">The same invented facts with a retriever that returns the wrong passage about 30% of the time. The failures show up as retrieval failures, with the page it should have found.</p>
+          <iframe class="frame" src="sample-report-degraded.html" title="Sample report: degraded demo" loading="lazy"></iframe>
+          <div class="viewer-foot"><span>One self-contained HTML file.</span><a class="ext" href="sample-report-degraded.html">Open full report ↗</a></div>
+        </div>
+        <div class="viewer-panel" role="tabpanel" id="sp-tune" aria-labelledby="st-tune" hidden>
+          <div class="viewer-meta"><span class="kind kind-mock">MOCK LLM · SCORES NOT MEANINGFUL</span><span class="viewer-source">offline mock model · 22 Oct 2026 · older v2 report layout</span></div>
+          <p class="viewer-desc">A toy pipeline tuned on practice questions, with the baseline and best settings scored on the locked exam. Built offline with the mock model to show the layout, so the numbers say nothing about real quality.</p>
+          <iframe class="frame" src="sample-report-v2-tune.html" title="Sample report: tune run with the mock model" loading="lazy"></iframe>
+          <div class="viewer-foot"><span>One self-contained HTML file.</span><a class="ext" href="sample-report-v2-tune.html">Open full report ↗</a></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section id="v2" class="ln-band ln-band--alt">
-    <div class="ln-col">
-      <h2>v2: honest scores while you tune</h2>
-      <p class="ln-lead">
-        Generate a question set that can't be gamed, then let ragaudit tune your pipeline
-        against it, with the final score measured once on questions the search never saw.
-      </p>
-      <div class="ln-steps">
-        <div class="ln-step">
-          <span class="k">01 &middot; generate</span>
-          <strong>Questions that resist keyword search</strong>
-          <p>Facts are extracted per chunk, questions are reworded away from the passage, and a second model verifies each one. Each chunk is assigned to dev or test by hash, and its questions inherit that split, so no chunk feeds both.</p>
-        </div>
-        <div class="ln-step">
-          <span class="k">02 &middot; evaluate</span>
-          <strong>Only re-run what changed</strong>
-          <p>Results are cached by question, config and corpus version. Edited chunks retire their questions; a corpus change re-runs new questions plus a sample of old ones.</p>
-        </div>
-        <div class="ln-step">
-          <span class="k">03 &middot; tune</span>
-          <strong>Search on dev only</strong>
-          <p>Grid, random, or an LLM reading dev failures proposes configs. The tuning code can't read the test split; a runtime lock and a static check enforce it.</p>
-        </div>
-        <div class="ln-step">
-          <span class="k">04 &middot; report</span>
-          <strong>Score once on the locked test set</strong>
-          <p>Baseline and best are scored once each on test. A large dev-over-test gap is flagged as overfitting.</p>
-        </div>
+  <section class="band band-white" aria-labelledby="what-title">
+    <span class="anchor" id="what"></span>
+    <span class="anchor" id="problem"></span>
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow indigo">WHAT IT IS · FOUR VERDICTS</div>
+        <h2 id="what-title">A right answer is not proof your search worked.</h2>
+        <p>Every question gets two checks: did your app retrieve the page the answer came from, and is its answer right? Crossing them gives four verdicts, and each one points at a different fix.</p>
       </div>
-
-      <p class="ln-viewer-desc" id="v2-viewer-desc" style="margin-top: 2.5rem">The toy pipeline tuned on the demo corpus: dev score per trial, baseline vs best on the locked test split, failure classes before and after. Built with the offline mock LLM.</p>
-
-      <div class="ln-tabs" role="tablist" aria-label="Sample v2 report">
-        <button type="button" class="ln-tab" role="tab" aria-selected="true"
-          data-src="sample-report-v2-tune.html"
-          data-desc="The toy pipeline tuned on the demo corpus: dev score per trial, baseline vs best on the locked test split, failure classes before and after. Built with the offline mock LLM.">Tune</button>
-        <button type="button" class="ln-tab" role="tab" aria-selected="false"
-          data-src="sample-report-v2-generate.html"
-          data-desc="One generate run on the demo corpus: what was kept, why the rest was rejected, and how far questions drifted from their passage's wording. Built with the offline mock LLM.">Generate</button>
-      </div>
-
-      <iframe class="ln-frame" id="v2-report-frame" src="sample-report-v2-tune.html"
-        title="Sample v2 report" loading="lazy"></iframe>
-
-      <p style="margin-top: 2rem">Run the v2 demo offline, no API key needed:</p>
-      <div class="ln-code">
-<pre><code>sh demo/v2/run_demo.sh</code></pre>
-        <button type="button" class="ln-copy" aria-label="Copy demo command">Copy</button>
-      </div>
-      <p>Against your own corpus and pipeline:</p>
-      <div class="ln-code">
-<pre><code>ragaudit generate --corpus corpus.jsonl --verifier-model gpt-4o
-ragaudit evaluate --adapter my_pipeline.py
-ragaudit tune --adapter my_pipeline.py --search-space space.yaml
-ragaudit report --kind tune --out tune-report.html</code></pre>
-        <button type="button" class="ln-copy" aria-label="Copy v2 CLI commands">Copy</button>
+      <div class="verdicts" role="table" aria-label="The four verdicts">
+        <div role="row" style="display: contents">
+          <div role="columnheader"></div>
+          <div class="vg-col" role="columnheader">FOUND THE PAGE</div>
+          <div class="vg-col" role="columnheader">MISSED THE PAGE</div>
+        </div>
+        <div role="row" style="display: contents">
+          <div class="vg-row" role="rowheader">RIGHT ANSWER</div>
+          <div class="cell cell-true_pass" role="cell"><div class="cell-head"><span class="cell-name">True pass</span></div><div class="cell-text">Worked end to end. This is the number to protect when you change anything.</div><div class="cell-fix"><b>Fix:</b> nothing. Re-run after every change.</div></div>
+          <div class="cell cell-hot" role="cell"><div class="cell-head"><span class="cell-name">Lucky pass</span></div><div class="cell-text">Right answer from the wrong page: the model knew it from memory. Most tests count this as a win; ragaudit re-asks with no pages to confirm.</div><div class="cell-fix"><b>Fix:</b> retrieval. Your search isn't doing the work yet.</div></div>
+        </div>
+        <div role="row" style="display: contents">
+          <div class="vg-row" role="rowheader">WRONG ANSWER</div>
+          <div class="cell" role="cell"><div class="cell-head"><span class="cell-name">Generation failure</span></div><div class="cell-text">The page was there and the model still got it wrong.</div><div class="cell-fix"><b>Fix:</b> the prompt, how much text you pass, or the model.</div></div>
+          <div class="cell" role="cell"><div class="cell-head"><span class="cell-name">Retrieval failure</span></div><div class="cell-text">Wrong page, wrong answer.</div><div class="cell-fix"><b>Fix:</b> chunking, embeddings or top-k.</div></div>
+        </div>
       </div>
     </div>
   </section>
 
+  <section class="band" aria-labelledby="how-title">
+    <span class="anchor" id="how"></span>
+    <span class="anchor" id="v2"></span>
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow indigo">HOW IT WORKS · WHY THE SCORES ARE HONEST</div>
+        <h2 id="how-title">Built so the score can't be gamed, even by the tuning loop.</h2>
+        <p>The pictures at the top walk through it. These are the rules that keep the numbers fair.</p>
+      </div>
+      <div class="cards">
+        <div class="card-soft"><div class="card-n">1 · REWORDED QUESTIONS</div><h3>No copying the page</h3><p class="card-text">Questions avoid the page's own wording, so plain keyword search can't match them for free. Names stay, since a question about the Redwatch Protocol has to say so.</p></div>
+        <div class="card-soft"><div class="card-n">2 · A SECOND MODEL</div><h3>Every answer key is checked</h3><p class="card-text">A different model from the one that wrote the question confirms it is answerable from the page, unambiguous and correct. Questions that fail are dropped, not graded.</p></div>
+        <div class="card-soft"><div class="card-n">3 · LOCKED FINAL EXAM</div><h3>Tuning never sees the exam</h3><p class="card-text">ragaudit improve tries settings on practice questions only. The exam is opened once at the end, for your old settings and the best new ones, and a big practice − exam gap is flagged as memorising.</p></div>
+        <div class="card-soft"><div class="card-n">4 · SAME QUIZ, FAIR TRENDS</div><h3>Only re-test what changed</h3><p class="card-text">Unchanged pages keep their questions, so two runs compare on the same quiz. Edited pages get new questions, deleted ones retire theirs, and the chart marks the change.</p></div>
+        <div class="card-soft"><div class="card-n">5 · LUCKY-PASS ABLATION</div><h3>Memory is caught, not credited</h3><p class="card-text">When an answer is right but the page wasn't retrieved, the question is asked again with no pages. If it is still right, it was memory, and it is reported as a lucky pass.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band band-white" aria-labelledby="start-title">
+    <span class="anchor" id="get-started"></span>
+    <span class="anchor" id="start"></span>
+    <span class="anchor" id="install"></span>
+    <span class="anchor" id="quickstart"></span>
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow indigo">GET STARTED · 2 COMMANDS</div>
+        <h2 id="start-title">Install once, then set everything up in your browser.</h2>
+        <p>Open a terminal (Terminal on Mac, PowerShell on Windows), paste each line and press Enter. The setup page walks you through picking the AI, your documents and your app, then runs the check.</p>
+      </div>
+      <div class="start">
+        <div class="start-main">
+          <div class="easy">
+            <div class="cmd-easy">
+              <div class="cmd-easy-head"><span class="cmd-n">1</span><span class="cmd-what-strong">Install ragaudit (once)</span></div>
+              <div class="cmd-easy-body"><code><span class="prompt" aria-hidden="true">$ </span>pip install ragaudit-cli</code><button type="button" class="copy copy-dark" data-copy="pip install ragaudit-cli" aria-label="Copy command: pip install ragaudit-cli">Copy</button></div>
+            </div>
+            <div class="cmd-easy">
+              <div class="cmd-easy-head"><span class="cmd-n">2</span><span class="cmd-what-strong">Open the setup page in your browser, then click Run</span></div>
+              <div class="cmd-easy-body"><code><span class="prompt" aria-hidden="true">$ </span>ragaudit ui</code><button type="button" class="copy copy-dark" data-copy="ragaudit ui" aria-label="Copy command: ragaudit ui">Copy</button></div>
+            </div>
+          </div>
+          <div class="card-label">PREFER THE TERMINAL? EVERY COMMAND</div>
+          <div class="cmd-list">
+            <div class="cmd-row"><code>ragaudit doctor</code><span class="cmd-what">Checks Python, your AI settings and your adapter, and says how to fix anything missing</span><button type="button" class="copy" data-copy="ragaudit doctor" aria-label="Copy command: ragaudit doctor">Copy</button></div>
+            <div class="cmd-row"><code>ragaudit init --framework demo</code><span class="cmd-what">Writes a ready-to-run adapter; use plain, langchain or llamaindex for your own app</span><button type="button" class="copy" data-copy="ragaudit init --framework demo" aria-label="Copy command: ragaudit init --framework demo">Copy</button></div>
+            <div class="cmd-row"><code>ragaudit check --docs ./docs --adapter ragaudit_adapter.py</code><span class="cmd-what">One quick test (about 20 questions), then opens the report</span><button type="button" class="copy" data-copy="ragaudit check --docs ./docs --adapter ragaudit_adapter.py" aria-label="Copy command: ragaudit check --docs ./docs --adapter ragaudit_adapter.py">Copy</button></div>
+            <div class="cmd-row"><code>ragaudit improve --docs ./docs --adapter ragaudit_adapter.py</code><span class="cmd-what">The self-improving loop: tunes settings on practice, scores on the locked exam</span><button type="button" class="copy" data-copy="ragaudit improve --docs ./docs --adapter ragaudit_adapter.py" aria-label="Copy command: ragaudit improve --docs ./docs --adapter ragaudit_adapter.py">Copy</button></div>
+            <div class="cmd-row"><code>ragaudit check --docs ./docs --adapter ragaudit_adapter.py --note "what you changed"</code><span class="cmd-what">Re-test after a change; the note labels the run in the score history</span><button type="button" class="copy" data-copy="ragaudit check --docs ./docs --adapter ragaudit_adapter.py --note &quot;what you changed&quot;" aria-label="Copy command: re-test with a note">Copy</button></div>
+            <div class="cmd-row"><code>ragaudit report --open</code><span class="cmd-what">Re-opens the latest report</span><button type="button" class="copy" data-copy="ragaudit report --open" aria-label="Copy command: ragaudit report --open">Copy</button></div>
+          </div>
+
+          <div class="connect">
+            <h3>Connect your own app</h3>
+            <p><code>ragaudit init --framework plain</code> (or <code>langchain</code>, <code>llamaindex</code>) writes <code>ragaudit_adapter.py</code> with one marked line: return your app's answer and the text of the passages it retrieved. Your documents are not re-indexed.</p>
+            <div data-snips>
+              <div class="tabs snip-tabs" role="tablist" aria-label="Adapter examples">
+                <button type="button" class="tab" role="tab" id="sn-plain-t" aria-controls="sn-plain" aria-selected="true" tabindex="0">Plain Python</button>
+                <button type="button" class="tab" role="tab" id="sn-lc-t" aria-controls="sn-lc" aria-selected="false" tabindex="-1">LangChain</button>
+                <button type="button" class="tab" role="tab" id="sn-li-t" aria-controls="sn-li" aria-selected="false" tabindex="-1">LlamaIndex</button>
+              </div>
+              <div class="snip-panel" role="tabpanel" id="sn-plain" aria-labelledby="sn-plain-t">
+                <div class="snip">
+                  <div class="snip-head"><span class="mono">ragaudit_adapter.py</span><button type="button" class="copy copy-dark" data-copy-kind="code" data-copy="def ask_my_pipeline(question):&#10;    result = my_rag.ask(question)  # your pipeline&#10;    return result.answer, [s.text for s in result.sources]" aria-label="Copy the plain Python example">Copy</button></div>
+<pre><code>def ask_my_pipeline(question):
+    result = my_rag.ask(question)  <span class="cm"># your pipeline</span>
+    return result.answer, [s.text for s in result.sources]</code></pre>
+                </div>
+              </div>
+              <div class="snip-panel" role="tabpanel" id="sn-lc" aria-labelledby="sn-lc-t" hidden>
+                <div class="snip">
+                  <div class="snip-head"><span class="mono">ragaudit_adapter.py</span><button type="button" class="copy copy-dark" data-copy-kind="code" data-copy="retriever = vectorstore.as_retriever(search_kwargs={&quot;k&quot;: 4})  # yours&#10;llm = ChatOllama(model=&quot;qwen2.5:7b&quot;)  # or any chat model" aria-label="Copy the LangChain example">Copy</button></div>
+<pre><code>retriever = vectorstore.as_retriever(search_kwargs={"k": 4})  <span class="cm"># yours</span>
+llm = ChatOllama(model="qwen2.5:7b")  <span class="cm"># or any chat model</span></code></pre>
+                </div>
+              </div>
+              <div class="snip-panel" role="tabpanel" id="sn-li" aria-labelledby="sn-li-t" hidden>
+                <div class="snip">
+                  <div class="snip-head"><span class="mono">ragaudit_adapter.py</span><button type="button" class="copy copy-dark" data-copy-kind="code" data-copy="query_engine = index.as_query_engine(similarity_top_k=4)  # yours" aria-label="Copy the LlamaIndex example">Copy</button></div>
+<pre><code>query_engine = index.as_query_engine(similarity_top_k=4)  <span class="cm"># yours</span></code></pre>
+                </div>
+              </div>
+              <p class="snip-note">To let <code>ragaudit improve</code> tune it, list the settings it may try in <code>KNOBS</code> and build your app from them in <code>make_adapter(config)</code>; the generated file shows where.</p>
+            </div>
+          </div>
+        </div>
+        <div class="start-side">
+          <div class="card-soft"><h3>What you need</h3><div class="card-text">Python 3.11 or newer, a folder of .txt or .md documents, and either Ollama (free, runs on your computer) or an OpenAI-compatible API key. The setup page checks all three.</div></div>
+          <div class="card-soft"><h3>Where results go</h3><div class="card-text">Every run is saved in a .ragaudit folder next to your documents. That is what the score history reads.</div></div>
+          <div class="card-soft"><h3>Your data stays local</h3><div class="card-text">With Ollama, nothing leaves your computer. Reports are files on your disk, not web links.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 
-<footer class="ln-footer">
-  <div class="ln-col">
-    <span>RAG Tester &middot; MIT licensed</span>
-    <a href="https://github.com/Aliismail293/rag-tester">github.com/Aliismail293/rag-tester</a>
+<footer class="site-foot">
+  <div class="wrap">
+    <span>ragaudit <span data-version>v0.4.0</span> · MIT licensed</span>
+    <a href="https://github.com/Aliismail293/rag-tester">github.com/Aliismail293/rag-tester ↗</a>
   </div>
 </footer>
 
-<script>
-(function () {
-  "use strict";
-
-  // Interactive 2x2: one cell selected at a time, detail panel follows.
-  var cells = Array.prototype.slice.call(document.querySelectorAll(".ln-cell"));
-  var details = Array.prototype.slice.call(document.querySelectorAll("#cell-detail [data-detail]"));
-
-  function selectCell(verdict) {
-    cells.forEach(function (c) {
-      c.setAttribute("aria-pressed", c.getAttribute("data-verdict") === verdict ? "true" : "false");
-    });
-    details.forEach(function (d) {
-      d.classList.toggle("is-active", d.getAttribute("data-detail") === verdict);
-    });
-  }
-
-  cells.forEach(function (c) {
-    c.addEventListener("click", function () {
-      selectCell(c.getAttribute("data-verdict"));
-    });
-  });
-
-  // Report viewers: tabs swap the iframe src and the one-line description.
-  function setUpViewer(sectionSelector, frameId, descId) {
-    var tabs = Array.prototype.slice.call(document.querySelectorAll(sectionSelector + " .ln-tab"));
-    var frame = document.getElementById(frameId);
-    var desc = document.getElementById(descId);
-
-    function selectTab(tab) {
-      tabs.forEach(function (t) {
-        t.setAttribute("aria-selected", t === tab ? "true" : "false");
-      });
-      var src = tab.getAttribute("data-src");
-      if (frame.getAttribute("src") !== src) {
-        frame.setAttribute("src", src);
-      }
-      desc.textContent = tab.getAttribute("data-desc");
-    }
-
-    tabs.forEach(function (t) {
-      t.addEventListener("click", function () { selectTab(t); });
-    });
-    selectTab(tabs[0]);
-  }
-
-  setUpViewer("#reports", "report-frame", "viewer-desc");
-  setUpViewer("#v2", "v2-report-frame", "v2-viewer-desc");
-
-  // Copy buttons.
-  function fallbackCopy(text) {
-    var ta = document.createElement("textarea");
-    ta.value = text;
-    ta.setAttribute("readonly", "");
-    ta.style.position = "fixed";
-    ta.style.top = "-1000px";
-    document.body.appendChild(ta);
-    ta.select();
-    var ok = false;
-    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
-    document.body.removeChild(ta);
-    return ok;
-  }
-
-  function confirmCopy(btn) {
-    var original = btn.textContent;
-    btn.textContent = "Copied";
-    btn.classList.add("is-done");
-    window.setTimeout(function () {
-      btn.textContent = original;
-      btn.classList.remove("is-done");
-    }, 1500);
-  }
-
-  Array.prototype.slice.call(document.querySelectorAll(".ln-copy")).forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var pre = btn.parentNode.querySelector("pre");
-      var text = pre ? pre.textContent : "";
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(function () { confirmCopy(btn); }, function () {
-          if (fallbackCopy(text)) { confirmCopy(btn); }
-        });
-      } else if (fallbackCopy(text)) {
-        confirmCopy(btn);
-      }
-    });
-  });
-})();
-</script>
-
+<script src="assets/ragaudit.js"></script>
+<script src="assets/site.js"></script>
 </body>
 </html>

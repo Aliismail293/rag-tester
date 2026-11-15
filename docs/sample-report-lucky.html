@@ -1,1817 +1,1545 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ragaudit report — e38fb2af-b11f-4b76-9f95-c9c524eb9fbd</title>
+<title>ragaudit report · Sep 17, 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
 <style>
-/* Shared stylesheet for the ragaudit HTML report and the docs/ landing page.
-   Dark theme, system font stack, no external fonts or frameworks. */
-
+/* ragaudit design system: tokens and shared components.
+   Canonical source. The report inlines it; the website links a synced copy
+   (docs/assets/ragaudit.css, written by scripts/sync_site.py). */
 :root {
-  --bg: #0f1115;
-  --surface: #171a21;
-  --surface-raised: #1f232c;
-  --border: #2a2f3a;
-  --text: #e6e6e6;
-  --text-muted: #9aa0a6;
-  --accent: #5b9dff;
-
-  --true-pass: #2ecc71;
-  --lucky-pass: #f5a623;
-  --generation-failure: #e74c3c;
-  --retrieval-failure: #8a94a6;
-
-  --true-pass-bg: rgba(46, 204, 113, 0.12);
-  --lucky-pass-bg: rgba(245, 166, 35, 0.16);
-  --generation-failure-bg: rgba(231, 76, 60, 0.12);
-  --retrieval-failure-bg: rgba(138, 148, 166, 0.12);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-}
-
-.container {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
-}
-
-header.report-header {
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
-}
-
-header.report-header h1 {
-  margin: 0 0 0.5rem;
-  font-size: 1.75rem;
-}
-
-.meta {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-.meta code {
-  background: var(--surface);
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-}
-
-section {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-section h2 {
-  margin-top: 0;
-  font-size: 1.15rem;
-}
-
-.report-header .meta code {
-  overflow-wrap: anywhere;
-}
-
-.summary-box {
-  border-left: 4px solid var(--accent);
-}
-
-.summary-box.summary-healthy {
-  border-left-color: var(--true-pass);
-}
-
-.summary-box.summary-needs_work {
-  border-left-color: var(--lucky-pass);
-}
-
-.summary-box.summary-empty {
-  border-left-color: var(--retrieval-failure);
-}
-
-.summary-lines {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.summary-lines li {
-  padding: 0.35rem 0;
-  line-height: 1.5;
-}
-
-.summary-lines li:first-child {
-  font-size: 1.1rem;
-}
-
-.summary-lines strong {
-  color: var(--text);
-}
-
-.headline-sentence {
-  font-size: 1.15rem;
-  line-height: 1.6;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1rem;
-}
-
-.stat {
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-}
-
-.stat .value {
-  font-size: 1.4rem;
-  font-weight: 600;
-  display: block;
-}
-
-.stat .label {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-table.matrix-table {
-  border-collapse: collapse;
-  width: 100%;
-  text-align: center;
-}
-
-table.matrix-table th,
-table.matrix-table td {
-  border: 1px solid var(--border);
-  padding: 1rem;
-}
-
-table.matrix-table th {
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-table.matrix-table td {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.cell-label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 400;
-  color: var(--text-muted);
-  margin-top: 0.25rem;
-}
-
-.cell-true-pass {
-  background: var(--true-pass-bg);
-  color: var(--true-pass);
-}
-
-.cell-lucky-pass {
-  background: var(--lucky-pass-bg);
-  color: var(--lucky-pass);
-}
-
-.cell-generation-failure {
-  background: var(--generation-failure-bg);
-  color: var(--generation-failure);
-}
-
-.cell-retrieval-failure {
-  background: var(--retrieval-failure-bg);
-  color: var(--retrieval-failure);
-}
-
-.warning {
-  color: var(--lucky-pass);
-}
-
-.filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.filter-btn {
-  background: var(--surface-raised);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.4rem 0.9rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.filter-btn:hover {
-  border-color: var(--accent);
-}
-
-.filter-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #061021;
-  font-weight: 600;
-}
-
-table#case-table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-table#case-table th,
-table#case-table td {
-  border-bottom: 1px solid var(--border);
-  padding: 0.6rem 0.75rem;
-  text-align: left;
-  vertical-align: top;
-}
-
-table#case-table th {
-  color: var(--text-muted);
-  font-weight: 500;
-  user-select: none;
-}
-
-table#case-table th[data-sort]::after {
-  content: " \2195";
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
-table#case-table td {
-  overflow-wrap: anywhere;
-}
-
-/* Phones: one card per case instead of four columns, so the page never scrolls sideways. */
-@media (max-width: 600px) {
-  table#case-table,
-  table#case-table tbody,
-  table#case-table tr,
-  table#case-table td {
-    display: block;
-    width: auto;
-  }
-
-  table#case-table thead {
-    display: none;
-  }
-
-  table#case-table tr.case-row {
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  table#case-table td {
-    border-bottom: 0;
-    padding: 0.2rem 0;
-  }
-
-  table#case-table td.case-question {
-    font-weight: 600;
-  }
-
-  table#case-table td.case-verdict,
-  table#case-table td.case-rank {
-    display: inline-block;
-    margin-right: 0.75rem;
-  }
-
-  table#case-table td.case-rank {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-  }
-
-  table#case-table td.case-rank::before {
-    content: attr(data-label) ": ";
-  }
-}
-
-.badge {
-  display: inline-block;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.badge-true_pass {
-  background: var(--true-pass-bg);
-  color: var(--true-pass);
-}
-
-.badge-lucky_pass {
-  background: var(--lucky-pass-bg);
-  color: var(--lucky-pass);
-}
-
-.badge-generation_failure {
-  background: var(--generation-failure-bg);
-  color: var(--generation-failure);
-}
-
-.badge-retrieval_failure {
-  background: var(--retrieval-failure-bg);
-  color: var(--retrieval-failure);
-}
-
-details summary {
-  cursor: pointer;
-  color: var(--accent);
-}
-
-details dl {
-  margin: 0.75rem 0 0;
-}
-
-details dt {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  margin-top: 0.6rem;
-}
-
-details dd {
-  margin: 0.2rem 0 0;
-  white-space: pre-wrap;
-}
-
-details ol {
-  margin: 0.2rem 0 0;
-  padding-left: 1.2rem;
-}
-
-/* The contexts list itself is markup: only each passage keeps its line breaks. */
-details dd.contexts {
-  white-space: normal;
-}
-
-details dd.contexts li {
-  white-space: pre-wrap;
-}
-
-a {
-  color: var(--accent);
-}
-
-/* --- Code blocks (shared) --- */
-
-pre,
-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-}
-
-code {
-  font-size: 0.9em;
-}
-
-pre {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
-  margin: 0;
-  overflow-x: auto;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--text);
-}
-
-pre code {
-  font-size: inherit;
-}
-
-/* --- Landing page (docs/index.html) ---
-   Everything below is scoped under html.ln / body.ln-page so the report
-   styles above are untouched. The page uses full-width bands with the
-   text held in an 1100px column. */
-
-:root {
-  --accent-hover: #78afff;
-  --accent-ink: #061021;
-  --nav-h: 60px;
-}
-
-html.ln {
-  scroll-behavior: smooth;
-  scroll-padding-top: calc(var(--nav-h) + 16px);
-}
-
-body.ln-page {
-  line-height: 1.6;
-}
-
-.ln-col {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-/* Nav */
-
-.ln-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--nav-h);
-  z-index: 10;
-  background: rgba(15, 17, 21, 0.78);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border);
-}
-
-.ln-nav .ln-col {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.ln-brand {
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.ln-nav-links {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.ln-nav-links a {
-  display: inline-block;
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 0.95rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: 6px;
-  transition: color 150ms, background-color 150ms;
-}
-
-.ln-nav-links a:hover {
-  color: var(--text);
-  background: var(--surface-raised);
-}
-
-.ln-nav-links a.ln-nav-gh {
-  color: var(--text);
-  border: 1px solid var(--border);
-  margin-left: 0.5rem;
-}
-
-.ln-nav-links a.ln-nav-gh:hover {
-  border-color: var(--accent);
-}
-
-/* Focus, shared by every interactive element on the page */
-
-.ln-page a:focus-visible,
-.ln-page button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* Bands */
-
-.ln-band {
-  padding: 6rem 0;
-}
-
-.ln-band--alt {
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-
-.ln-band--alt pre {
-  background: var(--surface-raised);
-}
-
-.ln-band h2 {
-  font-size: 1.75rem;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  margin: 0 0 0.75rem;
-}
-
-.ln-band .ln-lead {
-  color: var(--text-muted);
-  font-size: 1.1rem;
-  max-width: 64ch;
-  margin: 0 0 2.5rem;
-}
-
-.ln-band p {
-  max-width: 68ch;
-  margin: 0 0 1rem;
-}
-
-/* Hero */
-
-.ln-hero {
-  min-height: 100vh;
-  padding-top: calc(var(--nav-h) + 3rem);
-  padding-bottom: 4rem;
-  display: flex;
-  align-items: center;
-}
-
-.ln-hero-grid {
-  display: grid;
-  grid-template-columns: 1.05fr 1fr;
-  gap: 4.5rem;
-  align-items: center;
-  width: 100%;
-}
-
-.ln-hero h1 {
-  font-size: 3.5rem;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  margin: 0 0 1.25rem;
-}
-
-.ln-hero .ln-desc {
-  font-size: 1.2rem;
-  color: var(--text-muted);
-  max-width: 34rem;
-  margin: 0 0 2.5rem;
-}
-
-.ln-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2rem;
-  margin: 0 0 1rem;
-}
-
-.ln-stat .value {
-  display: block;
-  font-size: 3.75rem;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.03em;
-}
-
-.ln-stat .label {
-  display: block;
-  margin-top: 0.5rem;
-  color: var(--text-muted);
-}
-
-.ln-stat--lucky .value {
-  color: var(--lucky-pass);
-}
-
-.ln-stats-note {
-  color: var(--text-muted);
-  max-width: 34rem;
-  margin: 0 0 2.5rem;
-}
-
-.ln-actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-/* Buttons */
-
-.ln-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.7rem 1.25rem;
-  border-radius: 8px;
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.95rem;
-  text-decoration: none;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: background-color 150ms, border-color 150ms, color 150ms;
-}
-
-.ln-btn--primary {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
-}
-
-.ln-btn--primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-}
-
-.ln-btn--secondary {
-  background: transparent;
-  color: var(--text);
-  border-color: var(--border);
-}
-
-.ln-btn--secondary:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-/* Interactive 2x2 */
-
-.ln-matrix {
-  display: grid;
-  grid-template-columns: 5.5rem repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-.ln-matrix .axis {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-}
-
-.ln-matrix .axis--col {
-  padding-left: 0.25rem;
-  padding-bottom: 0.25rem;
-}
-
-.ln-cell {
-  display: block;
-  width: 100%;
-  text-align: left;
-  font: inherit;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1.25rem 1.1rem;
-  cursor: pointer;
-  transition: border-color 150ms, background-color 150ms;
-}
-
-.ln-cell .verdict {
-  display: block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 0.3rem;
-  transition: color 150ms;
-}
-
-.ln-cell .explain {
-  display: block;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  line-height: 1.45;
-}
-
-.ln-cell:hover {
-  border-color: var(--text-muted);
-}
-
-.ln-cell[aria-pressed="true"] {
-  border-color: var(--cell-border);
-  background: var(--cell-bg);
-}
-
-.ln-cell[aria-pressed="true"] .verdict {
-  color: var(--cell);
-}
-
-.ln-cell[aria-pressed="true"] .explain {
-  color: var(--text);
-}
-
-.ln-cell--true  { --cell: var(--true-pass); --cell-border: var(--true-pass); --cell-bg: var(--true-pass-bg); }
-.ln-cell--lucky { --cell: var(--lucky-pass); --cell-border: var(--lucky-pass); --cell-bg: var(--lucky-pass-bg); }
-.ln-cell--gen   { --cell: var(--generation-failure); --cell-border: var(--generation-failure); --cell-bg: var(--generation-failure-bg); }
-.ln-cell--ret   { --cell: var(--retrieval-failure); --cell-border: var(--retrieval-failure); --cell-bg: var(--retrieval-failure-bg); }
-
-/* Lucky is always the dominant cell, selected or not. */
-.ln-cell--lucky {
-  border-color: var(--lucky-pass);
-  padding: 1.5rem 1.25rem;
-}
-
-.ln-cell--lucky .verdict {
-  font-size: 1.25rem;
-  color: var(--lucky-pass);
-}
-
-.ln-cell--lucky[aria-pressed="true"] {
-  border-width: 2px;
-  padding: calc(1.5rem - 1px) calc(1.25rem - 1px);
-}
-
-.ln-cell-detail {
-  margin-top: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  padding: 1.25rem 1.5rem;
-  min-height: 9.5rem;
-}
-
-.ln-cell-detail .ln-detail-title {
-  display: block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.ln-cell-detail p {
-  margin: 0 0 0.6rem;
-  font-size: 0.95rem;
-  max-width: none;
-}
-
-.ln-cell-detail p:last-child {
-  margin-bottom: 0;
-}
-
-.ln-cell-detail [data-detail] {
-  display: none;
-}
-
-.ln-cell-detail [data-detail].is-active {
-  display: block;
-}
-
-/* How it works */
-
-.ln-steps {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1.25rem;
-  counter-reset: step;
-}
-
-.ln-step {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-raised);
-  padding: 1.25rem 1.25rem 1.4rem;
-}
-
-.ln-step .k {
-  display: block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  color: var(--accent);
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
-}
-
-.ln-step strong {
-  display: block;
-  margin-bottom: 0.35rem;
-}
-
-.ln-step p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.92rem;
-}
-
-/* Report viewer */
-
-.ln-viewer-desc {
-  min-height: 1.6em;
-  margin: 0 0 1rem;
-  color: var(--text-muted);
-}
-
-.ln-tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin: 0 0 1rem;
-  flex-wrap: wrap;
-}
-
-.ln-tab {
-  font: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.55rem 1rem;
-  cursor: pointer;
-  transition: color 150ms, border-color 150ms, background-color 150ms;
-}
-
-.ln-tab:hover {
-  color: var(--text);
-  border-color: var(--text-muted);
-}
-
-.ln-tab[aria-selected="true"] {
-  color: var(--accent-ink);
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.ln-frame {
-  display: block;
-  width: 100%;
-  height: 700px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
-}
-
-.ln-viewer-foot {
-  margin-top: 0.75rem;
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
-/* Install: code blocks with copy buttons */
-
-.ln-code {
-  position: relative;
-  margin: 0 0 1.5rem;
-}
-
-.ln-code pre {
-  padding-right: 5.5rem;
-}
-
-.ln-copy {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.3rem 0.65rem;
-  cursor: pointer;
-  transition: color 150ms, border-color 150ms, background-color 150ms;
-}
-
-.ln-copy:hover {
-  color: var(--text);
-  border-color: var(--accent);
-}
-
-.ln-copy.is-done {
-  color: var(--true-pass);
-  border-color: var(--true-pass);
-}
-
-/* 5-minute quickstart */
-
-.ln-quick-demo {
-  margin: 1.5rem 0 0;
-  max-width: 820px;
-  min-width: 0;
-  padding: 1rem 1.25rem;
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  border-radius: 6px;
-  background: var(--surface);
-}
-
-.ln-quick-demo > p:first-child {
-  margin: 0 0 0.75rem;
-}
-
-.ln-quick-demo .ln-code {
-  margin-bottom: 0.6rem;
-}
-
-.ln-quick {
-  margin: 2rem 0 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: quick;
-  max-width: 820px;
-}
-
-.ln-quick > li {
-  counter-increment: quick;
-  position: relative;
-  padding: 0 0 1.5rem 3rem;
-}
-
-.ln-quick > li::before {
-  content: counter(quick);
-  position: absolute;
-  left: 0;
-  top: -0.1rem;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ln-quick > li > strong {
-  display: block;
-  margin-bottom: 0.6rem;
-  font-size: 1.05rem;
-}
-
-.ln-quick .ln-code {
-  margin-bottom: 0.6rem;
-}
-
-.ln-quick-note {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.92rem;
-}
-
-.ln-quick-note code {
-  overflow-wrap: anywhere;
-}
-
-.ln-quick-h {
-  margin: 1.5rem 0 1rem;
-}
-
-.ln-table-wrap {
-  overflow-x: auto;
-}
-
-/* Let code blocks scroll inside their column instead of widening the page. */
-.ln-install-grid > *,
-.ln-quick > li {
-  min-width: 0;
-}
-
-.ln-verdicts {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.92rem;
-}
-
-.ln-verdicts th,
-.ln-verdicts td {
-  padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-  vertical-align: top;
-}
-
-.ln-verdicts th {
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.ln-tag {
-  display: inline-block;
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.ln-install-grid {
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 3rem;
-  align-items: start;
-}
-
-.ln-aside {
-  border-left: 2px solid var(--border);
-  padding-left: 1.25rem;
-  color: var(--text-muted);
-  font-size: 0.95rem;
-}
-
-.ln-aside p {
-  max-width: none;
-}
-
-/* Footer */
-
-.ln-footer {
-  border-top: 1px solid var(--border);
-  padding: 2.5rem 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-.ln-footer .ln-col {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-/* Responsive */
-
-@media (max-width: 960px) {
-  .ln-hero-grid {
-    grid-template-columns: 1fr;
-    gap: 3rem;
-  }
-
-  .ln-hero {
-    min-height: 0;
-  }
-
-  .ln-steps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .ln-install-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ln-aside {
-    border-left: 0;
-    padding-left: 0;
-  }
-}
+  --page: #F2F4F8;
+  --card: #FFFFFF;
+  --border: #E2E6EE;
+  --border-strong: #D5DAE3;
+  --soft: #F6F7FB;
+  --text: #111827;
+  --text-2: #374151;
+  --body: #4B5565;
+  --muted: #5B6577;
+  --indigo: #4338CA;
+  --indigo-dark: #312E81;
+  --deep: #1E1B4B;
+  --deep-2: #2E2A6B;
+  --night: #13122B;
+  --night-border: #34316A;
+  --tint: #EEF0FF;
+  --tint-2: #E0E7FF;
+  --lilac: #A5B4FC;
+  --lilac-text: #C7CBFF;
+  --on-deep: #EEF0FF;
+  --on-deep-2: #D9DCFF;
+  --amber: #F59E0B;
+  --amber-line: #D97706;
+  --amber-tint: #FEF3C7;
+  --amber-soft: #FFFBEB;
+  --amber-border: #FDE68A;
+  --amber-text: #92400E;
+  --amber-text-2: #78350F;
+  --ring: #E6E8F5;
+  --good: #15803D;
+  --good-tint: #DCFCE7;
+  --good-text: #14532D;
+  --bad: #B91C1C;
+  --grey-count: #5F6878;
+  --font: Manrope, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--page); color: var(--text); font-family: var(--font); line-height: 1.5; }
+a { color: var(--indigo); }
+a:hover { color: var(--indigo-dark); }
+code, pre, .mono { font-family: var(--mono); }
+h1, h2, h3 { margin: 0; }
+button { font: inherit; }
+:focus-visible { outline: 3px solid var(--indigo); outline-offset: 2px; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; }
+.eyebrow.indigo { color: var(--indigo); }
+.eyebrow.amber { color: var(--amber-text); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--card); color: var(--indigo-dark); font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; }
+.btn:hover { border-color: var(--indigo); }
+.btn-primary { background: var(--indigo); border-color: var(--indigo); color: #FFFFFF; }
+.btn-primary:hover { background: var(--indigo-dark); color: #FFFFFF; }
+.btn-arrow { min-width: 44px; padding: 0; font-weight: 800; font-size: 15px; color: var(--text); border-radius: 10px; }
+.btn-arrow.btn-primary { color: #FFFFFF; }
+.btn-small { font-size: 13px; font-weight: 600; color: var(--text); }
+.btn-big { min-height: 48px; padding: 12px 20px; font-size: 15px; border-radius: 10px; font-weight: 800; }
+.btn-ghost-big { min-height: 48px; padding: 12px 20px; font-size: 15px; border-radius: 10px; color: var(--text); }
+.btn-lilac { background: var(--lilac); border: none; color: var(--night); align-self: flex-start; }
+.btn-lilac:hover { background: var(--tint-2); color: var(--night); }
+
+/* badges */
+.badge { padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; }
+.badge-needs_work { background: var(--amber-tint); color: var(--amber-text); }
+.badge-good { background: var(--tint); color: var(--indigo-dark); }
+.badge-strong { background: var(--good-tint); color: var(--good-text); }
+
+/* pill tabs */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { min-height: 44px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--body); font-size: 14px; font-weight: 700; cursor: pointer; }
+.tab[aria-selected="true"] { border-color: var(--indigo); background: var(--tint); color: var(--indigo-dark); }
+.tab-nav { display: flex; align-items: center; gap: 8px; }
+.tab-pos { font-size: 13px; color: var(--muted); }
+
+/* layout helpers */
+.row { display: flex; flex-wrap: wrap; gap: 28px; }
+.row-16 { display: flex; flex-wrap: wrap; gap: 16px; }
+.col-main { flex: 3 1 560px; min-width: 0; }
+.col-2 { flex: 2 1 420px; min-width: 0; }
+.col-side { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.card-soft { background: var(--soft); border-radius: 14px; padding: 18px; }
+.card-soft h3, .card-title { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+.card-text { font-size: 14px; line-height: 1.6; color: var(--body); }
+.card-label { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+.card-deep { background: var(--deep); color: var(--on-deep); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.card-deep .card-label { color: var(--lilac-text); margin: 0; }
+.card-deep ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; color: var(--on-deep-2); }
+.card-deep code { display: block; background: var(--deep-2); border-radius: 8px; padding: 10px; font-size: 12px; overflow-x: auto; white-space: nowrap; color: var(--on-deep); }
+.card-link { text-align: left; background: var(--deep); color: var(--on-deep); border: none; border-radius: 14px; padding: 18px; cursor: pointer; width: 100%; }
+.card-link .card-text { color: var(--on-deep-2); }
+.card-link:hover { background: var(--indigo-dark); }
+
+/* score ring and stat cards */
+.ring { flex: none; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat { background: var(--soft); border-radius: 14px; padding: 16px; min-width: 0; }
+.stat-label, .stat-note { font-size: 12px; color: var(--muted); }
+.stat-note { margin-top: 4px; }
+.stat-value { font-size: 28px; font-weight: 800; }
+
+/* verdict grid */
+.verdicts { display: grid; grid-template-columns: 120px repeat(2, minmax(0, 1fr)); gap: 10px; }
+.vg-col { font-size: 13px; font-weight: 800; color: var(--muted); text-align: center; align-self: end; }
+.vg-row { font-size: 13px; font-weight: 800; color: var(--muted); display: flex; align-items: center; }
+.cell { border-radius: 14px; padding: 18px; background: var(--soft); min-width: 0; }
+.cell-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.cell-count { font-size: 34px; font-weight: 800; color: var(--grey-count); }
+.cell-name { font-weight: 800; color: var(--text-2); }
+.cell-text { font-size: 13px; line-height: 1.55; color: var(--body); margin-top: 6px; }
+.cell-true_pass { background: var(--tint); }
+.cell-true_pass .cell-count { color: var(--indigo); }
+.cell-true_pass .cell-name, .cell-true_pass .cell-text { color: var(--indigo-dark); }
+.cell.cell-hot { background: var(--amber-soft); border: 1px solid var(--amber-border); }
+.cell.cell-hot .cell-count, .cell.cell-hot .cell-name { color: var(--amber-text); }
+.cell.cell-hot .cell-text { color: var(--amber-text-2); }
+
+/* chips */
+.chip { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+.chip-good { background: var(--good-tint); color: var(--good-text); }
+.chip-warn { background: var(--amber-tint); color: var(--amber-text); }
+
+/* code rows with copy buttons */
+/* how to run */
+.cmd-easy { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.cmd-easy-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--soft); }
+.cmd-n { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--indigo); color: #FFFFFF; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.cmd-what-strong { font-size: 14px; font-weight: 700; }
+.cmd-easy-body { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--night); }
+.cmd-easy-body code { flex: 1 1 auto; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 14px; color: var(--on-deep); }
+.cmd-easy-body .prompt { color: var(--lilac); }
+.copy { flex: none; min-height: 44px; min-width: 88px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--card); color: var(--indigo-dark); font-size: 13px; font-weight: 700; cursor: pointer; }
+.copy-dark { border-color: var(--night-border); background: var(--deep); color: var(--on-deep); }
+.cmd-list { display: flex; flex-direction: column; gap: 8px; }
+.cmd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; }
+.cmd-row code { flex: 1 1 320px; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 13px; background: var(--page); border-radius: 8px; padding: 8px 10px; color: var(--text); }
+.cmd-row .cmd-what { flex: 1 1 220px; font-size: 13px; color: var(--body); min-width: 0; }
+.cmd-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.cmd-inline code { flex: 1 1 260px; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 13px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+
+/* slides */
+.slides { width: 100%; font-family: var(--font); }
+.slides-inner { width: 100%; padding: 18px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); }
+.slides-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.slide { margin: 0; }
+.js .slide[hidden] { display: none; }
+.no-js .slide[hidden] { display: none; }
+.slide-svg { display: block; width: 100%; height: auto; background: var(--soft); border: 1px solid var(--border); border-radius: 12px; }
+.slide-caption { display: block; margin-top: 14px; min-height: 64px; }
+.slide-title { display: block; font-size: 17px; font-weight: 800; color: var(--text); }
+.slide-body { display: block; font-size: 14px; line-height: 1.55; margin-top: 4px; color: var(--muted); }
+.slides-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.no-js .slides-nav, .no-js .slides-fs { display: none; }
+.slide-dots { display: flex; gap: 0; flex-wrap: wrap; }
+.slide-dot { width: 34px; height: 44px; padding: 0; border: none; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.slide-dot::before { content: ""; display: block; width: 10px; height: 10px; border-radius: 5px; background: #CBD2DE; transition: width 0.2s; }
+.slide-dot[aria-current="true"]::before { width: 26px; background: var(--indigo); }
+.slides-arrows { display: flex; gap: 8px; }
+.slides.fs, .slides:fullscreen { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 32px; background: rgba(17, 16, 46, 0.92); }
+.slides:fullscreen { position: static; }
+.slides.fs .slides-inner, .slides:fullscreen .slides-inner { max-width: 1040px; max-height: 100%; overflow: auto; padding: 24px; border-radius: 18px; border: none; }
+
+/* slides, dark variant (website hero): the drawings switch palette in the macro; the frame follows here */
+.slides-dark .slides-inner { background: #1A1838; border-color: var(--night-border); }
+.slides-dark .slide-svg { background: var(--night); border-color: var(--night-border); }
+.slides-dark .eyebrow.muted, .slides-dark .slide-body { color: #BCC0E8; }
+.slides-dark .slide-title { color: var(--on-deep); }
+.slides-dark .btn { background: #1A1838; border-color: var(--night-border); color: var(--on-deep); }
+.slides-dark .btn:hover { border-color: var(--lilac); }
+.slides-dark .btn-arrow.btn-primary { background: var(--lilac); border-color: var(--lilac); color: var(--night); }
+.slides-dark .slide-dot::before { background: #4A4785; }
+.slides-dark .slide-dot[aria-current="true"]::before { background: var(--lilac); }
+.slides-dark:focus-visible, .slides-dark :focus-visible { outline-color: var(--lilac); }
+.slides-dark.fs { background: rgba(8, 7, 22, 0.94); }
 
 @media (max-width: 720px) {
-  .ln-col {
-    padding: 0 1.25rem;
-  }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .verdicts { grid-template-columns: 64px repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .vg-col, .vg-row { font-size: 11px; }
+  .cell { padding: 12px; }
+  .cell-count { font-size: 26px; }
+  .slides.fs { padding: 8px; }
+  .slide-dot { width: 24px; }
+  .slides-nav { gap: 8px; }
+  .col-main, .col-2, .col-side { flex-basis: 100%; }
+  .row { gap: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
 
-  .ln-nav-links a:not(.ln-nav-gh) {
-    display: none;
-  }
+/* report-only layout and widgets; the shared design system (design.css) is inlined before this. */
+/* header */
+.top { background: var(--card); border-bottom: 1px solid var(--border); }
+.top-inner { max-width: 1240px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-width: 0; }
+.brand-name { font-weight: 800; font-size: 17px; }
+.brand-meta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.top-actions { display: flex; align-items: center; gap: 8px; }
 
-  .ln-band {
-    padding: 4rem 0;
-  }
+main { max-width: 1240px; margin: 0 auto; padding: 24px 32px 56px; }
+.scope { font-size: 13px; color: var(--body); margin: 0 0 12px; }
+.report { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px 26px 28px; }
 
-  .ln-hero h1 {
-    font-size: 2.5rem;
-  }
+/* tab bar and panels */
+.tabbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 18px; margin-bottom: 22px; border-bottom: 1px solid var(--border); }
+.no-js .tabbar { display: none; }
+.panel { min-height: 640px; }
+.js .panel[hidden] { display: none; }
+.no-js .panel + .panel { margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--border); min-height: 0; }
+.no-js .panel { min-height: 0; }
+.panel-title { font-size: 22px; font-weight: 800; margin: 0 0 6px; }
+.panel-lede { margin: 0 0 18px; font-size: 14px; color: var(--body); }
 
-  .ln-stats {
-    gap: 1.25rem;
-  }
+/* overview */
+.hero { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; margin-bottom: 24px; }
+.hero-text { flex: 1 1 420px; min-width: 0; }
+.hero h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; line-height: 1.25; }
+.hero p { margin: 0; font-size: 15px; line-height: 1.65; color: var(--body); }
+.reading ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.75; color: var(--text-2); }
+.next-title { font-size: 17px; font-weight: 800; line-height: 1.35; }
 
-  .ln-stat .value {
-    font-size: 2.75rem;
-  }
+/* score history */
+.chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.chart-title { font-size: 16px; font-weight: 800; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+.legend-line { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; background: var(--indigo); }
+.legend-dash { display: inline-block; width: 14px; height: 0; border-top: 3px dashed var(--amber-line); vertical-align: middle; margin-right: 6px; }
+.legend-mark { display: inline-block; width: 9px; height: 9px; transform: rotate(45deg); background: var(--amber); vertical-align: middle; margin-right: 7px; }
+.chart-sub { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.chart svg { display: block; width: 100%; height: auto; }
+.runs { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin-top: 6px; }
+.run-btn { text-align: center; min-height: 44px; padding: 6px 4px; border-radius: 10px; cursor: pointer; color: var(--text); background: transparent; border: 1px solid var(--border); }
+.run-btn[aria-pressed="true"] { color: #FFFFFF; background: var(--indigo); border-color: var(--indigo); }
+.run-btn .run-name { display: block; font-size: 13px; font-weight: 800; }
+.run-btn .run-date { display: block; font-size: 11px; }
+.run-detail { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; padding: 14px 16px; border-radius: 12px; background: var(--page); }
+.run-detail-main { flex: 1 1 220px; min-width: 0; }
+.run-detail-meta { font-size: 12px; font-weight: 700; color: var(--muted); }
+.run-detail-note { font-size: 15px; font-weight: 700; margin-top: 2px; overflow-wrap: anywhere; }
+.run-detail-nums { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; }
+.run-detail-nums .num { font-size: 18px; font-weight: 800; }
+.run-detail-warn { flex-basis: 100%; font-size: 13px; color: var(--amber-text); }
+.delta-good { color: var(--good); }
+.delta-bad { color: var(--bad); }
+.older { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.empty { background: var(--soft); border-radius: 14px; padding: 18px; margin-top: 12px; }
+.empty-title { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
 
-  .ln-matrix {
-    grid-template-columns: 1fr;
-  }
+/* what failed */
+.fail-layout { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.fail-list { flex: 1 1 240px; max-width: 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.fail-item { text-align: left; min-height: 44px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; font-size: 13px; line-height: 1.4; }
+.fail-item[aria-pressed="true"] { border-color: var(--indigo); background: var(--tint); }
+.fail-item .fail-kind { display: block; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; color: var(--amber-text); margin-bottom: 2px; }
+.fail-detail-wrap { flex: 999 1 560px; min-width: 0; }
+.js .fail-detail[hidden] { display: none; }
+.no-js .fail-detail + .fail-detail { margin-top: 32px; }
+.fail-q { font-size: 22px; font-weight: 800; margin: 0 0 16px; overflow-wrap: anywhere; }
+.answers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+.ans { border-radius: 12px; padding: 16px; min-width: 0; }
+.ans-label { font-size: 12px; font-weight: 700; }
+.ans-text { font-size: 18px; font-weight: 800; overflow-wrap: anywhere; }
+.ans-key { background: var(--tint); color: var(--indigo-dark); }
+.ans-got { background: var(--amber-soft); border: 1px solid var(--amber-border); color: var(--amber-text); }
+.ans-got.ok { background: var(--tint); border-color: var(--tint); color: var(--indigo-dark); }
+.passages { display: flex; flex-direction: column; gap: 8px; }
+.passage { display: flex; gap: 12px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); min-width: 0; }
+.passage.source { border: 2px solid var(--lilac); background: #F8F9FF; }
+.passage-rank { font-family: var(--mono); font-size: 12px; color: var(--muted); flex: none; }
+.passage.source .passage-rank { color: var(--indigo); font-weight: 500; }
+.passage-text { font-family: var(--mono); font-size: 13px; line-height: 1.6; color: var(--text-2); min-width: 0; overflow-wrap: anywhere; }
+.passage-text b { color: var(--text); }
+.passage-tag { margin-left: auto; font-size: 12px; font-weight: 800; color: var(--indigo); flex: none; }
+.passage.gold { border-style: dashed; }
+.none-note { font-size: 14px; color: var(--body); }
 
-  .ln-matrix .axis--col {
-    display: none;
-  }
+/* improvement loop */
+.bars { display: flex; flex-direction: column; gap: 14px; }
+.bar-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; margin-bottom: 6px; }
+.bar { height: 12px; border-radius: 6px; background: var(--ring); }
+.bar > span { display: block; height: 12px; border-radius: 6px; }
+.changes { font-family: var(--mono); font-size: 13px; line-height: 2; }
+.changes div { display: flex; justify-content: space-between; gap: 12px; }
+.changes .knob { color: var(--muted); overflow-wrap: anywhere; }
+.sparkline { display: block; width: 100%; max-width: 280px; height: auto; margin-top: 12px; }
 
-  .ln-steps {
-    grid-template-columns: 1fr;
-  }
+/* all questions */
+.table-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.filter { min-height: 44px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--body); font-size: 13px; font-weight: 700; cursor: pointer; }
+.filter[aria-pressed="true"] { border-color: var(--indigo); background: var(--tint); color: var(--indigo-dark); }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 4px; }
+table.cases { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px; }
+table.cases th { text-align: left; color: var(--muted); padding: 10px 8px; font-weight: 700; border-bottom: 1px solid var(--border); }
+table.cases td { padding: 13px 8px; border-bottom: 1px solid #EEF0F5; vertical-align: top; overflow-wrap: anywhere; }
+table.cases tr.hot { background: var(--amber-soft); }
+.v-true_pass { color: var(--indigo); font-weight: 800; }
+.v-lucky_pass, .v-generation_failure, .v-retrieval_failure { color: var(--amber-text); font-weight: 800; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 18px; font-size: 13px; color: var(--muted); }
 
-  .ln-frame {
-    height: 480px;
-  }
+/* welcome dialog */
+.welcome { position: fixed; inset: 0; z-index: 100; background: rgba(17, 16, 46, 0.72); display: flex; align-items: center; justify-content: center; padding: 32px; }
+.welcome[hidden] { display: none; }
+.welcome-box { position: relative; width: 100%; max-width: 1100px; max-height: 100%; overflow: auto; background: var(--card); border-radius: 22px; padding: 30px; display: flex; flex-wrap: wrap; gap: 28px; align-items: center; }
+.welcome-close { position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--card); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; z-index: 2; }
+.welcome-text { flex: 1 1 300px; min-width: 0; }
+.welcome-text h2 { margin: 0 0 12px; font-size: 30px; font-weight: 800; line-height: 1.2; }
+.welcome-text p { margin: 0 0 14px; font-size: 15px; line-height: 1.65; color: var(--body); }
+.welcome-text p:last-of-type { margin-bottom: 22px; }
+.welcome-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.welcome-art { flex: 1 1 480px; min-width: 0; }
+
+.foot { max-width: 1240px; margin: 0 auto; padding: 0 32px 40px; font-size: 12px; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .top-inner { padding: 12px 16px; }
+  main { padding: 16px 16px 40px; }
+  .foot { padding: 0 16px 32px; }
+  .report { padding: 16px 14px 22px; border-radius: 16px; }
+  .hero h1 { font-size: 23px; }
+  .hero { gap: 18px; }
+  .answers { grid-template-columns: minmax(0, 1fr); }
+  .fail-list { max-width: none; }
+  .welcome { padding: 12px; align-items: flex-start; }
+  .welcome-box { padding: 22px 16px; gap: 18px; }
+  .welcome-text h2 { font-size: 24px; padding-right: 40px; }
+  .hero-text, .welcome-art, .welcome-text, .fail-detail-wrap { flex-basis: 100%; }
+  .tab-nav { margin-left: auto; }
 }
 
 </style>
 </head>
-<body>
-<div class="container">
-
-  <header class="report-header">
-    <h1>ragaudit report</h1>
-    <div class="meta">
-      Run <code>e38fb2af-b11f-4b76-9f95-c9c524eb9fbd</code> ·
-      test set <code>41ce8049d4e75a2ccb121cc628e89dcd457fd71ee6985ecccd315b83ef7d2be9</code> ·
-      adapter <code>/app/demo/ungrounded_adapter.py</code> ·
-      started 2026-09-17 21:05:15.662075+00:00
+<body><div role="note" style="background:#FFFBEB;color:#92400E;border-bottom:1px solid #FDE68A;padding:10px 16px;font:600 13px/1.5 Manrope,system-ui,sans-serif;text-align:center">Sample report. Demo: well-known facts and an adapter that ignores what it retrieves, so correct answers come from memory. Re-rendered with the v3 report from the stored run (no new model calls); run on 17 Sep 2026 with gpt-4o-mini (OpenAI API) as the judge, on the bundled demo docs.</div>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="brand-name">ragaudit</div>
+      <div class="brand-meta">Run report · Sep 17, 2026 · ungrounded_adapter.py · run e38fb2af</div>
     </div>
-  </header>
+    <div class="top-actions">
+      <span class="badge badge-needs_work" title="STRONG: 80% or more true passes · GOOD: 60% or more · NEEDS WORK: below 60%">NEEDS WORK</span>
+      <button type="button" class="btn" data-welcome-open>What is this?</button>
+    </div>
+  </div>
+</header>
 
-  <section class="summary-box summary-needs_work" aria-label="Summary">
-    <h2>In plain English</h2>
-    <ul class="summary-lines">
-      
-      <li><strong>Verdict:</strong> NEEDS WORK. Only 4 of 13 answers were correct and from the right passage; main problem: correct answers are not coming from retrieval.</li>
-      
-      <li><strong>Retrieval hit rate:</strong> 31% (4 of 13 found the passage the question came from, matched by id)</li>
-      
-      <li><strong>Answer correctness:</strong> 100% (13 of 13 judged correct)</li>
-      
-      <li><strong>Lucky passes:</strong> 9 (correct answer, but the right passage was not retrieved); 9 still correct with no context at all, so answered from memory</li>
-      
-      <li><strong>Most useful fix:</strong> don&#39;t trust the correct answers yet. 9 were right without the right passage being retrieved, so the model answered from memory. Fix retrieval first, and tell the model to answer only from the context.</li>
-      
-    </ul>
-  </section>
-
-  <section class="headline">
-    <h2>The headline finding</h2>
-    <p class="headline-sentence">
-      
-      Out of 13 test questions, <strong>9 (69.2%)</strong>
-      were answered correctly even though the pipeline never retrieved the passage the answer
-      actually came from. In other words, the model got these right despite retrieval &mdash;
-      not because of it.
-      
-    </p>
-    <div class="stats-grid">
-      <div class="stat">
-        <span class="value">13</span>
-        <span class="label">Total questions</span>
+<main>
+  
+  <section class="report" aria-label="Report">
+    <div class="tabbar">
+      <div class="tabs" role="tablist" aria-label="Report sections">
+        <button type="button" role="tab" id="tab-overview" data-tab="overview" aria-controls="panel-overview" aria-selected="true" tabindex="0" class="tab">Overview</button>
+        <button type="button" role="tab" id="tab-history" data-tab="history" aria-controls="panel-history" aria-selected="false" tabindex="-1" class="tab">Score history</button>
+        <button type="button" role="tab" id="tab-verdicts" data-tab="verdicts" aria-controls="panel-verdicts" aria-selected="false" tabindex="-1" class="tab">Verdicts</button>
+        <button type="button" role="tab" id="tab-failed" data-tab="failed" aria-controls="panel-failed" aria-selected="false" tabindex="-1" class="tab">What failed</button>
+        <button type="button" role="tab" id="tab-loop" data-tab="loop" aria-controls="panel-loop" aria-selected="false" tabindex="-1" class="tab">Improvement loop</button>
+        <button type="button" role="tab" id="tab-questions" data-tab="questions" aria-controls="panel-questions" aria-selected="false" tabindex="-1" class="tab">All questions</button>
+        <button type="button" role="tab" id="tab-how" data-tab="how" aria-controls="panel-how" aria-selected="false" tabindex="-1" class="tab">How it works</button>
+        <button type="button" role="tab" id="tab-run" data-tab="run" aria-controls="panel-run" aria-selected="false" tabindex="-1" class="tab">How to run</button>
       </div>
-      <div class="stat">
-        <span class="value">30.8%</span>
-        <span class="label">Retrieval hit rate</span>
-      </div>
-      <div class="stat">
-        <span class="value">100.0%</span>
-        <span class="label">Answer correctness rate</span>
-      </div>
-      <div class="stat">
-        <span class="value">
-          30.8%
-        </span>
-        <span class="label">Mean groundedness</span>
+      <div class="tab-nav">
+        <span class="tab-pos" data-tab-pos>1 / 8</span>
+        <button type="button" class="btn btn-arrow" data-tab-prev aria-label="Previous section">←</button>
+        <button type="button" class="btn btn-arrow btn-primary" data-tab-next aria-label="Next section">→</button>
       </div>
     </div>
-  </section>
 
-  <section class="matrix">
-    <h2>Verdict breakdown</h2>
-    <table class="matrix-table">
-      <thead>
-        <tr>
-          <th></th>
-          <th>Retrieved</th>
-          <th>Not retrieved</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th>Correct</th>
-          <td class="cell-true-pass">4<span class="cell-label">True pass</span></td>
-          <td class="cell-lucky-pass">9<span class="cell-label">Lucky pass</span></td>
-        </tr>
-        <tr>
-          <th>Wrong</th>
-          <td class="cell-generation-failure">0<span class="cell-label">Generation failure</span></td>
-          <td class="cell-retrieval-failure">0<span class="cell-label">Retrieval failure</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
-
-  <section class="ablation">
-    <h2>Ablation check</h2>
     
-    <p>
-      Of the 9 lucky-pass case(s), <strong>9</strong>
-      stayed correct even with retrieval turned off entirely &mdash; confirming the model didn't
-      need retrieval to answer them.
-    </p>
-    
-  </section>
-
-  <section class="judge-failures">
-    <h2>Judge reliability</h2>
-    <p>
-      
-      All judge responses in this run parsed successfully &mdash; 0 parsing failures.
-      
-    </p>
-  </section>
-
-  <section class="cases">
-    <h2>Per-case results</h2>
-    <div class="filter-bar" role="group" aria-label="Filter by verdict">
-      <button type="button" class="filter-btn active" data-filter="all">All (13)</button>
-      <button type="button" class="filter-btn" data-filter="true_pass">True pass (4)</button>
-      <button type="button" class="filter-btn" data-filter="lucky_pass">Lucky pass (9)</button>
-      <button type="button" class="filter-btn" data-filter="generation_failure">Generation failure (0)</button>
-      <button type="button" class="filter-btn" data-filter="retrieval_failure">Retrieval failure (0)</button>
+    <div class="panel" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+      <div class="hero">
+        <svg class="ring" width="150" height="150" viewBox="0 0 148 148" role="img" aria-label="4 of 13 true passes">
+          <circle cx="74" cy="74" r="62" fill="none" stroke="#E6E8F5" stroke-width="14"></circle>
+          <circle cx="74" cy="74" r="62" fill="none" stroke="#4338CA" stroke-width="14" stroke-linecap="round" stroke-dasharray="119.9 389.6" transform="rotate(-90 74 74)"></circle>
+          <text x="74" y="72" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="34" font-weight="800" fill="#111827">4/13</text>
+          <text x="74" y="96" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#5B6577">true passes</text>
+        </svg>
+        <div class="hero-text">
+          <h1>Some right answers didn&#39;t come from your documents.</h1>
+          <p>9 of 13 answers were right even though search missed the page they live on: the model answered from memory. Those wins won&#39;t hold for facts it doesn&#39;t already know.</p>
+        </div>
+      </div>
+      <div class="stats">
+        
+        <div class="stat"><div class="stat-label">Retrieval hit</div><div class="stat-value">31%</div><div class="stat-note">4 of 13 found the source page</div></div>
+        
+        <div class="stat"><div class="stat-label">Answer correctness</div><div class="stat-value">100%</div><div class="stat-note">13 of 13 judged correct</div></div>
+        
+        <div class="stat"><div class="stat-label">Grounded</div><div class="stat-value">31%</div><div class="stat-note">answers used the passages</div></div>
+        
+        <div class="stat"><div class="stat-label">Lucky passes</div><div class="stat-value">9</div><div class="stat-note">right answer, wrong page</div></div>
+        
+      </div>
+      <div class="row-16">
+        <div class="card-soft reading col-2">
+          <div class="card-label">HOW TO READ THESE NUMBERS</div>
+          <ul><li>Correctness higher than retrieval hit means some right answers did not come from the right page.</li><li>9 lucky passes: right answers your search didn&#39;t earn. Don&#39;t count them as wins.</li><li>13 questions is a small sample. Run with the default 20 (or more) before trusting a trend.</li></ul>
+        </div>
+        <div class="card-deep col-side">
+          <div class="card-label">NEXT STEP</div>
+          <div class="next-title">Fix retrieval, and tell the model to answer only from the context.</div>
+          <button type="button" class="btn btn-lilac" data-goto="failed">See what failed →</button>
+        </div>
+      </div>
     </div>
-    <table id="case-table">
-      <thead>
-        <tr>
-          <th data-sort="question">Question</th>
-          <th data-sort="verdict">Verdict</th>
-          <th data-sort="rank">Retrieval rank</th>
-          <th>Details</th>
-        </tr>
-      </thead>
-      <tbody>
-        
-        <tr class="case-row" data-verdict="lucky_pass" data-rank="-1">
-          <td class="case-question">What is the atomic number of Carbon?</td>
-          <td class="case-verdict"><span class="badge badge-lucky_pass">Lucky pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">not retrieved</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>6</dd>
-                <dt>Model answer</dt>
-                <dd>The atomic number of Carbon is 6.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># The Oceans
 
-There are five recognized oceans on Earth: the Pacific, Atlantic,
-Indian, Southern, and Arctic. The Pacific Ocean is the largest and
-deepest, covering more area than all of Earth&#39;s land combined. The
-Arctic Ocean is the smallest and shallowest of the five. The deepest
-known point in any ocean is the Challenger Deep in the Pacific&#39;s
-Mariana Trench.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-                <dt>Ablation (no-context) answer</dt>
-                <dd>The atomic number of carbon is 6.</dd>
-                <dt>Ablation confirms lucky pass</dt>
-                <dd>Yes</dd>
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-        <tr class="case-row" data-verdict="lucky_pass" data-rank="-1">
-          <td class="case-question">What is the smallest and shallowest ocean on Earth?</td>
-          <td class="case-verdict"><span class="badge badge-lucky_pass">Lucky pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">not retrieved</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>The Arctic Ocean is the smallest and shallowest of the five.</dd>
-                <dt>Model answer</dt>
-                <dd>The smallest and shallowest ocean on Earth is the Arctic Ocean. It covers an area of about 15.6 million square kilometers (6.1 million square miles) and has an average depth of around 1,205 meters (3,937 feet), making it both the smallest and the shallowest of the world&#39;s oceans.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># The Moon Landing
+    
+    <div class="panel" role="tabpanel" id="panel-history" aria-labelledby="tab-history" hidden>
+      <h2 class="sr-only">Score history</h2>
+      <div class="row">
+        <div class="col-main chart" data-chart>
+          
+          <div class="chart-head">
+            <div class="chart-title">Score history</div>
+            <div class="legend">
+              <span><span class="legend-line" aria-hidden="true"></span>true pass</span>
+              <span><span class="legend-dash" aria-hidden="true"></span>retrieval hit</span>
+              
+            </div>
+          </div>
+          
+          <div class="empty">
+            <div class="empty-title">No runs recorded for this project yet</div>
+            <div class="card-text">Runs from <code>ragaudit check</code> and <code>ragaudit improve</code> are saved in a .ragaudit folder next to your documents and drawn here.</div>
+            <div class="cmd-inline"><code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py</code><button type="button" class="copy" data-copy="ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py" aria-label="Copy command: ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py">Copy</button></div>
+          </div>
+          
+        </div>
+        <div class="col-side">
+          <div class="card-soft"><div class="card-label">WHERE THIS COMES FROM</div><div class="card-text">Every check is saved in your project folder, so each new report draws every earlier run.</div></div>
+          <div class="card-soft"><div class="card-label">FAIR COMPARISONS</div><div class="card-text">Runs reuse the same questions while your documents stay the same. Runs where documents changed are marked.</div></div>
+          <div class="card-soft"><div class="card-label">READING A DIP</div><div class="card-text">A drop right after new documents usually means look-alike pages now compete. Try raising top-k or adding re-ranking.</div></div>
+        </div>
+      </div>
+    </div>
 
-On July 20, 1969, NASA&#39;s Apollo 11 mission landed the first humans on
-the Moon. Neil Armstrong became the first person to step onto the
-lunar surface, followed shortly after by Buzz Aldrin, while Michael
-Collins remained in lunar orbit aboard the command module. Armstrong&#39;s
-words upon stepping onto the surface, &#34;That&#39;s one small step for man,
-one giant leap for mankind,&#34; are among the most quoted in history.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-                <dt>Ablation (no-context) answer</dt>
-                <dd>The smallest and shallowest ocean on Earth is the Arctic Ocean. It covers an area of about 15 million square kilometers (5.8 million square miles) and has an average depth of about 1,205 meters (3,943 feet).</dd>
-                <dt>Ablation confirms lucky pass</dt>
-                <dd>Yes</dd>
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-        <tr class="case-row" data-verdict="lucky_pass" data-rank="-1">
-          <td class="case-question">Who primarily drafted the Declaration of Independence?</td>
-          <td class="case-verdict"><span class="badge badge-lucky_pass">Lucky pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">not retrieved</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>Thomas Jefferson</dd>
-                <dt>Model answer</dt>
-                <dd>The primary author of the Declaration of Independence was Thomas Jefferson. He drafted the document in 1776, with input and revisions from other members of the Continental Congress, including John Adams and Benjamin Franklin. The Declaration was adopted on July 4, 1776.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># The French Revolution
+    
+    <div class="panel" role="tabpanel" id="panel-verdicts" aria-labelledby="tab-verdicts" hidden>
+      <h2 class="panel-title">Verdicts: two checks, crossed</h2>
+      <p class="panel-lede">Each question is judged on retrieval and on the answer separately. Where it lands tells you what to fix.</p>
+      <div class="verdicts">
+        <div></div>
+        <div class="vg-col">FOUND THE PAGE</div>
+        <div class="vg-col">MISSED THE PAGE</div>
+        <div class="vg-row">RIGHT ANSWER</div>
+        <div class="cell cell-true_pass"><div class="cell-head"><span class="cell-count">4</span><span class="cell-name">True pass</span></div><div class="cell-text">Worked end to end. This is the number to protect when you change anything.</div></div>
+        <div class="cell cell-hot"><div class="cell-head"><span class="cell-count">9</span><span class="cell-name">Lucky pass</span></div><div class="cell-text">Right answer from the wrong page: the model guessed from memory. Each one is re-asked with no pages to confirm.</div></div>
+        <div class="vg-row">WRONG ANSWER</div>
+        <div class="cell"><div class="cell-head"><span class="cell-count">0</span><span class="cell-name">Generation failure</span></div><div class="cell-text">The page was there and the model still got it wrong. Fix the prompt, passage length or model.</div></div>
+        <div class="cell"><div class="cell-head"><span class="cell-count">0</span><span class="cell-name">Retrieval failure</span></div><div class="cell-text">Wrong page, wrong answer. Fix chunking, embeddings or top-k.</div></div>
+      </div>
+    </div>
 
-The French Revolution began in 1789, marked by the storming of the
-Bastille prison in Paris on July 14 of that year — a date now
-celebrated annually as Bastille Day, France&#39;s national holiday. The
-revolution led to the abolition of the French monarchy and, in 1793,
-the execution of King Louis XVI. It fundamentally reshaped French
-society and influenced revolutionary movements across the world.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-                <dt>Ablation (no-context) answer</dt>
-                <dd>The Declaration of Independence was primarily drafted by Thomas Jefferson. He was selected by a committee formed by the Continental Congress, which also included John Adams, Benjamin Franklin, Roger Sherman, and Robert R. Livingston. Jefferson&#39;s draft was then revised by the committee and the Congress before its adoption on July 4, 1776.</dd>
-                <dt>Ablation confirms lucky pass</dt>
-                <dd>Yes</dd>
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
+    
+    <div class="panel" role="tabpanel" id="panel-failed" aria-labelledby="tab-failed" hidden>
+      
+      <h2 class="sr-only">What failed</h2>
+      <div class="fail-layout">
         
-        <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td class="case-question">What is the capital city of Germany?</td>
-          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">0</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>Berlin</dd>
-                <dt>Model answer</dt>
-                <dd>The capital city of Germany is Berlin.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># Capital Cities of Europe
-
-France&#39;s capital is Paris. Germany&#39;s capital is Berlin. Italy&#39;s capital
-is Rome. Spain&#39;s capital is Madrid. The United Kingdom&#39;s capital is
-London. These have been the seats of national government for their
-respective countries for well over a century, and each city is also
-the largest city in its country by population.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
+        <div class="fail-list" aria-label="Failing questions">
+          
+          <button type="button" class="fail-item" data-fail aria-pressed="true"><span class="fail-kind">LUCKY PASS</span>What is the atomic number of Carbon?</button>
+          
+          <button type="button" class="fail-item" data-fail aria-pressed="false"><span class="fail-kind">LUCKY PASS</span>What is the smallest and shallowest ocean on Earth?</button>
+          
+          <button type="button" class="fail-item" data-fail aria-pressed="false"><span class="fail-kind">LUCKY PASS</span>Who primarily drafted the Declaration of Independence?</button>
+          
+          <button type="button" class="fail-item" data-fail aria-pressed="false"><span class="fail-kind">LUCKY PASS</span>Who was the first person to step onto the lunar surface during the Moon landing?</button>
+          
+          <button type="button" class="fail-item" data-fail aria-pressed="false"><span class="fail-kind">LUCKY PASS</span>What is the capital of Canada?</button>
+          
+          <button type="button" class="fail-item" data-fail aria-pressed="false"><span class="fail-kind">LUCKY PASS</span>When was Mount Everest first summited?</button>
+          
+          <button type="button" class="fail-item" data-fail aria-pressed="false"><span class="fail-kind">LUCKY PASS</span>What is the speed of light in a vacuum in meters per second?</button>
+          
+          <button type="button" class="fail-item" data-fail aria-pressed="false"><span class="fail-kind">LUCKY PASS</span>What is the capital of South Korea?</button>
+          
+          <button type="button" class="fail-item" data-fail aria-pressed="false"><span class="fail-kind">LUCKY PASS</span>What significant event marked the beginning of the French Revolution?</button>
+          
+        </div>
         
-        <tr class="case-row" data-verdict="lucky_pass" data-rank="-1">
-          <td class="case-question">Who was the first person to step onto the lunar surface during the Moon landing?</td>
-          <td class="case-verdict"><span class="badge badge-lucky_pass">Lucky pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">not retrieved</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>Neil Armstrong</dd>
-                <dt>Model answer</dt>
-                <dd>The first person to step onto the lunar surface during the Moon landing was astronaut Neil Armstrong. He did so on July 20, 1969, as part of NASA&#39;s Apollo 11 mission. Armstrong famously declared, &#34;That&#39;s one small step for [a] man, one giant leap for mankind&#34; as he descended from the lunar module.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
+        <div class="fail-detail-wrap">
+          
+          <article class="fail-detail" data-fail-detail>
+            <div class="row">
+              <div class="col-2">
+                <div class="eyebrow amber" style="margin-bottom: 8px">LUCKY PASS · 1 OF 9</div>
+                <h3 class="fail-q">What is the atomic number of Carbon?</h3>
+                <div class="answers">
+                  <div class="ans ans-key"><div class="ans-label">Answer key</div><div class="ans-text">6</div></div>
+                  <div class="ans ans-got ok"><div class="ans-label">Pipeline said</div><div class="ans-text">The atomic number of Carbon is 6.</div></div>
+                </div>
+                <div class="card-label">WHAT THE SEARCH RETURNED</div>
+                <div class="passages">
                   
-                  <ol>
-                    
-                    <li># Mount Everest
+                  <div class="passage"><span class="passage-rank">#1</span><span class="passage-text"># The Oceans There are five recognized oceans on Earth: the Pacific, Atlantic, Indian, Southern, and Arctic. The Pacific Ocean is the largest and deepest, covering more area than all of Earth&#39;s land combined. The Arctic Ocean is the smallest and shallowest of the five. The deepest known point in any ocean is the Challenger Deep in the Pacific&#39;s Mariana Trench.</span></div>
+                  
+                </div>
+                
+                <div class="card-label" style="margin-top: 16px">THE PAGE IT SHOULD HAVE FOUND</div>
+                <div class="passages"><div class="passage gold"><span class="passage-rank">src</span><span class="passage-text"># Basic Chemical Elements Hydrogen is the first element on the periodic table, with atomic number 1. Oxygen has atomic number 8. Carbon has atomic number <b>6</b>, and its ability to form long chains is the basis of organic chemistry. Gold has the chemical symbol Au, from the Latin &#34;aurum,&#34; and iron has the symbol Fe, from &#34;ferrum.&#34; Helium, atomic number 2, is the second lightest element and does not react with other elements under normal conditions.</span></div></div>
+                
+              </div>
+              <div class="col-side">
+                <div class="card-soft"><div class="card-label">WHY IT FAILED</div><div class="card-text">The answer matched the key, but the passage it lives on was not retrieved, so the model answered from memory or from a look-alike page. Re-asked with no passages at all, it was still right: confirmed from memory. Judge: The candidate answer correctly states that the atomic number of Carbon is 6, matching the expected answer.</div></div>
+                <div class="card-deep">
+                  <div class="card-label">TRY THIS</div>
+                  <ul><li>Fix retrieval first: this page should come back</li><li>Tell the model to answer only from the context</li><li>Raise top-k or add re-ranking</li></ul>
+                  <code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py --note &#34;what you changed&#34;</code>
+                </div>
+              </div>
+            </div>
+          </article>
+          
+          <article class="fail-detail" data-fail-detail hidden>
+            <div class="row">
+              <div class="col-2">
+                <div class="eyebrow amber" style="margin-bottom: 8px">LUCKY PASS · 2 OF 9</div>
+                <h3 class="fail-q">What is the smallest and shallowest ocean on Earth?</h3>
+                <div class="answers">
+                  <div class="ans ans-key"><div class="ans-label">Answer key</div><div class="ans-text">The Arctic Ocean is the smallest and shallowest of the five.</div></div>
+                  <div class="ans ans-got ok"><div class="ans-label">Pipeline said</div><div class="ans-text">The smallest and shallowest ocean on Earth is the Arctic Ocean. It covers an area of about 15.6 million square kilometers (6.1 million square miles) and has an average depth of around 1,205 meters (3,937 feet), making it both the smallest and the shallowest of the world&#39;s oceans.</div></div>
+                </div>
+                <div class="card-label">WHAT THE SEARCH RETURNED</div>
+                <div class="passages">
+                  
+                  <div class="passage"><span class="passage-rank">#1</span><span class="passage-text"># The Moon Landing On July 20, 1969, NASA&#39;s Apollo 11 mission landed the first humans on the Moon. Neil Armstrong became the first person to step onto the lunar surface, followed shortly after by Buzz Aldrin, while Michael Collins remained in lunar orbit aboard the command module. Armstrong&#39;s words upon stepping onto the surface, &#34;That&#39;s one small step for man, one giant leap for mankind,&#34; are among the most quoted in history.</span></div>
+                  
+                </div>
+                
+                <div class="card-label" style="margin-top: 16px">THE PAGE IT SHOULD HAVE FOUND</div>
+                <div class="passages"><div class="passage gold"><span class="passage-rank">src</span><span class="passage-text"># The Oceans There are five recognized oceans on Earth: the Pacific, Atlantic, Indian, Southern, and Arctic. The Pacific Ocean is the largest and deepest, covering more area than all of Earth&#39;s land combined. <b>The Arctic Ocean is the smallest and shallowest of the five.</b> The deepest known point in any ocean is the Challenger Deep in the Pacific&#39;s Mariana Trench.</span></div></div>
+                
+              </div>
+              <div class="col-side">
+                <div class="card-soft"><div class="card-label">WHY IT FAILED</div><div class="card-text">The answer matched the key, but the passage it lives on was not retrieved, so the model answered from memory or from a look-alike page. Re-asked with no passages at all, it was still right: confirmed from memory. Judge: The candidate answer correctly identifies the Arctic Ocean as the smallest and shallowest ocean, matching the expected answer&#39;s content and providing additional accurate details.</div></div>
+                <div class="card-deep">
+                  <div class="card-label">TRY THIS</div>
+                  <ul><li>Fix retrieval first: this page should come back</li><li>Tell the model to answer only from the context</li><li>Raise top-k or add re-ranking</li></ul>
+                  <code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py --note &#34;what you changed&#34;</code>
+                </div>
+              </div>
+            </div>
+          </article>
+          
+          <article class="fail-detail" data-fail-detail hidden>
+            <div class="row">
+              <div class="col-2">
+                <div class="eyebrow amber" style="margin-bottom: 8px">LUCKY PASS · 3 OF 9</div>
+                <h3 class="fail-q">Who primarily drafted the Declaration of Independence?</h3>
+                <div class="answers">
+                  <div class="ans ans-key"><div class="ans-label">Answer key</div><div class="ans-text">Thomas Jefferson</div></div>
+                  <div class="ans ans-got ok"><div class="ans-label">Pipeline said</div><div class="ans-text">The primary author of the Declaration of Independence was Thomas Jefferson. He drafted the document in 1776, with input and revisions from other members of the Continental Congress, including John Adams and Benjamin Franklin. The Declaration was adopted on July 4, 1776.</div></div>
+                </div>
+                <div class="card-label">WHAT THE SEARCH RETURNED</div>
+                <div class="passages">
+                  
+                  <div class="passage"><span class="passage-rank">#1</span><span class="passage-text"># The French Revolution The French Revolution began in 1789, marked by the storming of the Bastille prison in Paris on July 14 of that year — a date now celebrated annually as Bastille Day, France&#39;s national holiday. The revolution led to the abolition of the French monarchy and, in 1793, the execution of King Louis XVI. It fundamentally reshaped French society and influenced revolutionary movements across the world.</span></div>
+                  
+                </div>
+                
+                <div class="card-label" style="margin-top: 16px">THE PAGE IT SHOULD HAVE FOUND</div>
+                <div class="passages"><div class="passage gold"><span class="passage-rank">src</span><span class="passage-text"># United States Independence The United States declared independence from Great Britain on July 4, 1776, when the Continental Congress adopted the Declaration of Independence. The document was primarily drafted by <b>Thomas Jefferson</b>. Independence Day is celebrated annually in the United States on July 4th with fireworks and public celebrations. The Revolutionary War itself continued until 1783, when the Treaty of Paris formally ended the conflict.</span></div></div>
+                
+              </div>
+              <div class="col-side">
+                <div class="card-soft"><div class="card-label">WHY IT FAILED</div><div class="card-text">The answer matched the key, but the passage it lives on was not retrieved, so the model answered from memory or from a look-alike page. Re-asked with no passages at all, it was still right: confirmed from memory. Judge: The candidate answer correctly identifies Thomas Jefferson as the primary author of the Declaration of Independence and provides additional relevant context about the drafting process and adoption date.</div></div>
+                <div class="card-deep">
+                  <div class="card-label">TRY THIS</div>
+                  <ul><li>Fix retrieval first: this page should come back</li><li>Tell the model to answer only from the context</li><li>Raise top-k or add re-ranking</li></ul>
+                  <code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py --note &#34;what you changed&#34;</code>
+                </div>
+              </div>
+            </div>
+          </article>
+          
+          <article class="fail-detail" data-fail-detail hidden>
+            <div class="row">
+              <div class="col-2">
+                <div class="eyebrow amber" style="margin-bottom: 8px">LUCKY PASS · 4 OF 9</div>
+                <h3 class="fail-q">Who was the first person to step onto the lunar surface during the Moon landing?</h3>
+                <div class="answers">
+                  <div class="ans ans-key"><div class="ans-label">Answer key</div><div class="ans-text">Neil Armstrong</div></div>
+                  <div class="ans ans-got ok"><div class="ans-label">Pipeline said</div><div class="ans-text">The first person to step onto the lunar surface during the Moon landing was astronaut Neil Armstrong. He did so on July 20, 1969, as part of NASA&#39;s Apollo 11 mission. Armstrong famously declared, &#34;That&#39;s one small step for [a] man, one giant leap for mankind&#34; as he descended from the lunar module.</div></div>
+                </div>
+                <div class="card-label">WHAT THE SEARCH RETURNED</div>
+                <div class="passages">
+                  
+                  <div class="passage"><span class="passage-rank">#1</span><span class="passage-text"># Mount Everest Mount Everest, located in the Himalayas on the border between Nepal and Tibet, is Earth&#39;s tallest mountain above sea level, with a peak elevation of 8,849 meters (29,032 feet). It was first summited on May 29, 1953, by Sir Edmund Hillary and Tenzing Norgay. While Everest is the tallest mountain above sea level, Mauna Kea in Hawaii is taller when measured from its base on the ocean floor.</span></div>
+                  
+                </div>
+                
+                <div class="card-label" style="margin-top: 16px">THE PAGE IT SHOULD HAVE FOUND</div>
+                <div class="passages"><div class="passage gold"><span class="passage-rank">src</span><span class="passage-text"># The Moon Landing On July 20, 1969, NASA&#39;s Apollo 11 mission landed the first humans on the Moon. <b>Neil Armstrong</b> became the first person to step onto the lunar surface, followed shortly after by Buzz Aldrin, while Michael Collins remained in lunar orbit aboard the command module. Armstrong&#39;s words upon stepping onto the surface, &#34;That&#39;s one small step for man, one giant leap for mankind,&#34; are among the most quoted in history.</span></div></div>
+                
+              </div>
+              <div class="col-side">
+                <div class="card-soft"><div class="card-label">WHY IT FAILED</div><div class="card-text">The answer matched the key, but the passage it lives on was not retrieved, so the model answered from memory or from a look-alike page. Re-asked with no passages at all, it was still right: confirmed from memory. Judge: The candidate answer correctly identifies Neil Armstrong as the first person to step onto the lunar surface and provides additional context about the event and his famous quote.</div></div>
+                <div class="card-deep">
+                  <div class="card-label">TRY THIS</div>
+                  <ul><li>Fix retrieval first: this page should come back</li><li>Tell the model to answer only from the context</li><li>Raise top-k or add re-ranking</li></ul>
+                  <code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py --note &#34;what you changed&#34;</code>
+                </div>
+              </div>
+            </div>
+          </article>
+          
+          <article class="fail-detail" data-fail-detail hidden>
+            <div class="row">
+              <div class="col-2">
+                <div class="eyebrow amber" style="margin-bottom: 8px">LUCKY PASS · 5 OF 9</div>
+                <h3 class="fail-q">What is the capital of Canada?</h3>
+                <div class="answers">
+                  <div class="ans ans-key"><div class="ans-label">Answer key</div><div class="ans-text">Ottawa</div></div>
+                  <div class="ans ans-got ok"><div class="ans-label">Pipeline said</div><div class="ans-text">The capital of Canada is Ottawa.</div></div>
+                </div>
+                <div class="card-label">WHAT THE SEARCH RETURNED</div>
+                <div class="passages">
+                  
+                  <div class="passage"><span class="passage-rank">#1</span><span class="passage-text"># Capital Cities of Europe France&#39;s capital is Paris. Germany&#39;s capital is Berlin. Italy&#39;s capital is Rome. Spain&#39;s capital is Madrid. The United Kingdom&#39;s capital is London. These have been the seats of national government for their respective countries for well over a century, and each city is also the largest city in its country by population.</span></div>
+                  
+                </div>
+                
+                <div class="card-label" style="margin-top: 16px">THE PAGE IT SHOULD HAVE FOUND</div>
+                <div class="passages"><div class="passage gold"><span class="passage-rank">src</span><span class="passage-text"># Capital Cities of the Americas The capital of the United States is Washington, D.C., which is not part of any state. Canada&#39;s capital is <b>Ottawa</b>, not Toronto. Brazil&#39;s capital is Brasília, a purpose-built city that replaced Rio de Janeiro as the capital in 1960. Mexico&#39;s capital is Mexico City, one of the largest cities in the world by population.</span></div></div>
+                
+              </div>
+              <div class="col-side">
+                <div class="card-soft"><div class="card-label">WHY IT FAILED</div><div class="card-text">The answer matched the key, but the passage it lives on was not retrieved, so the model answered from memory or from a look-alike page. Re-asked with no passages at all, it was still right: confirmed from memory. Judge: The candidate answer correctly states that Ottawa is the capital of Canada, which matches the expected answer.</div></div>
+                <div class="card-deep">
+                  <div class="card-label">TRY THIS</div>
+                  <ul><li>Fix retrieval first: this page should come back</li><li>Tell the model to answer only from the context</li><li>Raise top-k or add re-ranking</li></ul>
+                  <code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py --note &#34;what you changed&#34;</code>
+                </div>
+              </div>
+            </div>
+          </article>
+          
+          <article class="fail-detail" data-fail-detail hidden>
+            <div class="row">
+              <div class="col-2">
+                <div class="eyebrow amber" style="margin-bottom: 8px">LUCKY PASS · 6 OF 9</div>
+                <h3 class="fail-q">When was Mount Everest first summited?</h3>
+                <div class="answers">
+                  <div class="ans ans-key"><div class="ans-label">Answer key</div><div class="ans-text">May 29, 1953</div></div>
+                  <div class="ans ans-got ok"><div class="ans-label">Pipeline said</div><div class="ans-text">Mount Everest was first summited on May 29, 1953, by Sir Edmund Hillary from New Zealand and Tenzing Norgay, a Sherpa of Nepal.</div></div>
+                </div>
+                <div class="card-label">WHAT THE SEARCH RETURNED</div>
+                <div class="passages">
+                  
+                  <div class="passage"><span class="passage-rank">#1</span><span class="passage-text"># Basic Physics Constants The speed of light in a vacuum is approximately 299,792,458 meters per second, often rounded to 3.0 x 10^8 m/s. Standard Earth gravity is approximately 9.8 meters per second squared. Absolute zero, the coldest theoretically possible temperature, is 0 Kelvin, equal to -273.15 degrees Celsius. These values are treated as fixed constants in physics and do not vary by location or experiment under normal conditions.</span></div>
+                  
+                </div>
+                
+                <div class="card-label" style="margin-top: 16px">THE PAGE IT SHOULD HAVE FOUND</div>
+                <div class="passages"><div class="passage gold"><span class="passage-rank">src</span><span class="passage-text"># Mount Everest Mount Everest, located in the Himalayas on the border between Nepal and Tibet, is Earth&#39;s tallest mountain above sea level, with a peak elevation of 8,849 meters (29,032 feet). It was first summited on <b>May 29, 1953</b>, by Sir Edmund Hillary and Tenzing Norgay. While Everest is the tallest mountain above sea level, Mauna Kea in Hawaii is taller when measured from its base on the ocean floor.</span></div></div>
+                
+              </div>
+              <div class="col-side">
+                <div class="card-soft"><div class="card-label">WHY IT FAILED</div><div class="card-text">The answer matched the key, but the passage it lives on was not retrieved, so the model answered from memory or from a look-alike page. Re-asked with no passages at all, it was still right: confirmed from memory. Judge: The candidate answer correctly states the date Mount Everest was first summited as May 29, 1953, and provides additional accurate details regarding the climbers.</div></div>
+                <div class="card-deep">
+                  <div class="card-label">TRY THIS</div>
+                  <ul><li>Fix retrieval first: this page should come back</li><li>Tell the model to answer only from the context</li><li>Raise top-k or add re-ranking</li></ul>
+                  <code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py --note &#34;what you changed&#34;</code>
+                </div>
+              </div>
+            </div>
+          </article>
+          
+          <article class="fail-detail" data-fail-detail hidden>
+            <div class="row">
+              <div class="col-2">
+                <div class="eyebrow amber" style="margin-bottom: 8px">LUCKY PASS · 7 OF 9</div>
+                <h3 class="fail-q">What is the speed of light in a vacuum in meters per second?</h3>
+                <div class="answers">
+                  <div class="ans ans-key"><div class="ans-label">Answer key</div><div class="ans-text">Approximately 299,792,458 meters per second.</div></div>
+                  <div class="ans ans-got ok"><div class="ans-label">Pipeline said</div><div class="ans-text">The speed of light in a vacuum is approximately 299,792,458 meters per second. This is often rounded to 300,000 kilometers per second for simplicity in calculations.</div></div>
+                </div>
+                <div class="card-label">WHAT THE SEARCH RETURNED</div>
+                <div class="passages">
+                  
+                  <div class="passage"><span class="passage-rank">#1</span><span class="passage-text"># Basic Chemical Elements Hydrogen is the first element on the periodic table, with atomic number 1. Oxygen has atomic number 8. Carbon has atomic number 6, and its ability to form long chains is the basis of organic chemistry. Gold has the chemical symbol Au, from the Latin &#34;aurum,&#34; and iron has the symbol Fe, from &#34;ferrum.&#34; Helium, atomic number 2, is the second lightest element and does not react with other elements under normal conditions.</span></div>
+                  
+                </div>
+                
+                <div class="card-label" style="margin-top: 16px">THE PAGE IT SHOULD HAVE FOUND</div>
+                <div class="passages"><div class="passage gold"><span class="passage-rank">src</span><span class="passage-text"># Basic Physics Constants The speed of light in a vacuum is approximately 299,792,458 meters per second, often rounded to 3.0 x 10^8 m/s. Standard Earth gravity is approximately 9.8 meters per second squared. Absolute zero, the coldest theoretically possible temperature, is 0 Kelvin, equal to -273.15 degrees Celsius. These values are treated as fixed constants in physics and do not vary by location or experiment under normal conditions.</span></div></div>
+                
+              </div>
+              <div class="col-side">
+                <div class="card-soft"><div class="card-label">WHY IT FAILED</div><div class="card-text">The answer matched the key, but the passage it lives on was not retrieved, so the model answered from memory or from a look-alike page. Re-asked with no passages at all, it was still right: confirmed from memory. Judge: The candidate answer accurately states the speed of light in a vacuum as approximately 299,792,458 meters per second, which matches the expected answer precisely.</div></div>
+                <div class="card-deep">
+                  <div class="card-label">TRY THIS</div>
+                  <ul><li>Fix retrieval first: this page should come back</li><li>Tell the model to answer only from the context</li><li>Raise top-k or add re-ranking</li></ul>
+                  <code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py --note &#34;what you changed&#34;</code>
+                </div>
+              </div>
+            </div>
+          </article>
+          
+          <article class="fail-detail" data-fail-detail hidden>
+            <div class="row">
+              <div class="col-2">
+                <div class="eyebrow amber" style="margin-bottom: 8px">LUCKY PASS · 8 OF 9</div>
+                <h3 class="fail-q">What is the capital of South Korea?</h3>
+                <div class="answers">
+                  <div class="ans ans-key"><div class="ans-label">Answer key</div><div class="ans-text">Seoul</div></div>
+                  <div class="ans ans-got ok"><div class="ans-label">Pipeline said</div><div class="ans-text">The capital of South Korea is Seoul.</div></div>
+                </div>
+                <div class="card-label">WHAT THE SEARCH RETURNED</div>
+                <div class="passages">
+                  
+                  <div class="passage"><span class="passage-rank">#1</span><span class="passage-text"># Basic Physics Constants The speed of light in a vacuum is approximately 299,792,458 meters per second, often rounded to 3.0 x 10^8 m/s. Standard Earth gravity is approximately 9.8 meters per second squared. Absolute zero, the coldest theoretically possible temperature, is 0 Kelvin, equal to -273.15 degrees Celsius. These values are treated as fixed constants in physics and do not vary by location or experiment under normal conditions.</span></div>
+                  
+                </div>
+                
+                <div class="card-label" style="margin-top: 16px">THE PAGE IT SHOULD HAVE FOUND</div>
+                <div class="passages"><div class="passage gold"><span class="passage-rank">src</span><span class="passage-text"># Capital Cities of Asia Japan&#39;s capital is Tokyo. China&#39;s capital is Beijing. India&#39;s capital is New Delhi. South Korea&#39;s capital is <b>Seoul</b>. Indonesia&#39;s capital is Jakarta. Tokyo is the most populous metropolitan area in the world, while Beijing is the political center of the world&#39;s most populous country.</span></div></div>
+                
+              </div>
+              <div class="col-side">
+                <div class="card-soft"><div class="card-label">WHY IT FAILED</div><div class="card-text">The answer matched the key, but the passage it lives on was not retrieved, so the model answered from memory or from a look-alike page. Re-asked with no passages at all, it was still right: confirmed from memory. Judge: The candidate answer correctly states that the capital of South Korea is Seoul, matching the expected answer exactly.</div></div>
+                <div class="card-deep">
+                  <div class="card-label">TRY THIS</div>
+                  <ul><li>Fix retrieval first: this page should come back</li><li>Tell the model to answer only from the context</li><li>Raise top-k or add re-ranking</li></ul>
+                  <code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py --note &#34;what you changed&#34;</code>
+                </div>
+              </div>
+            </div>
+          </article>
+          
+          <article class="fail-detail" data-fail-detail hidden>
+            <div class="row">
+              <div class="col-2">
+                <div class="eyebrow amber" style="margin-bottom: 8px">LUCKY PASS · 9 OF 9</div>
+                <h3 class="fail-q">What significant event marked the beginning of the French Revolution?</h3>
+                <div class="answers">
+                  <div class="ans ans-key"><div class="ans-label">Answer key</div><div class="ans-text">The storming of the Bastille prison in Paris on July 14, 1789.</div></div>
+                  <div class="ans ans-got ok"><div class="ans-label">Pipeline said</div><div class="ans-text">The significant event that marked the beginning of the French Revolution was the Storming of the Bastille on July 14, 1789. This event symbolized the uprising of the people against the monarchy and the oppressive regime, and it is often regarded as a foundational moment in the revolution.</div></div>
+                </div>
+                <div class="card-label">WHAT THE SEARCH RETURNED</div>
+                <div class="passages">
+                  
+                  <div class="passage"><span class="passage-rank">#1</span><span class="passage-text"># Water Water is a chemical compound with the formula H2O: two hydrogen atoms bonded to one oxygen atom. At standard atmospheric pressure, water freezes at 0 degrees Celsius (32 degrees Fahrenheit) and boils at 100 degrees Celsius (212 degrees Fahrenheit). Water is most dense at around 4 degrees Celsius, which is why ice floats on liquid water rather than sinking.</span></div>
+                  
+                </div>
+                
+                <div class="card-label" style="margin-top: 16px">THE PAGE IT SHOULD HAVE FOUND</div>
+                <div class="passages"><div class="passage gold"><span class="passage-rank">src</span><span class="passage-text"># The French Revolution The French Revolution began in 1789, marked by the storming of the Bastille prison in Paris on July 14 of that year — a date now celebrated annually as Bastille Day, France&#39;s national holiday. The revolution led to the abolition of the French monarchy and, in 1793, the execution of King Louis XVI. It fundamentally reshaped French society and influenced revolutionary movements across the world.</span></div></div>
+                
+              </div>
+              <div class="col-side">
+                <div class="card-soft"><div class="card-label">WHY IT FAILED</div><div class="card-text">The answer matched the key, but the passage it lives on was not retrieved, so the model answered from memory or from a look-alike page. Re-asked with no passages at all, it was still right: confirmed from memory. Judge: The candidate answer accurately identifies the storming of the Bastille on July 14, 1789, as the significant event that marked the beginning of the French Revolution and provides additional context about its symbolism.</div></div>
+                <div class="card-deep">
+                  <div class="card-label">TRY THIS</div>
+                  <ul><li>Fix retrieval first: this page should come back</li><li>Tell the model to answer only from the context</li><li>Raise top-k or add re-ranking</li></ul>
+                  <code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py --note &#34;what you changed&#34;</code>
+                </div>
+              </div>
+            </div>
+          </article>
+          
+        </div>
+      </div>
+      
+    </div>
 
-Mount Everest, located in the Himalayas on the border between Nepal
-and Tibet, is Earth&#39;s tallest mountain above sea level, with a peak
-elevation of 8,849 meters (29,032 feet). It was first summited on May
-29, 1953, by Sir Edmund Hillary and Tenzing Norgay. While Everest is
-the tallest mountain above sea level, Mauna Kea in Hawaii is taller
-when measured from its base on the ocean floor.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-                <dt>Ablation (no-context) answer</dt>
-                <dd>The first person to step onto the lunar surface during the Moon landing was astronaut Neil Armstrong. He did so on July 20, 1969, during the Apollo 11 mission.</dd>
-                <dt>Ablation confirms lucky pass</dt>
-                <dd>Yes</dd>
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-        <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td class="case-question">What is the density of water at around 4 degrees Celsius?</td>
-          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">0</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>Water is most dense at around 4 degrees Celsius.</dd>
-                <dt>Model answer</dt>
-                <dd>The density of water at around 4 degrees Celsius is approximately 1.00 grams per cubic centimeter (g/cm³), or 1000 kilograms per cubic meter (kg/m³). This is the point at which water is most dense.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># Water
+    
+    <div class="panel" role="tabpanel" id="panel-loop" aria-labelledby="tab-loop" hidden>
+      
+      
+      <h2 class="panel-title">Self-improvement loop</h2>
+      <p class="panel-lede">ragaudit improve tries different settings on practice questions and keeps whatever scores better. It then scores your old and new settings once on a locked final exam, so you can see whether the gain is real.</p>
+      <div class="empty"><div class="empty-title">No improvement run for this project yet</div><div class="cmd-inline"><code>ragaudit improve --docs ./docs --adapter demo/ungrounded_adapter.py</code><button type="button" class="copy" data-copy="ragaudit improve --docs ./docs --adapter demo/ungrounded_adapter.py" aria-label="Copy command: ragaudit improve --docs ./docs --adapter demo/ungrounded_adapter.py">Copy</button></div></div>
+      
+    </div>
 
-Water is a chemical compound with the formula H2O: two hydrogen atoms
-bonded to one oxygen atom. At standard atmospheric pressure, water
-freezes at 0 degrees Celsius (32 degrees Fahrenheit) and boils at 100
-degrees Celsius (212 degrees Fahrenheit). Water is most dense at
-around 4 degrees Celsius, which is why ice floats on liquid water
-rather than sinking.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-        <tr class="case-row" data-verdict="lucky_pass" data-rank="-1">
-          <td class="case-question">What is the capital of Canada?</td>
-          <td class="case-verdict"><span class="badge badge-lucky_pass">Lucky pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">not retrieved</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>Ottawa</dd>
-                <dt>Model answer</dt>
-                <dd>The capital of Canada is Ottawa.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># Capital Cities of Europe
+    
+    <div class="panel" role="tabpanel" id="panel-questions" aria-labelledby="tab-questions" hidden>
+      <div class="table-head">
+        <h2 class="panel-title" style="margin: 0">All 13 questions</h2>
+        <div class="muted" style="font-size: 13px">matched by chunk id</div>
+      </div>
+      
+      <div class="chips" aria-label="Filter by verdict">
+        <button type="button" class="filter" data-filter="all" aria-pressed="true">All (13)</button><button type="button" class="filter" data-filter="true_pass" aria-pressed="false">True pass (4)</button><button type="button" class="filter" data-filter="lucky_pass" aria-pressed="false">Lucky pass (9)</button>
+      </div>
+      
+      <div class="table-scroll" tabindex="0" aria-label="All questions table, scrolls sideways">
+        <table class="cases">
+          <thead><tr><th scope="col">Question</th><th scope="col" style="width: 150px">Key</th><th scope="col" style="width: 170px">Answered</th><th scope="col" style="width: 60px">Rank</th><th scope="col" style="width: 160px">Verdict</th></tr></thead>
+          <tbody>
+            
+            <tr data-case="lucky_pass" class="hot"><td>What is the atomic number of Carbon?</td><td>6</td><td>The atomic number of Carbon is 6.</td><td>–</td><td class="v-lucky_pass">Lucky pass</td></tr>
+            
+            <tr data-case="lucky_pass" class="hot"><td>What is the smallest and shallowest ocean on Earth?</td><td>The Arctic Ocean is the smallest and shallowest of the five.</td><td>The smallest and shallowest ocean on Earth is the Arctic Ocean. It covers an area of about 15.6 million square kilometers (6.1 million square miles) and has an average depth of around 1,205 meters (3,937 feet), making it both the smallest and the shallowest of the world&#39;s oceans.</td><td>–</td><td class="v-lucky_pass">Lucky pass</td></tr>
+            
+            <tr data-case="lucky_pass" class="hot"><td>Who primarily drafted the Declaration of Independence?</td><td>Thomas Jefferson</td><td>The primary author of the Declaration of Independence was Thomas Jefferson. He drafted the document in 1776, with input and revisions from other members of the Continental Congress, including John Adams and Benjamin Franklin. The Declaration was adopted on July 4, 1776.</td><td>–</td><td class="v-lucky_pass">Lucky pass</td></tr>
+            
+            <tr data-case="true_pass"><td>What is the capital city of Germany?</td><td>Berlin</td><td>The capital city of Germany is Berlin.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="lucky_pass" class="hot"><td>Who was the first person to step onto the lunar surface during the Moon landing?</td><td>Neil Armstrong</td><td>The first person to step onto the lunar surface during the Moon landing was astronaut Neil Armstrong. He did so on July 20, 1969, as part of NASA&#39;s Apollo 11 mission. Armstrong famously declared, &#34;That&#39;s one small step for [a] man, one giant leap for mankind&#34; as he descended from the lunar module.</td><td>–</td><td class="v-lucky_pass">Lucky pass</td></tr>
+            
+            <tr data-case="true_pass"><td>What is the density of water at around 4 degrees Celsius?</td><td>Water is most dense at around 4 degrees Celsius.</td><td>The density of water at around 4 degrees Celsius is approximately 1.00 grams per cubic centimeter (g/cm³), or 1000 kilograms per cubic meter (kg/m³). This is the point at which water is most dense.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="lucky_pass" class="hot"><td>What is the capital of Canada?</td><td>Ottawa</td><td>The capital of Canada is Ottawa.</td><td>–</td><td class="v-lucky_pass">Lucky pass</td></tr>
+            
+            <tr data-case="lucky_pass" class="hot"><td>When was Mount Everest first summited?</td><td>May 29, 1953</td><td>Mount Everest was first summited on May 29, 1953, by Sir Edmund Hillary from New Zealand and Tenzing Norgay, a Sherpa of Nepal.</td><td>–</td><td class="v-lucky_pass">Lucky pass</td></tr>
+            
+            <tr data-case="lucky_pass" class="hot"><td>What is the speed of light in a vacuum in meters per second?</td><td>Approximately 299,792,458 meters per second.</td><td>The speed of light in a vacuum is approximately 299,792,458 meters per second. This is often rounded to 300,000 kilometers per second for simplicity in calculations.</td><td>–</td><td class="v-lucky_pass">Lucky pass</td></tr>
+            
+            <tr data-case="lucky_pass" class="hot"><td>What is the capital of South Korea?</td><td>Seoul</td><td>The capital of South Korea is Seoul.</td><td>–</td><td class="v-lucky_pass">Lucky pass</td></tr>
+            
+            <tr data-case="lucky_pass" class="hot"><td>What significant event marked the beginning of the French Revolution?</td><td>The storming of the Bastille prison in Paris on July 14, 1789.</td><td>The significant event that marked the beginning of the French Revolution was the Storming of the Bastille on July 14, 1789. This event symbolized the uprising of the people against the monarchy and the oppressive regime, and it is often regarded as a foundational moment in the revolution.</td><td>–</td><td class="v-lucky_pass">Lucky pass</td></tr>
+            
+            <tr data-case="true_pass"><td>What is the pH of lemon juice?</td><td>around 2</td><td>The pH of lemon juice is around 2, making it acidic.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>When did World War II begin in Europe?</td><td>September 1, 1939</td><td>World War II began in Europe on September 1, 1939, when Germany invaded Poland.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+          </tbody>
+        </table>
+      </div>
+      <div class="facts"><span>Ablation: 9 of 9 lucky pass(es) still right with no passages</span><span>Judge parse failures: 0</span><span>matched by chunk id</span></div>
+    </div>
 
-France&#39;s capital is Paris. Germany&#39;s capital is Berlin. Italy&#39;s capital
-is Rome. Spain&#39;s capital is Madrid. The United Kingdom&#39;s capital is
-London. These have been the seats of national government for their
-respective countries for well over a century, and each city is also
-the largest city in its country by population.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-                <dt>Ablation (no-context) answer</dt>
-                <dd>The capital of Canada is Ottawa.</dd>
-                <dt>Ablation confirms lucky pass</dt>
-                <dd>Yes</dd>
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-        <tr class="case-row" data-verdict="lucky_pass" data-rank="-1">
-          <td class="case-question">When was Mount Everest first summited?</td>
-          <td class="case-verdict"><span class="badge badge-lucky_pass">Lucky pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">not retrieved</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>May 29, 1953</dd>
-                <dt>Model answer</dt>
-                <dd>Mount Everest was first summited on May 29, 1953, by Sir Edmund Hillary from New Zealand and Tenzing Norgay, a Sherpa of Nepal.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># Basic Physics Constants
-
-The speed of light in a vacuum is approximately 299,792,458 meters per
-second, often rounded to 3.0 x 10^8 m/s. Standard Earth gravity is
-approximately 9.8 meters per second squared. Absolute zero, the
-coldest theoretically possible temperature, is 0 Kelvin, equal to
--273.15 degrees Celsius. These values are treated as fixed constants
-in physics and do not vary by location or experiment under normal
-conditions.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-                <dt>Ablation (no-context) answer</dt>
-                <dd>Mount Everest was first summited on May 29, 1953, by Sir Edmund Hillary from New Zealand and Tenzing Norgay, a Sherpa of Nepal.</dd>
-                <dt>Ablation confirms lucky pass</dt>
-                <dd>Yes</dd>
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-        <tr class="case-row" data-verdict="lucky_pass" data-rank="-1">
-          <td class="case-question">What is the speed of light in a vacuum in meters per second?</td>
-          <td class="case-verdict"><span class="badge badge-lucky_pass">Lucky pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">not retrieved</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>Approximately 299,792,458 meters per second.</dd>
-                <dt>Model answer</dt>
-                <dd>The speed of light in a vacuum is approximately 299,792,458 meters per second. This is often rounded to 300,000 kilometers per second for simplicity in calculations.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># Basic Chemical Elements
-
-Hydrogen is the first element on the periodic table, with atomic
-number 1. Oxygen has atomic number 8. Carbon has atomic number 6, and
-its ability to form long chains is the basis of organic chemistry.
-Gold has the chemical symbol Au, from the Latin &#34;aurum,&#34; and iron has
-the symbol Fe, from &#34;ferrum.&#34; Helium, atomic number 2, is the second
-lightest element and does not react with other elements under normal
-conditions.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-                <dt>Ablation (no-context) answer</dt>
-                <dd>The speed of light in a vacuum is approximately 299,792,458 meters per second.</dd>
-                <dt>Ablation confirms lucky pass</dt>
-                <dd>Yes</dd>
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-        <tr class="case-row" data-verdict="lucky_pass" data-rank="-1">
-          <td class="case-question">What is the capital of South Korea?</td>
-          <td class="case-verdict"><span class="badge badge-lucky_pass">Lucky pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">not retrieved</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>Seoul</dd>
-                <dt>Model answer</dt>
-                <dd>The capital of South Korea is Seoul.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># Basic Physics Constants
-
-The speed of light in a vacuum is approximately 299,792,458 meters per
-second, often rounded to 3.0 x 10^8 m/s. Standard Earth gravity is
-approximately 9.8 meters per second squared. Absolute zero, the
-coldest theoretically possible temperature, is 0 Kelvin, equal to
--273.15 degrees Celsius. These values are treated as fixed constants
-in physics and do not vary by location or experiment under normal
-conditions.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-                <dt>Ablation (no-context) answer</dt>
-                <dd>The capital of South Korea is Seoul.</dd>
-                <dt>Ablation confirms lucky pass</dt>
-                <dd>Yes</dd>
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-        <tr class="case-row" data-verdict="lucky_pass" data-rank="-1">
-          <td class="case-question">What significant event marked the beginning of the French Revolution?</td>
-          <td class="case-verdict"><span class="badge badge-lucky_pass">Lucky pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">not retrieved</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>The storming of the Bastille prison in Paris on July 14, 1789.</dd>
-                <dt>Model answer</dt>
-                <dd>The significant event that marked the beginning of the French Revolution was the Storming of the Bastille on July 14, 1789. This event symbolized the uprising of the people against the monarchy and the oppressive regime, and it is often regarded as a foundational moment in the revolution.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># Water
-
-Water is a chemical compound with the formula H2O: two hydrogen atoms
-bonded to one oxygen atom. At standard atmospheric pressure, water
-freezes at 0 degrees Celsius (32 degrees Fahrenheit) and boils at 100
-degrees Celsius (212 degrees Fahrenheit). Water is most dense at
-around 4 degrees Celsius, which is why ice floats on liquid water
-rather than sinking.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-                <dt>Ablation (no-context) answer</dt>
-                <dd>The significant event that marked the beginning of the French Revolution was the Storming of the Bastille, which occurred on July 14, 1789. This event symbolized the uprising of the people against the monarchy and the oppressive regime, and it is widely considered the starting point of the revolution.</dd>
-                <dt>Ablation confirms lucky pass</dt>
-                <dd>Yes</dd>
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-        <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td class="case-question">What is the pH of lemon juice?</td>
-          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">0</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>around 2</dd>
-                <dt>Model answer</dt>
-                <dd>The pH of lemon juice is around 2, making it acidic.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># Acids and Bases
-
-The pH scale runs from 0 to 14, with 7 being neutral. Values below 7
-are acidic and values above 7 are basic (alkaline). Pure water has a
-pH of 7. Lemon juice is acidic, with a pH around 2, while household
-bleach is strongly basic, with a pH around 12 to 13. The pH scale is
-logarithmic, so each whole-number step represents a tenfold change in
-acidity or alkalinity.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-        <tr class="case-row" data-verdict="true_pass" data-rank="0">
-          <td class="case-question">When did World War II begin in Europe?</td>
-          <td class="case-verdict"><span class="badge badge-true_pass">True pass</span></td>
-          <td class="case-rank" data-label="Retrieval rank">0</td>
-          <td class="case-details">
-            <details>
-              <summary>Show</summary>
-              <dl>
-                <dt>Expected answer</dt>
-                <dd>September 1, 1939</dd>
-                <dt>Model answer</dt>
-                <dd>World War II began in Europe on September 1, 1939, when Germany invaded Poland.</dd>
-                <dt>Retrieved contexts</dt>
-                <dd class="contexts">
-                  
-                  <ol>
-                    
-                    <li># World War II
-
-World War II began in Europe on September 1, 1939, when Germany
-invaded Poland, and ended in Europe on May 8, 1945, with Germany&#39;s
-surrender. The war in the Pacific continued until Japan&#39;s surrender on
-September 2, 1945, following the atomic bombings of Hiroshima and
-Nagasaki in August 1945. It remains the deadliest conflict in human
-history.
-</li>
-                    
-                  </ol>
-                  
-                </dd>
-                
-                
-              </dl>
-            </details>
-          </td>
-        </tr>
-        
-      </tbody>
-    </table>
-  </section>
-
+    
+    <div class="panel" role="tabpanel" id="panel-how" aria-labelledby="tab-how" hidden>
+      <h2 class="sr-only">How it works</h2>
+      <div class="row" style="align-items: flex-start">
+        <div class="col-main">
+<div class="slides" data-slides id="how-slides">
+<div class="slides-inner">
+<div class="slides-top">
+<div class="eyebrow muted">HOW IT WORKS · <span data-slide-label>1 / 6</span></div>
+<button type="button" class="btn btn-small slides-fs" data-slide-fs aria-label="Open pictures full screen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"></path></svg><span data-slide-fs-text>Full screen</span></button>
 </div>
+<div class="slides-stage">
+<figure class="slide" data-slide="0">
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Three document pages turn into three quiz cards, each pinned to a page number">
+<rect x="94" y="54" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="82" y="66" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="70" y="78" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="90" y="102" width="90" height="10" rx="5" fill="#4338CA"></rect>
+<rect x="90" y="126" width="110" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="142" width="100" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="158" width="112" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="174" width="80" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="198" width="106" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="214" width="94" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<text x="145" y="304" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">your docs</text>
+<path d="M268 170h66" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<path d="M322 158l14 12-14 12" fill="none" stroke="#4338CA" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="370" y="58" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="96" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q1</text>
+<rect x="426" y="84" width="86" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="78" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="94" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.2</text>
+<rect x="370" y="138" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="176" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q2</text>
+<rect x="426" y="164" width="70" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="158" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="174" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.5</text>
+<rect x="370" y="218" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="256" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q3</text>
+<rect x="426" y="244" width="80" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="238" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="254" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.9</text>
+<text x="475" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">a quiz, each answer pinned to its page</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Your documents become a quiz</span><span class="slide-body">ragaudit writes questions from your files and pins each answer to the page it came from.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="1" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A magnifying glass finds the pinned page among five pages and marks it with a check">
+<rect x="54" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="160" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="266" y="96" width="84" height="112" rx="8" fill="#E0E7FF" stroke="#4338CA" stroke-width="3"></rect>
+<rect x="372" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="478" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="280" y="116" width="44" height="8" rx="4" fill="#4338CA"></rect>
+<rect x="280" y="134" width="56" height="6" rx="3" fill="#A5B4FC"></rect>
+<rect x="280" y="148" width="50" height="6" rx="3" fill="#A5B4FC"></rect>
+<rect x="280" y="162" width="54" height="6" rx="3" fill="#A5B4FC"></rect>
+<text x="308" y="196" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="800" fill="#4338CA">p.5</text>
+<circle cx="308" cy="152" r="76" fill="none" stroke="#1E1B4B" stroke-width="8"></circle>
+<path d="M362 206l52 52" stroke="#1E1B4B" stroke-width="16" stroke-linecap="round"></path>
+<circle cx="368" cy="86" r="20" fill="#4338CA"></circle>
+<path d="M359 86l6 7 12-14" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="150" y="282" width="340" height="38" rx="19" fill="#FFFFFF" stroke="#E2E6EE" stroke-width="2"></rect>
+<text x="320" y="307" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">Q2 pinned to p.5 · search returned p.5 ✓</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 1: did it find the right page?</span><span class="slide-body">We look at what your search returned. If the pinned page is in there, that is a hit.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="2" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="The answer key says 20, the pipeline said 5, and the judge marks it wrong">
+<rect x="60" y="66" width="220" height="132" rx="18" fill="#E0E7FF"></rect>
+<path d="M110 198l-6 30 30-30z" fill="#E0E7FF"></path>
+<text x="84" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#4338CA">answer key</text>
+<text x="84" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#4338CA">20</text>
+<rect x="360" y="66" width="220" height="132" rx="18" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3"></rect>
+<path d="M530 198l6 30-30-30z" fill="#FEF3C7"></path>
+<text x="384" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#92400E">your pipeline said</text>
+<text x="384" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#92400E">5</text>
+<text x="320" y="152" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="44" font-weight="800" fill="#5B6577">≠</text>
+<rect x="200" y="258" width="240" height="44" rx="22" fill="#1E1B4B"></rect>
+<text x="320" y="286" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">judge model: wrong ✕</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 2: was the answer right?</span><span class="slide-body">A separate judge model compares your pipeline’s answer to the answer key.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="3" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A two by two grid: true pass, lucky pass highlighted, generation failure and retrieval failure">
+<text x="250" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">found the page</text>
+<text x="440" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">missed the page</text>
+<text x="148" y="116" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">right</text>
+<text x="148" y="246" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">wrong</text>
+<rect x="160" y="56" width="180" height="118" rx="14" fill="#E0E7FF"></rect>
+<text x="250" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#4338CA">true pass</text>
+<text x="250" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#4338CA">it worked</text>
+<rect x="350" y="56" width="180" height="118" rx="14" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3"></rect>
+<text x="440" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#92400E">lucky pass</text>
+<text x="440" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#92400E">guessed from memory</text>
+<path d="M520 46l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="#F59E0B"></path>
+<rect x="160" y="184" width="180" height="118" rx="14" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="250" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#111827">generation fail</text>
+<text x="250" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">fix the prompt</text>
+<rect x="350" y="184" width="180" height="118" rx="14" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="440" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#111827">retrieval fail</text>
+<text x="440" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">fix the search</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Two checks, four verdicts</span><span class="slide-body">A lucky pass is a right answer from the wrong page. Most tests count it as a win; ragaudit flags it.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="4" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Practice questions feed a tuning loop that keeps better settings, while a locked final exam is opened once at the end">
+<rect x="66" y="96" width="140" height="96" rx="12" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="58" y="108" width="140" height="96" rx="12" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="50" y="120" width="140" height="96" rx="12" fill="#FFFFFF" stroke="#4338CA" stroke-width="2"></rect>
+<text x="120" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#4338CA">practice</text>
+<text x="120" y="186" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">7 of 10 questions</text>
+<path d="M200 168h44" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<circle cx="320" cy="168" r="62" fill="none" stroke="#4338CA" stroke-width="6" stroke-dasharray="300 90"></circle>
+<path d="M366 120l14 -4 -4 14" fill="none" stroke="#4338CA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+<text x="320" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="800" fill="#111827">try a setting</text>
+<text x="320" y="184" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">keep it if better</text>
+<text x="320" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#5B6577">chunk size · top-k · re-rank</text>
+<rect x="444" y="96" width="140" height="132" rx="14" fill="#1E1B4B"></rect>
+<rect x="497" y="144" width="34" height="28" rx="5" fill="#F59E0B"></rect>
+<path d="M503 144v-10a11 11 0 0 1 22 0v10" fill="none" stroke="#F59E0B" stroke-width="5"></path>
+<text x="514" y="200" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#FFFFFF">final exam</text>
+<text x="514" y="218" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#FFFFFF">locked · 3 of 10</text>
+<text x="514" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#5B6577">opened once, at the end</text>
+<rect x="130" y="290" width="380" height="36" rx="18" fill="#FFFFFF" stroke="#E2E6EE" stroke-width="2"></rect>
+<text x="320" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#111827">practice high, exam low = it memorised, alarm rings</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Then it gets better on its own</span><span class="slide-body">ragaudit tune tries settings on practice questions and keeps what scores better. A locked final exam is opened once, so the score can’t be faked.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="5" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="New pages get new questions, old pages get a few spot checks, deleted pages have their questions retired">
+<rect x="70" y="40" width="56" height="70" rx="7" fill="#E0E7FF" stroke="#4338CA" stroke-width="2"></rect>
+<rect x="140" y="40" width="56" height="70" rx="7" fill="#E0E7FF" stroke="#4338CA" stroke-width="2"></rect>
+<rect x="74" y="30" width="40" height="18" rx="9" fill="#4338CA"></rect>
+<text x="94" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#FFFFFF">NEW</text>
+<rect x="144" y="30" width="40" height="18" rx="9" fill="#4338CA"></rect>
+<text x="164" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#FFFFFF">NEW</text>
+<path d="M224 75h70" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="52" width="270" height="46" rx="23" fill="#E0E7FF"></rect>
+<text x="445" y="81" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#4338CA">new questions written</text>
+<rect x="70" y="135" width="56" height="70" rx="7" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="140" y="135" width="56" height="70" rx="7" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<path d="M224 170h70" stroke="#CBD2DE" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="147" width="270" height="46" rx="23" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="445" y="176" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#111827">a few old ones spot-checked</text>
+<rect x="105" y="230" width="56" height="70" rx="7" fill="none" stroke="#5B6577" stroke-width="2" stroke-dasharray="5 4"></rect>
+<path d="M115 240l36 50M151 240l-36 50" stroke="#5B6577" stroke-width="3" stroke-linecap="round"></path>
+<path d="M224 265h70" stroke="#CBD2DE" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="242" width="270" height="46" rx="23" fill="#F6F7FB" stroke="#CBD2DE" stroke-width="2" stroke-dasharray="5 4"></rect>
+<text x="445" y="271" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#5B6577">its questions retired</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Only re-test what changed</span><span class="slide-body">Add or edit documents and only those get new questions. Old ones are spot-checked, and deleted pages retire theirs.</span></figcaption>
+</figure>
+</div>
+<div class="slides-nav">
+<div class="slide-dots">
+<button type="button" class="slide-dot" data-slide-dot="0" aria-label="Picture 1: Your documents become a quiz" aria-current="true"></button>
+<button type="button" class="slide-dot" data-slide-dot="1" aria-label="Picture 2: Check 1: did it find the right page?"></button>
+<button type="button" class="slide-dot" data-slide-dot="2" aria-label="Picture 3: Check 2: was the answer right?"></button>
+<button type="button" class="slide-dot" data-slide-dot="3" aria-label="Picture 4: Two checks, four verdicts"></button>
+<button type="button" class="slide-dot" data-slide-dot="4" aria-label="Picture 5: Then it gets better on its own"></button>
+<button type="button" class="slide-dot" data-slide-dot="5" aria-label="Picture 6: Only re-test what changed"></button>
+</div>
+<div class="slides-arrows"><button type="button" class="btn btn-arrow" data-slide-prev aria-label="Previous picture">←</button><button type="button" class="btn btn-arrow btn-primary" data-slide-next aria-label="Next picture">→</button></div>
+</div>
+</div>
+</div>
+</div>
+        <div class="col-side" style="flex: 2 1 300px">
+          <div class="card-soft"><h3>Why two checks?</h3><div class="card-text">A right answer can come from the model's memory. Checking the page separately catches that.</div></div>
+          <div class="card-soft"><h3>Why can't the score be faked?</h3><div class="card-text">Questions avoid the page's exact wording, a second model checks every answer key, and the final exam stays locked during tuning.</div></div>
+          <div class="card-soft"><h3>Why the same questions every run?</h3><div class="card-text">Scores only compare fairly on the same quiz. ragaudit keeps your questions while your documents stay the same, and writes new ones only for pages you add or edit.</div></div>
+          <button type="button" class="card-link" data-goto="run"><div class="card-title">Ready to run it yourself?</div><div class="card-text">Two commands, with copy buttons, in How to run →</div></button>
+        </div>
+      </div>
+    </div>
 
+    
+    <div class="panel" role="tabpanel" id="panel-run" aria-labelledby="tab-run" hidden>
+      <div class="row">
+        <div class="col-main">
+          <div class="eyebrow indigo" style="margin-bottom: 8px">EASIEST WAY · 2 COMMANDS</div>
+          <h2 class="panel-title">Install once, then set everything up in your browser.</h2>
+          <p class="panel-lede" style="line-height: 1.6">Open a terminal (Terminal on Mac, PowerShell on Windows), paste each line, press Enter.</p>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px">
+            
+            <div class="cmd-easy">
+              <div class="cmd-easy-head"><span class="cmd-n">1</span><span class="cmd-what-strong">Install ragaudit (once)</span></div>
+              <div class="cmd-easy-body"><code><span class="prompt" aria-hidden="true">$ </span>pip install ragaudit-cli</code><button type="button" class="copy copy-dark" data-copy="pip install ragaudit-cli" aria-label="Copy command: pip install ragaudit-cli">Copy</button></div>
+            </div>
+            
+            <div class="cmd-easy">
+              <div class="cmd-easy-head"><span class="cmd-n">2</span><span class="cmd-what-strong">Open the setup page in your browser, then click Run</span></div>
+              <div class="cmd-easy-body"><code><span class="prompt" aria-hidden="true">$ </span>ragaudit ui</code><button type="button" class="copy copy-dark" data-copy="ragaudit ui" aria-label="Copy command: ragaudit ui">Copy</button></div>
+            </div>
+            
+          </div>
+          <div class="card-label">PREFER THE TERMINAL? EVERY COMMAND</div>
+          <div class="cmd-list">
+            
+            <div class="cmd-row"><code>ragaudit doctor --adapter demo/ungrounded_adapter.py</code><span class="cmd-what">Checks Python, your AI settings and your adapter, and says how to fix anything missing</span><button type="button" class="copy" data-copy="ragaudit doctor --adapter demo/ungrounded_adapter.py" aria-label="Copy command: ragaudit doctor --adapter demo/ungrounded_adapter.py">Copy</button></div>
+            
+            <div class="cmd-row"><code>ragaudit init --framework demo</code><span class="cmd-what">Writes a ready-to-run adapter; use plain, langchain or llamaindex for your own app</span><button type="button" class="copy" data-copy="ragaudit init --framework demo" aria-label="Copy command: ragaudit init --framework demo">Copy</button></div>
+            
+            <div class="cmd-row"><code>ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py</code><span class="cmd-what">One quick test (about 20 questions), then opens this report</span><button type="button" class="copy" data-copy="ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py" aria-label="Copy command: ragaudit check --docs ./docs --adapter demo/ungrounded_adapter.py">Copy</button></div>
+            
+            <div class="cmd-row"><code>ragaudit improve --docs ./docs --adapter demo/ungrounded_adapter.py</code><span class="cmd-what">The self-improving loop: tunes settings on practice, scores on the locked exam</span><button type="button" class="copy" data-copy="ragaudit improve --docs ./docs --adapter demo/ungrounded_adapter.py" aria-label="Copy command: ragaudit improve --docs ./docs --adapter demo/ungrounded_adapter.py">Copy</button></div>
+            
+            <div class="cmd-row"><code>ragaudit report --open</code><span class="cmd-what">Re-opens the latest report</span><button type="button" class="copy" data-copy="ragaudit report --open" aria-label="Copy command: ragaudit report --open">Copy</button></div>
+            
+          </div>
+        </div>
+        <div class="col-side">
+          <div class="card-soft"><h3>What you need</h3><div class="card-text">Python 3.11 or newer, a folder of documents, and either Ollama (free, runs on your computer) or an API key. The setup page checks all three for you.</div></div>
+          <div class="card-soft"><h3>Where results go</h3><div class="card-text">Every run is saved in a .ragaudit folder next to your documents. That is what the score history reads.</div></div>
+          <div class="card-soft"><h3>Your data stays local</h3><div class="card-text">With Ollama, nothing leaves your computer. Reports are files on your disk, not web links.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="foot">Generated by ragaudit on Nov 15, 2026 · run e38fb2af-b11f-4b76-9f95-c9c524eb9fbd</footer>
+
+<div class="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title" data-welcome hidden>
+  <div class="welcome-box">
+    <button type="button" class="welcome-close" data-welcome-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"></path></svg>
+    </button>
+    <div class="welcome-text">
+      <div class="eyebrow indigo" style="margin-bottom: 10px">FIRST TIME HERE?</div>
+      <h2 id="welcome-title">A report card for your document-answering AI.</h2>
+      <p>ragaudit quizzed it on your own files and graded two things separately: did it find the right page, and was its answer right.</p>
+      <p>Run it again after any change and the report tracks whether you got better.</p>
+      <div class="welcome-actions">
+        <button type="button" class="btn btn-primary btn-big" data-welcome-close>Show my results</button>
+        <button type="button" class="btn btn-ghost-big" data-welcome-run>How to run it</button>
+      </div>
+    </div>
+    <div class="welcome-art">
+<div class="slides" data-slides id="welcome-slides">
+<div class="slides-inner">
+<div class="slides-top">
+<div class="eyebrow muted">HOW IT WORKS · <span data-slide-label>1 / 6</span></div>
+<button type="button" class="btn btn-small slides-fs" data-slide-fs aria-label="Open pictures full screen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"></path></svg><span data-slide-fs-text>Full screen</span></button>
+</div>
+<div class="slides-stage">
+<figure class="slide" data-slide="0">
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Three document pages turn into three quiz cards, each pinned to a page number">
+<rect x="94" y="54" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="82" y="66" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="70" y="78" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="90" y="102" width="90" height="10" rx="5" fill="#4338CA"></rect>
+<rect x="90" y="126" width="110" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="142" width="100" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="158" width="112" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="174" width="80" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="198" width="106" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="214" width="94" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<text x="145" y="304" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">your docs</text>
+<path d="M268 170h66" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<path d="M322 158l14 12-14 12" fill="none" stroke="#4338CA" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="370" y="58" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="96" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q1</text>
+<rect x="426" y="84" width="86" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="78" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="94" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.2</text>
+<rect x="370" y="138" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="176" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q2</text>
+<rect x="426" y="164" width="70" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="158" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="174" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.5</text>
+<rect x="370" y="218" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="256" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q3</text>
+<rect x="426" y="244" width="80" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="238" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="254" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.9</text>
+<text x="475" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">a quiz, each answer pinned to its page</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Your documents become a quiz</span><span class="slide-body">ragaudit writes questions from your files and pins each answer to the page it came from.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="1" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A magnifying glass finds the pinned page among five pages and marks it with a check">
+<rect x="54" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="160" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="266" y="96" width="84" height="112" rx="8" fill="#E0E7FF" stroke="#4338CA" stroke-width="3"></rect>
+<rect x="372" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="478" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="280" y="116" width="44" height="8" rx="4" fill="#4338CA"></rect>
+<rect x="280" y="134" width="56" height="6" rx="3" fill="#A5B4FC"></rect>
+<rect x="280" y="148" width="50" height="6" rx="3" fill="#A5B4FC"></rect>
+<rect x="280" y="162" width="54" height="6" rx="3" fill="#A5B4FC"></rect>
+<text x="308" y="196" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="800" fill="#4338CA">p.5</text>
+<circle cx="308" cy="152" r="76" fill="none" stroke="#1E1B4B" stroke-width="8"></circle>
+<path d="M362 206l52 52" stroke="#1E1B4B" stroke-width="16" stroke-linecap="round"></path>
+<circle cx="368" cy="86" r="20" fill="#4338CA"></circle>
+<path d="M359 86l6 7 12-14" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="150" y="282" width="340" height="38" rx="19" fill="#FFFFFF" stroke="#E2E6EE" stroke-width="2"></rect>
+<text x="320" y="307" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">Q2 pinned to p.5 · search returned p.5 ✓</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 1: did it find the right page?</span><span class="slide-body">We look at what your search returned. If the pinned page is in there, that is a hit.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="2" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="The answer key says 20, the pipeline said 5, and the judge marks it wrong">
+<rect x="60" y="66" width="220" height="132" rx="18" fill="#E0E7FF"></rect>
+<path d="M110 198l-6 30 30-30z" fill="#E0E7FF"></path>
+<text x="84" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#4338CA">answer key</text>
+<text x="84" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#4338CA">20</text>
+<rect x="360" y="66" width="220" height="132" rx="18" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3"></rect>
+<path d="M530 198l6 30-30-30z" fill="#FEF3C7"></path>
+<text x="384" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#92400E">your pipeline said</text>
+<text x="384" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#92400E">5</text>
+<text x="320" y="152" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="44" font-weight="800" fill="#5B6577">≠</text>
+<rect x="200" y="258" width="240" height="44" rx="22" fill="#1E1B4B"></rect>
+<text x="320" y="286" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">judge model: wrong ✕</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 2: was the answer right?</span><span class="slide-body">A separate judge model compares your pipeline’s answer to the answer key.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="3" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A two by two grid: true pass, lucky pass highlighted, generation failure and retrieval failure">
+<text x="250" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">found the page</text>
+<text x="440" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">missed the page</text>
+<text x="148" y="116" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">right</text>
+<text x="148" y="246" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">wrong</text>
+<rect x="160" y="56" width="180" height="118" rx="14" fill="#E0E7FF"></rect>
+<text x="250" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#4338CA">true pass</text>
+<text x="250" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#4338CA">it worked</text>
+<rect x="350" y="56" width="180" height="118" rx="14" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3"></rect>
+<text x="440" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#92400E">lucky pass</text>
+<text x="440" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#92400E">guessed from memory</text>
+<path d="M520 46l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="#F59E0B"></path>
+<rect x="160" y="184" width="180" height="118" rx="14" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="250" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#111827">generation fail</text>
+<text x="250" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">fix the prompt</text>
+<rect x="350" y="184" width="180" height="118" rx="14" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="440" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#111827">retrieval fail</text>
+<text x="440" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">fix the search</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Two checks, four verdicts</span><span class="slide-body">A lucky pass is a right answer from the wrong page. Most tests count it as a win; ragaudit flags it.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="4" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Practice questions feed a tuning loop that keeps better settings, while a locked final exam is opened once at the end">
+<rect x="66" y="96" width="140" height="96" rx="12" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="58" y="108" width="140" height="96" rx="12" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="50" y="120" width="140" height="96" rx="12" fill="#FFFFFF" stroke="#4338CA" stroke-width="2"></rect>
+<text x="120" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#4338CA">practice</text>
+<text x="120" y="186" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">7 of 10 questions</text>
+<path d="M200 168h44" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<circle cx="320" cy="168" r="62" fill="none" stroke="#4338CA" stroke-width="6" stroke-dasharray="300 90"></circle>
+<path d="M366 120l14 -4 -4 14" fill="none" stroke="#4338CA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+<text x="320" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="800" fill="#111827">try a setting</text>
+<text x="320" y="184" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">keep it if better</text>
+<text x="320" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#5B6577">chunk size · top-k · re-rank</text>
+<rect x="444" y="96" width="140" height="132" rx="14" fill="#1E1B4B"></rect>
+<rect x="497" y="144" width="34" height="28" rx="5" fill="#F59E0B"></rect>
+<path d="M503 144v-10a11 11 0 0 1 22 0v10" fill="none" stroke="#F59E0B" stroke-width="5"></path>
+<text x="514" y="200" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#FFFFFF">final exam</text>
+<text x="514" y="218" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#FFFFFF">locked · 3 of 10</text>
+<text x="514" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#5B6577">opened once, at the end</text>
+<rect x="130" y="290" width="380" height="36" rx="18" fill="#FFFFFF" stroke="#E2E6EE" stroke-width="2"></rect>
+<text x="320" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#111827">practice high, exam low = it memorised, alarm rings</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Then it gets better on its own</span><span class="slide-body">ragaudit tune tries settings on practice questions and keeps what scores better. A locked final exam is opened once, so the score can’t be faked.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="5" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="New pages get new questions, old pages get a few spot checks, deleted pages have their questions retired">
+<rect x="70" y="40" width="56" height="70" rx="7" fill="#E0E7FF" stroke="#4338CA" stroke-width="2"></rect>
+<rect x="140" y="40" width="56" height="70" rx="7" fill="#E0E7FF" stroke="#4338CA" stroke-width="2"></rect>
+<rect x="74" y="30" width="40" height="18" rx="9" fill="#4338CA"></rect>
+<text x="94" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#FFFFFF">NEW</text>
+<rect x="144" y="30" width="40" height="18" rx="9" fill="#4338CA"></rect>
+<text x="164" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#FFFFFF">NEW</text>
+<path d="M224 75h70" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="52" width="270" height="46" rx="23" fill="#E0E7FF"></rect>
+<text x="445" y="81" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#4338CA">new questions written</text>
+<rect x="70" y="135" width="56" height="70" rx="7" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="140" y="135" width="56" height="70" rx="7" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<path d="M224 170h70" stroke="#CBD2DE" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="147" width="270" height="46" rx="23" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="445" y="176" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#111827">a few old ones spot-checked</text>
+<rect x="105" y="230" width="56" height="70" rx="7" fill="none" stroke="#5B6577" stroke-width="2" stroke-dasharray="5 4"></rect>
+<path d="M115 240l36 50M151 240l-36 50" stroke="#5B6577" stroke-width="3" stroke-linecap="round"></path>
+<path d="M224 265h70" stroke="#CBD2DE" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="242" width="270" height="46" rx="23" fill="#F6F7FB" stroke="#CBD2DE" stroke-width="2" stroke-dasharray="5 4"></rect>
+<text x="445" y="271" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#5B6577">its questions retired</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Only re-test what changed</span><span class="slide-body">Add or edit documents and only those get new questions. Old ones are spot-checked, and deleted pages retire theirs.</span></figcaption>
+</figure>
+</div>
+<div class="slides-nav">
+<div class="slide-dots">
+<button type="button" class="slide-dot" data-slide-dot="0" aria-label="Picture 1: Your documents become a quiz" aria-current="true"></button>
+<button type="button" class="slide-dot" data-slide-dot="1" aria-label="Picture 2: Check 1: did it find the right page?"></button>
+<button type="button" class="slide-dot" data-slide-dot="2" aria-label="Picture 3: Check 2: was the answer right?"></button>
+<button type="button" class="slide-dot" data-slide-dot="3" aria-label="Picture 4: Two checks, four verdicts"></button>
+<button type="button" class="slide-dot" data-slide-dot="4" aria-label="Picture 5: Then it gets better on its own"></button>
+<button type="button" class="slide-dot" data-slide-dot="5" aria-label="Picture 6: Only re-test what changed"></button>
+</div>
+<div class="slides-arrows"><button type="button" class="btn btn-arrow" data-slide-prev aria-label="Previous picture">←</button><button type="button" class="btn btn-arrow btn-primary" data-slide-next aria-label="Next picture">→</button></div>
+</div>
+</div>
+</div>
+</div>
+  </div>
+</div>
+<script type="application/json" id="ra-data">{"history":[]}</script>
 <script>
+/* ragaudit design system: shared behaviour for copy buttons, pill tabs and the slides widget.
+   Canonical source. The report inlines it; the website loads a synced copy
+   (docs/assets/ragaudit.js, written by scripts/sync_site.py). No dependencies. */
 (function () {
   "use strict";
+  var UI = window.RagauditUI = window.RagauditUI || {};
+  var doc = document.documentElement;
+  doc.classList.remove("no-js");
+  doc.classList.add("js");
 
-  var filterButtons = Array.prototype.slice.call(document.querySelectorAll(".filter-btn"));
-  var rows = Array.prototype.slice.call(document.querySelectorAll("#case-table tbody tr"));
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  UI.$ = $;
+  UI.$$ = $$;
 
-  filterButtons.forEach(function (btn) {
+  /* ---- copy buttons: any button whose data-copy attribute holds the text */
+  function fallbackCopy(text) {
+    var area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.top = "-1000px";
+    document.body.appendChild(area);
+    area.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(area);
+    return ok;
+  }
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallbackCopy(text); });
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+  UI.copyText = copyText;
+  $$("[data-copy]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      filterButtons.forEach(function (b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      var filter = btn.getAttribute("data-filter");
-      rows.forEach(function (row) {
-        var show = filter === "all" || row.getAttribute("data-verdict") === filter;
-        row.style.display = show ? "" : "none";
+      var text = btn.getAttribute("data-copy");
+      copyText(text).then(function (ok) {
+        btn.textContent = ok ? "Copied ✓" : "Select & copy";
+        clearTimeout(btn._t);
+        btn._t = setTimeout(function () { btn.textContent = "Copy"; }, 1500);
       });
     });
   });
 
-  var sortState = {};
-  Array.prototype.slice.call(document.querySelectorAll("#case-table th[data-sort]")).forEach(function (th) {
-    th.addEventListener("click", function () {
-      var key = th.getAttribute("data-sort");
-      var ascending = !sortState[key];
-      sortState = {};
-      sortState[key] = ascending;
-
-      var tbody = document.querySelector("#case-table tbody");
-      var sorted = rows.slice().sort(function (a, b) {
-        var av, bv;
-        if (key === "rank") {
-          av = parseFloat(a.getAttribute("data-rank"));
-          bv = parseFloat(b.getAttribute("data-rank"));
-        } else if (key === "verdict") {
-          av = a.getAttribute("data-verdict");
-          bv = b.getAttribute("data-verdict");
-        } else {
-          av = a.cells[0].textContent.trim().toLowerCase();
-          bv = b.cells[0].textContent.trim().toLowerCase();
-        }
-        if (av < bv) { return ascending ? -1 : 1; }
-        if (av > bv) { return ascending ? 1 : -1; }
-        return 0;
+  /* ---- pill tabs --------------------------------------------------------
+     root holds one [role=tablist] of [role=tab] buttons, each with aria-controls
+     naming its [role=tabpanel]; optional [data-tab-prev], [data-tab-next],
+     [data-tab-pos]. opts.hash: mirror data-tab names in the URL hash. */
+  UI.Tabs = function (root, opts) {
+    opts = opts || {};
+    var tablist = $("[role=tablist]", root);
+    var tabs = $$("[role=tab]", tablist);
+    var panels = tabs.map(function (t) { return document.getElementById(t.getAttribute("aria-controls")); });
+    var pos = $("[data-tab-pos]", root);
+    var current = 0;
+    function indexOf(name) {
+      for (var i = 0; i < tabs.length; i++) if (tabs[i].getAttribute("data-tab") === name) return i;
+      return -1;
+    }
+    function select(index, o) {
+      o = o || {};
+      var n = tabs.length;
+      if (!n) return;
+      index = (index + n) % n;
+      current = index;
+      tabs.forEach(function (tab, i) {
+        var on = i === index;
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+        tab.tabIndex = on ? 0 : -1;
+        if (panels[i]) panels[i].hidden = !on;
       });
-      sorted.forEach(function (row) { tbody.appendChild(row); });
+      if (pos) pos.textContent = (index + 1) + " / " + n;
+      if (o.focus) tabs[index].focus();
+      if (opts.hash && !o.noHash) {
+        var hash = "#" + tabs[index].getAttribute("data-tab");
+        try { history.replaceState(null, "", hash); } catch (e) { location.hash = hash; }
+      }
+      if (opts.onSelect) opts.onSelect(index, tabs[index], panels[index]);
+    }
+    tabs.forEach(function (tab, i) { tab.addEventListener("click", function () { select(i); }); });
+    tablist.addEventListener("keydown", function (ev) {
+      var key = ev.key;
+      if (key === "ArrowRight") { select(current + 1, { focus: true }); ev.preventDefault(); }
+      else if (key === "ArrowLeft") { select(current - 1, { focus: true }); ev.preventDefault(); }
+      else if (key === "Home") { select(0, { focus: true }); ev.preventDefault(); }
+      else if (key === "End") { select(tabs.length - 1, { focus: true }); ev.preventDefault(); }
+    });
+    var prev = $("[data-tab-prev]", root), next = $("[data-tab-next]", root);
+    if (prev) prev.addEventListener("click", function () { select(current - 1); });
+    if (next) next.addEventListener("click", function () { select(current + 1); });
+    if (opts.hash) {
+      var fromHash = function () {
+        var i = indexOf((location.hash || "").replace("#", ""));
+        select(i >= 0 ? i : 0, { noHash: i < 0 });
+      };
+      fromHash();
+      window.addEventListener("hashchange", fromHash);
+    } else {
+      var start = 0;
+      tabs.forEach(function (t, i) { if (t.getAttribute("aria-selected") === "true") start = i; });
+      select(start);
+    }
+    return { select: select, indexOf: indexOf, current: function () { return current; } };
+  };
+
+  /* ---- slides: [data-slides] with [data-slide] figures ------------------- */
+  UI.openSlides = null;
+  function Slides(root) {
+    var slides = $$("[data-slide]", root);
+    var dots = $$("[data-slide-dot]", root);
+    var label = $("[data-slide-label]", root);
+    var fsBtn = $("[data-slide-fs]", root);
+    var fsText = $("[data-slide-fs-text]", root);
+    var i = 0, fs = false, overlay = false;
+    function show(k) {
+      var n = slides.length;
+      i = (k + n) % n;
+      slides.forEach(function (s, j) { s.hidden = j !== i; });
+      dots.forEach(function (d, j) {
+        if (j === i) d.setAttribute("aria-current", "true"); else d.removeAttribute("aria-current");
+      });
+      if (label) label.textContent = (i + 1) + " / " + n;
+    }
+    function setFs(on) {
+      fs = on;
+      root.classList.toggle("is-fs", on);
+      fsText.textContent = on ? "Close" : "Full screen";
+      fsBtn.setAttribute("aria-label", on ? "Close full screen" : "Open pictures full screen");
+      if (on) { UI.openSlides = api; document.addEventListener("keydown", onKey, true); }
+      else { if (UI.openSlides === api) UI.openSlides = null; document.removeEventListener("keydown", onKey, true); }
+    }
+    function openFs() {
+      var req = root.requestFullscreen || root.webkitRequestFullscreen;
+      var useOverlay = function () { overlay = true; root.classList.add("fs"); setFs(true); fsBtn.focus(); };
+      if (!req) return useOverlay();
+      try {
+        var p = req.call(root);
+        if (p && p.then) {
+          p.then(function () { setFs(true); }, useOverlay);
+        } else {
+          setFs(true);
+        }
+      } catch (e) { useOverlay(); }
+    }
+    function closeFs() {
+      if (overlay) { overlay = false; root.classList.remove("fs"); setFs(false); return; }
+      var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+      if (fsEl === root) {
+        var exit = document.exitFullscreen || document.webkitExitFullscreen;
+        try { exit.call(document); } catch (e) {}
+      }
+      setFs(false);
+    }
+    function onKey(ev) {
+      if (!fs) return;
+      if (ev.key === "ArrowRight") { show(i + 1); ev.preventDefault(); ev.stopPropagation(); }
+      else if (ev.key === "ArrowLeft") { show(i - 1); ev.preventDefault(); ev.stopPropagation(); }
+      else if (ev.key === "Escape") { closeFs(); ev.preventDefault(); ev.stopPropagation(); }
+    }
+    document.addEventListener("fullscreenchange", function () {
+      if (!document.fullscreenElement && fs && !overlay) setFs(false);
+    });
+    $("[data-slide-prev]", root).addEventListener("click", function () { show(i - 1); });
+    $("[data-slide-next]", root).addEventListener("click", function () { show(i + 1); });
+    dots.forEach(function (d, j) { d.addEventListener("click", function () { show(j); }); });
+    fsBtn.addEventListener("click", function () { if (fs) closeFs(); else openFs(); });
+    var api = { show: show, close: closeFs, isOpen: function () { return fs; } };
+    show(0);
+    return api;
+  }
+  UI.Slides = Slides;
+  $$("[data-slides]").forEach(function (root) { Slides(root); });
+})();
+
+/* report-only behaviour; the shared design system (design.js) runs before this and provides window.RagauditUI. */
+(function () {
+  "use strict";
+  var UI = window.RagauditUI;
+  var data = {};
+  try {
+    data = JSON.parse(document.getElementById("ra-data").textContent);
+  } catch (e) {}
+
+  var $ = UI.$, $$ = UI.$$;
+
+  /* ---- report tabs (the shared pill-tab widget, mirrored in the URL hash) */
+  var reportTabs = UI.Tabs($(".report"), { hash: true });
+  function selectTab(index) { reportTabs.select(index); }
+  function tabIndexFor(name) { return reportTabs.indexOf(name); }
+  $$("[data-goto]").forEach(function (el) {
+    el.addEventListener("click", function () {
+      var i = tabIndexFor(el.getAttribute("data-goto"));
+      if (i >= 0) { selectTab(i); window.scrollTo(0, 0); }
+    });
+  });
+
+  /* ---- welcome popup ---------------------------------------------------- */
+  var dialog = $("[data-welcome]");
+  var lastFocus = null;
+  var SEEN = "ragaudit.welcome.seen";
+  function onDialogKey(ev) {
+    if (ev.key === "Escape" && !(UI.openSlides && UI.openSlides.isOpen())) { closeWelcome(); ev.preventDefault(); }
+    if (ev.key === "Tab") {
+      var focusable = $$("button, a[href], [tabindex='0']", dialog).filter(function (el) { return el.offsetParent !== null; });
+      if (!focusable.length) return;
+      var first = focusable[0], last = focusable[focusable.length - 1];
+      if (ev.shiftKey && document.activeElement === first) { last.focus(); ev.preventDefault(); }
+      else if (!ev.shiftKey && document.activeElement === last) { first.focus(); ev.preventDefault(); }
+    }
+  }
+  function openWelcome() {
+    if (!dialog) return;
+    lastFocus = document.activeElement;
+    dialog.hidden = false;
+    document.addEventListener("keydown", onDialogKey);
+    var close = $("[data-welcome-close]", dialog);
+    if (close) close.focus();
+    try { localStorage.setItem(SEEN, "1"); } catch (e) {}
+  }
+  function closeWelcome() {
+    if (!dialog || dialog.hidden) return;
+    if (UI.openSlides && UI.openSlides.isOpen()) UI.openSlides.close();
+    dialog.hidden = true;
+    document.removeEventListener("keydown", onDialogKey);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  if (dialog) {
+    $$("[data-welcome-close]", dialog).forEach(function (b) { b.addEventListener("click", closeWelcome); });
+    dialog.addEventListener("click", function (ev) { if (ev.target === dialog) closeWelcome(); });
+    $$("[data-welcome-run]", dialog).forEach(function (b) {
+      b.addEventListener("click", function () { closeWelcome(); selectTab(tabIndexFor("run")); window.scrollTo(0, 0); });
+    });
+    $$("[data-welcome-open]").forEach(function (b) { b.addEventListener("click", openWelcome); });
+    var seen = null, embedded = false;
+    try { seen = localStorage.getItem(SEEN); } catch (e) { seen = null; }
+    try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+    // Shown inside another page (the website's sample viewer): don't cover it; "What is this?" still opens it.
+    if (!seen && !embedded) openWelcome();
+  }
+
+  /* ---- score history ---------------------------------------------------- */
+  var runs = data.history || [];
+  var chart = $("[data-chart]");
+  if (chart && runs.length) {
+    var band = $("[data-sel-band]", chart);
+    var selLabel = $("[data-sel-label]", chart);
+    var points = $$("[data-point]", chart);
+    var buttons = $$("[data-run]");
+    var detail = $("[data-run-detail]");
+    function fill(name, value) { var el = $("[data-d=" + name + "]", detail); if (el) el.textContent = value; }
+    function pick(k) {
+      var r = runs[k];
+      if (!r) return;
+      band.setAttribute("x1", r.x); band.setAttribute("x2", r.x);
+      selLabel.setAttribute("x", r.x); selLabel.setAttribute("y", r.label_y); selLabel.textContent = r.tp_text;
+      points.forEach(function (p, j) { p.setAttribute("r", j === k ? 9 : 6); });
+      buttons.forEach(function (b, j) { b.setAttribute("aria-pressed", j === k ? "true" : "false"); });
+      fill("meta", r.meta); fill("note", r.note); fill("tp", r.tp_text); fill("hit", r.hit_text); fill("delta", r.delta_text);
+      var d = $("[data-d=delta]", detail);
+      d.className = "num" + (r.delta_class ? " " + r.delta_class : "");
+      var warn = $("[data-d=warn]", detail);
+      warn.textContent = r.warn || "";
+      warn.hidden = !r.warn;
+    }
+    buttons.forEach(function (b, j) { b.addEventListener("click", function () { pick(j); }); });
+  }
+
+  /* ---- what failed ------------------------------------------------------ */
+  var failButtons = $$("[data-fail]");
+  var failDetails = $$("[data-fail-detail]");
+  function pickFail(k) {
+    failButtons.forEach(function (b, j) { b.setAttribute("aria-pressed", j === k ? "true" : "false"); });
+    failDetails.forEach(function (d, j) { d.hidden = j !== k; });
+  }
+  failButtons.forEach(function (b, j) { b.addEventListener("click", function () { pickFail(j); }); });
+  if (failDetails.length > 1) pickFail(0);
+
+  /* ---- all-questions filters -------------------------------------------- */
+  var filters = $$("[data-filter]");
+  var caseRows = $$("[data-case]");
+  filters.forEach(function (f) {
+    f.addEventListener("click", function () {
+      var want = f.getAttribute("data-filter");
+      filters.forEach(function (o) { o.setAttribute("aria-pressed", o === f ? "true" : "false"); });
+      caseRows.forEach(function (row) {
+        row.hidden = !(want === "all" || row.getAttribute("data-case") === want);
+      });
     });
   });
 })();
-</script>
 
+</script>
 </body>
 </html>

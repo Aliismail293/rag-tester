@@ -603,7 +603,9 @@ def _asset(name: str) -> str:
 def render_html(view: dict) -> str:
     env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)), autoescape=select_autoescape(["html", "jinja"]))
     template = env.get_template("v3/report.html.jinja")
-    return template.render(v=view, css=Markup(_asset("report.css")), js=Markup(_asset("report.js")))
+    css = _asset("design.css") + "\n" + _asset("report.css")
+    js = _asset("design.js") + "\n" + _asset("report.js")
+    return template.render(v=view, css=Markup(css), js=Markup(js))
 
 
 def write_report(view: dict, out: str | Path) -> Path:

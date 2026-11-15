@@ -229,9 +229,10 @@ def test_run_report_opens_with_the_plain_english_summary(tmp_path, v1_db):
 
 
 def test_docs_sample_reports_show_the_summary_box():
+    # The published samples use the v3 report: its overview carries the plain-English reading and next step.
     for name in ("healthy", "degraded", "lucky"):
         page = (ROOT / "docs" / f"sample-report-{name}.html").read_text()
-        assert "In plain English" in page and "Most useful fix:" in page
+        assert "HOW TO READ THESE NUMBERS" in page and "NEXT STEP" in page
 
 
 def test_run_report_case_table_stacks_on_phones(tmp_path, v1_db):
@@ -242,5 +243,5 @@ def test_run_report_case_table_stacks_on_phones(tmp_path, v1_db):
     assert "table#case-table thead" in phone_css and "display: block" in phone_css
     assert 'class="case-rank" data-label="Retrieval rank"' in page
     assert "overflow-wrap: anywhere" in page
-    for name in ("healthy", "degraded", "lucky"):  # the published samples carry the same CSS
-        assert 'class="case-question"' in (ROOT / "docs" / f"sample-report-{name}.html").read_text()
+    for name in ("healthy", "degraded", "lucky"):  # the published samples (v3) scroll their table inside a box
+        assert 'class="table-scroll"' in (ROOT / "docs" / f"sample-report-{name}.html").read_text()

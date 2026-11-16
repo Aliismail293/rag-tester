@@ -405,20 +405,55 @@ deliberate flaws, for demos and tests; its numbers say nothing about a
 real pipeline. Without `--corpus`, `generate` is the unchanged v1 command,
 and `report` defaults to the v1 run report.
 
+### The harder demo: watch improve work
+
+`demo/v3/docs` (shipped with the package; "Try the demo docs" in
+`ragaudit ui` step 2 copies it into `./demo-docs`) is 38 short, made-up files
+about an invented coastal survey office: tide stations, vessels, buoys, data
+products, procedures and offices. The facts are invented, so a model can't
+answer from memory, and every family has look-alikes with the same kinds of
+facts (crew sizes, intervals, limits, prices), so keyword search pulls the
+wrong file's paragraph. Real run on 15 Nov 2026, local Ollama (qwen2.5:7b
+writes, answers and judges; llama3.1:8b verifies questions), demo adapter:
+
+| | Settings | Result |
+|---|---|---|
+| `ragaudit check` | defaults (paragraph passages, top 3, strict prompt) | 12 of 20 true passes (60%) |
+| `ragaudit improve --budget-calls 400` | 8 trials on 16 practice questions | practice 38 → 100 |
+| Locked exam (5 questions, never tuned on) | baseline → best | **60 → 100** (3 → 5 correct) |
+
+The best settings were `chunk_size` paragraph → 800 and `top_k` 3 → 5: whole
+files as passages keep each name next to its facts. Practice − exam was 0
+points, so no overfitting warning; 300 of the 400 calls were used. Report:
+[docs/sample-report-improve.html](docs/sample-report-improve.html).
+
+From the terminal, after "Try the demo docs" in `ragaudit ui` (or with
+`--docs demo/v3/docs` in a clone of this repo):
+
+```bash
+ragaudit init --framework demo --docs demo-docs
+ragaudit improve --docs demo-docs --budget-calls 400
+```
+
 ### Known limitations
 
 - Real-model testing so far: on 15 Nov 2026, `check` (three times, around a
   docs edit) and `improve --budget-calls 400 --max-trials 4` ran end to end
   on local Ollama models (qwen2.5:7b writes, answers and judges; llama3.1:8b
   verifies improve's questions) on the bundled demo docs with the demo
-  adapter. See [docs/sample-report.html](docs/sample-report.html). That run
+  adapter. See [docs/sample-report.html](docs/sample-report.html). The same
+  day, `check` and `improve --budget-calls 400` ran on the harder demo docs
+  (above). That run
   found and fixed two bugs: names counted as copied wording (which rejected
   most questions), and one malformed judge reply could flip a verdict (the
   judges now retry once). Hosted APIs and pipelines other than the demo have
-  not been run end to end on 0.4.0.
-- The demo corpus is small and its questions are easy for keyword search
-  (17 of 17 true passes; `improve` found no exam gain on 6 exam questions).
-  Small corpora give few exam questions, so treat a few-point change as noise.
+  not been run end to end on 0.4.x.
+- The original demo corpus (`demo/docs`) is small and easy for keyword
+  search (17 of 17 true passes; `improve` found no exam gain on 6 exam
+  questions). The harder demo docs (above) were built to show the loop working.
+- `improve` writes questions from at most 25 passages, so even a large corpus
+  gives a small locked exam (5 questions in the run below). Treat a
+  one-question change as noise.
 - Documents are read from `.txt` and `.md` files only.
 
 ## Releasing

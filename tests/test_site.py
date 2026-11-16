@@ -134,7 +134,7 @@ def test_footer_shows_the_package_version():
     assert f"<span data-version>v{version}</span>" in INDEX
 
 
-@pytest.mark.parametrize("name", ["sample-report.html", "sample-report-lucky.html", "sample-report-healthy.html", "sample-report-degraded.html"])
+@pytest.mark.parametrize("name", ["sample-report.html", "sample-report-improve.html", "sample-report-lucky.html", "sample-report-healthy.html", "sample-report-degraded.html"])
 def test_v3_samples_are_self_contained_and_have_no_local_paths(name):
     html = (DOCS / name).read_text(encoding="utf-8")
     assert html.count('role="tab"') == 8

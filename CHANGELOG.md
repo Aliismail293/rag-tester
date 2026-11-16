@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.4.1
+
+A harder demo that shows `improve` working, and a website built from the
+report's own design.
+
+### Added
+
+- Harder demo docs in `demo/v3/docs`, shipped in the wheel as
+  `ragaudit/demo_docs`: 38 short invented files (tide stations, vessels,
+  buoys, data products, procedures, offices) with look-alike pages, so
+  passage size, top_k and the prompt matter. Real run on local Ollama
+  (qwen2.5:7b, llama3.1:8b verifier): `check` at defaults 12/20 true passes;
+  `improve --budget-calls 400` took the locked exam from 60 to 100 on 5
+  questions, with no gap between practice and exam. Report:
+  `docs/sample-report-improve.html`.
+- `ragaudit ui` step 2: "Try the demo docs" copies them into `./demo-docs`
+  (never over a folder holding other files) and picks the demo app.
+- `scripts/sync_site.py`: copies the report's design system into
+  `docs/assets/` and renders the hero slides; `--check` runs in the tests.
+
+### Changed
+
+- The report's CSS and JS are split into a shared design system
+  (`design.css`, `design.js`: tokens, buttons, pill tabs, copy buttons,
+  slides with a dark variant) and report-only parts. Reports still inline
+  everything and look the same.
+- The website (`docs/index.html`) is rebuilt on that design system: hero
+  with the two-command quickstart and slides, real-run stats, a tabbed
+  sample-report viewer (real, improve loop, demo and mock runs, each
+  labelled with models and date), verdicts, why the scores are honest, and
+  every command with a Copy button. Old anchors still work.
+- The older sample reports (lucky, healthy, degraded) are re-rendered with
+  the v3 report from their stored runs, with no new model calls.
+- The report's welcome popup no longer opens by itself inside an iframe.
+- Slide dots fit on one line at phone width.
+
+### Removed
+
+- `docs/style.css` and `scripts/sync_landing_css.py` (only the old site
+  used them).
+
 ## 0.4.0
 
 A setup page, a new report with history, and a command that improves your

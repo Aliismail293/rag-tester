@@ -225,8 +225,9 @@
 
   <section class="strip" aria-labelledby="strip-label">
     <div class="wrap">
-      <div class="strip-label" id="strip-label">FROM A REAL RUN · QWEN2.5:7B + LLAMA3.1:8B ON LOCAL OLLAMA · 15 NOV 2026 · <a href="sample-report.html">open the report ↗</a></div>
+      <div class="strip-label" id="strip-label">FROM REAL RUNS · QWEN2.5:7B + LLAMA3.1:8B ON LOCAL OLLAMA · 15 NOV 2026 · <a href="#reports">see the reports</a></div>
       <div class="stats">
+        <div class="stat stat-wide" data-source="sample-report-improve.html" data-evidence="5-question locked exam"><div class="stat-label">Improve · locked exam</div><div class="stat-value">60 → 100</div><div class="stat-note">harder demo docs · 5 exam questions it never tuned on</div></div>
         <div class="stat" data-source="sample-report.html" data-evidence="17 of 17 judged correct"><div class="stat-label">True passes</div><div class="stat-value">17 / 17</div><div class="stat-note">right page and right answer</div></div>
         <div class="stat" data-source="sample-report.html" data-evidence="17 of 17 found the source page"><div class="stat-label">Retrieval hit</div><div class="stat-value">100%</div><div class="stat-note">17 of 17 found the source page</div></div>
         <div class="stat" data-source="sample-report.html" data-evidence="none answered from memory"><div class="stat-label">Lucky passes</div><div class="stat-value">0</div><div class="stat-note">none answered from memory</div></div>
@@ -247,13 +248,14 @@
         <div class="viewer-bar">
           <div class="tabs" role="tablist" aria-label="Sample reports">
             <button type="button" class="tab" role="tab" id="st-real" aria-controls="sp-real" aria-selected="true" tabindex="0">Real run (Ollama)</button>
+            <button type="button" class="tab" role="tab" id="st-improve" aria-controls="sp-improve" aria-selected="false" tabindex="-1">Improve loop</button>
             <button type="button" class="tab" role="tab" id="st-lucky" aria-controls="sp-lucky" aria-selected="false" tabindex="-1">Lucky pass demo</button>
             <button type="button" class="tab" role="tab" id="st-healthy" aria-controls="sp-healthy" aria-selected="false" tabindex="-1">Healthy</button>
             <button type="button" class="tab" role="tab" id="st-degraded" aria-controls="sp-degraded" aria-selected="false" tabindex="-1">Degraded</button>
             <button type="button" class="tab" role="tab" id="st-tune" aria-controls="sp-tune" aria-selected="false" tabindex="-1">Tune (mock)</button>
           </div>
           <div class="tab-nav">
-            <span class="tab-pos" data-tab-pos>1 / 5</span>
+            <span class="tab-pos" data-tab-pos>1 / 6</span>
             <button type="button" class="btn btn-arrow" data-tab-prev aria-label="Previous sample report">←</button>
             <button type="button" class="btn btn-arrow btn-primary" data-tab-next aria-label="Next sample report">→</button>
           </div>
@@ -264,6 +266,12 @@
           <p class="viewer-desc">The bundled demo docs and demo app, checked four times around one improve run and a docs edit. Every answer came from the right page; the history chart marks the edit.</p>
           <iframe class="frame" src="sample-report.html" title="Sample report: real run on Ollama" loading="lazy"></iframe>
           <div class="viewer-foot"><span>One self-contained HTML file.</span><a class="ext" href="sample-report.html">Open full report ↗</a></div>
+        </div>
+        <div class="viewer-panel" role="tabpanel" id="sp-improve" aria-labelledby="st-improve" hidden>
+          <div class="viewer-meta"><span class="kind kind-real">REAL MODELS</span><span class="viewer-source">qwen2.5:7b writes, answers and judges · llama3.1:8b verifies questions · local Ollama · 15 Nov 2026</span></div>
+          <p class="viewer-desc">The harder demo docs, full of look-alike pages, with <code>ragaudit improve --budget-calls 400</code>. Tuned on 16 practice questions, then scored once on 5 locked exam questions: 60 → 100, with no gap between practice and exam.</p>
+          <iframe class="frame" src="sample-report-improve.html" title="Sample report: improve loop on Ollama" loading="lazy"></iframe>
+          <div class="viewer-foot"><span>One self-contained HTML file.</span><a class="ext" href="sample-report-improve.html">Open full report ↗</a></div>
         </div>
         <div class="viewer-panel" role="tabpanel" id="sp-lucky" aria-labelledby="st-lucky" hidden>
           <div class="viewer-meta"><span class="kind kind-demo">DEMO APP · REAL JUDGE</span><span class="viewer-source">gpt-4o-mini via the OpenAI API · 17 Sep 2026 · re-rendered with the current report</span></div>
@@ -420,7 +428,7 @@ llm = ChatOllama(model="qwen2.5:7b")  <span class="cm"># or any chat model</span
 
 <footer class="site-foot">
   <div class="wrap">
-    <span>ragaudit <span data-version>v0.4.0</span> · MIT licensed</span>
+    <span>ragaudit <span data-version>v0.4.1</span> · MIT licensed</span>
     <a href="https://github.com/Aliismail293/rag-tester">github.com/Aliismail293/rag-tester ↗</a>
   </div>
 </footer>

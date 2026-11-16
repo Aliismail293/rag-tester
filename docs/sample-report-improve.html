@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ragaudit report · Nov 15, 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+/* ragaudit design system: tokens and shared components.
+   Canonical source. The report inlines it; the website links a synced copy
+   (docs/assets/ragaudit.css, written by scripts/sync_site.py). */
+:root {
+  --page: #F2F4F8;
+  --card: #FFFFFF;
+  --border: #E2E6EE;
+  --border-strong: #D5DAE3;
+  --soft: #F6F7FB;
+  --text: #111827;
+  --text-2: #374151;
+  --body: #4B5565;
+  --muted: #5B6577;
+  --indigo: #4338CA;
+  --indigo-dark: #312E81;
+  --deep: #1E1B4B;
+  --deep-2: #2E2A6B;
+  --night: #13122B;
+  --night-border: #34316A;
+  --tint: #EEF0FF;
+  --tint-2: #E0E7FF;
+  --lilac: #A5B4FC;
+  --lilac-text: #C7CBFF;
+  --on-deep: #EEF0FF;
+  --on-deep-2: #D9DCFF;
+  --amber: #F59E0B;
+  --amber-line: #D97706;
+  --amber-tint: #FEF3C7;
+  --amber-soft: #FFFBEB;
+  --amber-border: #FDE68A;
+  --amber-text: #92400E;
+  --amber-text-2: #78350F;
+  --ring: #E6E8F5;
+  --good: #15803D;
+  --good-tint: #DCFCE7;
+  --good-text: #14532D;
+  --bad: #B91C1C;
+  --grey-count: #5F6878;
+  --font: Manrope, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--page); color: var(--text); font-family: var(--font); line-height: 1.5; }
+a { color: var(--indigo); }
+a:hover { color: var(--indigo-dark); }
+code, pre, .mono { font-family: var(--mono); }
+h1, h2, h3 { margin: 0; }
+button { font: inherit; }
+:focus-visible { outline: 3px solid var(--indigo); outline-offset: 2px; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; }
+.eyebrow.indigo { color: var(--indigo); }
+.eyebrow.amber { color: var(--amber-text); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--card); color: var(--indigo-dark); font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; }
+.btn:hover { border-color: var(--indigo); }
+.btn-primary { background: var(--indigo); border-color: var(--indigo); color: #FFFFFF; }
+.btn-primary:hover { background: var(--indigo-dark); color: #FFFFFF; }
+.btn-arrow { min-width: 44px; padding: 0; font-weight: 800; font-size: 15px; color: var(--text); border-radius: 10px; }
+.btn-arrow.btn-primary { color: #FFFFFF; }
+.btn-small { font-size: 13px; font-weight: 600; color: var(--text); }
+.btn-big { min-height: 48px; padding: 12px 20px; font-size: 15px; border-radius: 10px; font-weight: 800; }
+.btn-ghost-big { min-height: 48px; padding: 12px 20px; font-size: 15px; border-radius: 10px; color: var(--text); }
+.btn-lilac { background: var(--lilac); border: none; color: var(--night); align-self: flex-start; }
+.btn-lilac:hover { background: var(--tint-2); color: var(--night); }
+
+/* badges */
+.badge { padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.04em; }
+.badge-needs_work { background: var(--amber-tint); color: var(--amber-text); }
+.badge-good { background: var(--tint); color: var(--indigo-dark); }
+.badge-strong { background: var(--good-tint); color: var(--good-text); }
+
+/* pill tabs */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { min-height: 44px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--body); font-size: 14px; font-weight: 700; cursor: pointer; }
+.tab[aria-selected="true"] { border-color: var(--indigo); background: var(--tint); color: var(--indigo-dark); }
+.tab-nav { display: flex; align-items: center; gap: 8px; }
+.tab-pos { font-size: 13px; color: var(--muted); }
+
+/* layout helpers */
+.row { display: flex; flex-wrap: wrap; gap: 28px; }
+.row-16 { display: flex; flex-wrap: wrap; gap: 16px; }
+.col-main { flex: 3 1 560px; min-width: 0; }
+.col-2 { flex: 2 1 420px; min-width: 0; }
+.col-side { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.card-soft { background: var(--soft); border-radius: 14px; padding: 18px; }
+.card-soft h3, .card-title { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+.card-text { font-size: 14px; line-height: 1.6; color: var(--body); }
+.card-label { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+.card-deep { background: var(--deep); color: var(--on-deep); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.card-deep .card-label { color: var(--lilac-text); margin: 0; }
+.card-deep ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; color: var(--on-deep-2); }
+.card-deep code { display: block; background: var(--deep-2); border-radius: 8px; padding: 10px; font-size: 12px; overflow-x: auto; white-space: nowrap; color: var(--on-deep); }
+.card-link { text-align: left; background: var(--deep); color: var(--on-deep); border: none; border-radius: 14px; padding: 18px; cursor: pointer; width: 100%; }
+.card-link .card-text { color: var(--on-deep-2); }
+.card-link:hover { background: var(--indigo-dark); }
+
+/* score ring and stat cards */
+.ring { flex: none; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat { background: var(--soft); border-radius: 14px; padding: 16px; min-width: 0; }
+.stat-label, .stat-note { font-size: 12px; color: var(--muted); }
+.stat-note { margin-top: 4px; }
+.stat-value { font-size: 28px; font-weight: 800; }
+
+/* verdict grid */
+.verdicts { display: grid; grid-template-columns: 120px repeat(2, minmax(0, 1fr)); gap: 10px; }
+.vg-col { font-size: 13px; font-weight: 800; color: var(--muted); text-align: center; align-self: end; }
+.vg-row { font-size: 13px; font-weight: 800; color: var(--muted); display: flex; align-items: center; }
+.cell { border-radius: 14px; padding: 18px; background: var(--soft); min-width: 0; }
+.cell-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.cell-count { font-size: 34px; font-weight: 800; color: var(--grey-count); }
+.cell-name { font-weight: 800; color: var(--text-2); }
+.cell-text { font-size: 13px; line-height: 1.55; color: var(--body); margin-top: 6px; }
+.cell-true_pass { background: var(--tint); }
+.cell-true_pass .cell-count { color: var(--indigo); }
+.cell-true_pass .cell-name, .cell-true_pass .cell-text { color: var(--indigo-dark); }
+.cell.cell-hot { background: var(--amber-soft); border: 1px solid var(--amber-border); }
+.cell.cell-hot .cell-count, .cell.cell-hot .cell-name { color: var(--amber-text); }
+.cell.cell-hot .cell-text { color: var(--amber-text-2); }
+
+/* chips */
+.chip { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+.chip-good { background: var(--good-tint); color: var(--good-text); }
+.chip-warn { background: var(--amber-tint); color: var(--amber-text); }
+
+/* code rows with copy buttons */
+/* how to run */
+.cmd-easy { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.cmd-easy-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--soft); }
+.cmd-n { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--indigo); color: #FFFFFF; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.cmd-what-strong { font-size: 14px; font-weight: 700; }
+.cmd-easy-body { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--night); }
+.cmd-easy-body code { flex: 1 1 auto; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 14px; color: var(--on-deep); }
+.cmd-easy-body .prompt { color: var(--lilac); }
+.copy { flex: none; min-height: 44px; min-width: 88px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--card); color: var(--indigo-dark); font-size: 13px; font-weight: 700; cursor: pointer; }
+.copy-dark { border-color: var(--night-border); background: var(--deep); color: var(--on-deep); }
+.cmd-list { display: flex; flex-direction: column; gap: 8px; }
+.cmd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; }
+.cmd-row code { flex: 1 1 320px; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 13px; background: var(--page); border-radius: 8px; padding: 8px 10px; color: var(--text); }
+.cmd-row .cmd-what { flex: 1 1 220px; font-size: 13px; color: var(--body); min-width: 0; }
+.cmd-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.cmd-inline code { flex: 1 1 260px; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 13px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+
+/* slides */
+.slides { width: 100%; font-family: var(--font); }
+.slides-inner { width: 100%; padding: 18px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); }
+.slides-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.slide { margin: 0; }
+.js .slide[hidden] { display: none; }
+.no-js .slide[hidden] { display: none; }
+.slide-svg { display: block; width: 100%; height: auto; background: var(--soft); border: 1px solid var(--border); border-radius: 12px; }
+.slide-caption { display: block; margin-top: 14px; min-height: 64px; }
+.slide-title { display: block; font-size: 17px; font-weight: 800; color: var(--text); }
+.slide-body { display: block; font-size: 14px; line-height: 1.55; margin-top: 4px; color: var(--muted); }
+.slides-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.no-js .slides-nav, .no-js .slides-fs { display: none; }
+.slide-dots { display: flex; gap: 0; flex-wrap: wrap; }
+.slide-dot { width: 34px; height: 44px; padding: 0; border: none; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.slide-dot::before { content: ""; display: block; width: 10px; height: 10px; border-radius: 5px; background: #CBD2DE; transition: width 0.2s; }
+.slide-dot[aria-current="true"]::before { width: 26px; background: var(--indigo); }
+.slides-arrows { display: flex; gap: 8px; }
+.slides.fs, .slides:fullscreen { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 32px; background: rgba(17, 16, 46, 0.92); }
+.slides:fullscreen { position: static; }
+.slides.fs .slides-inner, .slides:fullscreen .slides-inner { max-width: 1040px; max-height: 100%; overflow: auto; padding: 24px; border-radius: 18px; border: none; }
+
+/* slides, dark variant (website hero): the drawings switch palette in the macro; the frame follows here */
+.slides-dark .slides-inner { background: #1A1838; border-color: var(--night-border); }
+.slides-dark .slide-svg { background: var(--night); border-color: var(--night-border); }
+.slides-dark .eyebrow.muted, .slides-dark .slide-body { color: #BCC0E8; }
+.slides-dark .slide-title { color: var(--on-deep); }
+.slides-dark .btn { background: #1A1838; border-color: var(--night-border); color: var(--on-deep); }
+.slides-dark .btn:hover { border-color: var(--lilac); }
+.slides-dark .btn-arrow.btn-primary { background: var(--lilac); border-color: var(--lilac); color: var(--night); }
+.slides-dark .slide-dot::before { background: #4A4785; }
+.slides-dark .slide-dot[aria-current="true"]::before { background: var(--lilac); }
+.slides-dark:focus-visible, .slides-dark :focus-visible { outline-color: var(--lilac); }
+.slides-dark.fs { background: rgba(8, 7, 22, 0.94); }
+
+@media (max-width: 720px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .verdicts { grid-template-columns: 64px repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .vg-col, .vg-row { font-size: 11px; }
+  .cell { padding: 12px; }
+  .cell-count { font-size: 26px; }
+  .slides.fs { padding: 8px; }
+  .slide-dot { width: 24px; }
+  .slides-nav { gap: 8px; }
+  .col-main, .col-2, .col-side { flex-basis: 100%; }
+  .row { gap: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
+/* report-only layout and widgets; the shared design system (design.css) is inlined before this. */
+/* header */
+.top { background: var(--card); border-bottom: 1px solid var(--border); }
+.top-inner { max-width: 1240px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-width: 0; }
+.brand-name { font-weight: 800; font-size: 17px; }
+.brand-meta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.top-actions { display: flex; align-items: center; gap: 8px; }
+
+main { max-width: 1240px; margin: 0 auto; padding: 24px 32px 56px; }
+.scope { font-size: 13px; color: var(--body); margin: 0 0 12px; }
+.report { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px 26px 28px; }
+
+/* tab bar and panels */
+.tabbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 18px; margin-bottom: 22px; border-bottom: 1px solid var(--border); }
+.no-js .tabbar { display: none; }
+.panel { min-height: 640px; }
+.js .panel[hidden] { display: none; }
+.no-js .panel + .panel { margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--border); min-height: 0; }
+.no-js .panel { min-height: 0; }
+.panel-title { font-size: 22px; font-weight: 800; margin: 0 0 6px; }
+.panel-lede { margin: 0 0 18px; font-size: 14px; color: var(--body); }
+
+/* overview */
+.hero { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; margin-bottom: 24px; }
+.hero-text { flex: 1 1 420px; min-width: 0; }
+.hero h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; line-height: 1.25; }
+.hero p { margin: 0; font-size: 15px; line-height: 1.65; color: var(--body); }
+.reading ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.75; color: var(--text-2); }
+.next-title { font-size: 17px; font-weight: 800; line-height: 1.35; }
+
+/* score history */
+.chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.chart-title { font-size: 16px; font-weight: 800; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+.legend-line { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; background: var(--indigo); }
+.legend-dash { display: inline-block; width: 14px; height: 0; border-top: 3px dashed var(--amber-line); vertical-align: middle; margin-right: 6px; }
+.legend-mark { display: inline-block; width: 9px; height: 9px; transform: rotate(45deg); background: var(--amber); vertical-align: middle; margin-right: 7px; }
+.chart-sub { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.chart svg { display: block; width: 100%; height: auto; }
+.runs { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin-top: 6px; }
+.run-btn { text-align: center; min-height: 44px; padding: 6px 4px; border-radius: 10px; cursor: pointer; color: var(--text); background: transparent; border: 1px solid var(--border); }
+.run-btn[aria-pressed="true"] { color: #FFFFFF; background: var(--indigo); border-color: var(--indigo); }
+.run-btn .run-name { display: block; font-size: 13px; font-weight: 800; }
+.run-btn .run-date { display: block; font-size: 11px; }
+.run-detail { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; padding: 14px 16px; border-radius: 12px; background: var(--page); }
+.run-detail-main { flex: 1 1 220px; min-width: 0; }
+.run-detail-meta { font-size: 12px; font-weight: 700; color: var(--muted); }
+.run-detail-note { font-size: 15px; font-weight: 700; margin-top: 2px; overflow-wrap: anywhere; }
+.run-detail-nums { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; }
+.run-detail-nums .num { font-size: 18px; font-weight: 800; }
+.run-detail-warn { flex-basis: 100%; font-size: 13px; color: var(--amber-text); }
+.delta-good { color: var(--good); }
+.delta-bad { color: var(--bad); }
+.older { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.empty { background: var(--soft); border-radius: 14px; padding: 18px; margin-top: 12px; }
+.empty-title { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+
+/* what failed */
+.fail-layout { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.fail-list { flex: 1 1 240px; max-width: 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.fail-item { text-align: left; min-height: 44px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; font-size: 13px; line-height: 1.4; }
+.fail-item[aria-pressed="true"] { border-color: var(--indigo); background: var(--tint); }
+.fail-item .fail-kind { display: block; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; color: var(--amber-text); margin-bottom: 2px; }
+.fail-detail-wrap { flex: 999 1 560px; min-width: 0; }
+.js .fail-detail[hidden] { display: none; }
+.no-js .fail-detail + .fail-detail { margin-top: 32px; }
+.fail-q { font-size: 22px; font-weight: 800; margin: 0 0 16px; overflow-wrap: anywhere; }
+.answers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+.ans { border-radius: 12px; padding: 16px; min-width: 0; }
+.ans-label { font-size: 12px; font-weight: 700; }
+.ans-text { font-size: 18px; font-weight: 800; overflow-wrap: anywhere; }
+.ans-key { background: var(--tint); color: var(--indigo-dark); }
+.ans-got { background: var(--amber-soft); border: 1px solid var(--amber-border); color: var(--amber-text); }
+.ans-got.ok { background: var(--tint); border-color: var(--tint); color: var(--indigo-dark); }
+.passages { display: flex; flex-direction: column; gap: 8px; }
+.passage { display: flex; gap: 12px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); min-width: 0; }
+.passage.source { border: 2px solid var(--lilac); background: #F8F9FF; }
+.passage-rank { font-family: var(--mono); font-size: 12px; color: var(--muted); flex: none; }
+.passage.source .passage-rank { color: var(--indigo); font-weight: 500; }
+.passage-text { font-family: var(--mono); font-size: 13px; line-height: 1.6; color: var(--text-2); min-width: 0; overflow-wrap: anywhere; }
+.passage-text b { color: var(--text); }
+.passage-tag { margin-left: auto; font-size: 12px; font-weight: 800; color: var(--indigo); flex: none; }
+.passage.gold { border-style: dashed; }
+.none-note { font-size: 14px; color: var(--body); }
+
+/* improvement loop */
+.bars { display: flex; flex-direction: column; gap: 14px; }
+.bar-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; margin-bottom: 6px; }
+.bar { height: 12px; border-radius: 6px; background: var(--ring); }
+.bar > span { display: block; height: 12px; border-radius: 6px; }
+.changes { font-family: var(--mono); font-size: 13px; line-height: 2; }
+.changes div { display: flex; justify-content: space-between; gap: 12px; }
+.changes .knob { color: var(--muted); overflow-wrap: anywhere; }
+.sparkline { display: block; width: 100%; max-width: 280px; height: auto; margin-top: 12px; }
+
+/* all questions */
+.table-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.filter { min-height: 44px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--body); font-size: 13px; font-weight: 700; cursor: pointer; }
+.filter[aria-pressed="true"] { border-color: var(--indigo); background: var(--tint); color: var(--indigo-dark); }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 4px; }
+table.cases { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px; }
+table.cases th { text-align: left; color: var(--muted); padding: 10px 8px; font-weight: 700; border-bottom: 1px solid var(--border); }
+table.cases td { padding: 13px 8px; border-bottom: 1px solid #EEF0F5; vertical-align: top; overflow-wrap: anywhere; }
+table.cases tr.hot { background: var(--amber-soft); }
+.v-true_pass { color: var(--indigo); font-weight: 800; }
+.v-lucky_pass, .v-generation_failure, .v-retrieval_failure { color: var(--amber-text); font-weight: 800; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 18px; font-size: 13px; color: var(--muted); }
+
+/* welcome dialog */
+.welcome { position: fixed; inset: 0; z-index: 100; background: rgba(17, 16, 46, 0.72); display: flex; align-items: center; justify-content: center; padding: 32px; }
+.welcome[hidden] { display: none; }
+.welcome-box { position: relative; width: 100%; max-width: 1100px; max-height: 100%; overflow: auto; background: var(--card); border-radius: 22px; padding: 30px; display: flex; flex-wrap: wrap; gap: 28px; align-items: center; }
+.welcome-close { position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--card); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; z-index: 2; }
+.welcome-text { flex: 1 1 300px; min-width: 0; }
+.welcome-text h2 { margin: 0 0 12px; font-size: 30px; font-weight: 800; line-height: 1.2; }
+.welcome-text p { margin: 0 0 14px; font-size: 15px; line-height: 1.65; color: var(--body); }
+.welcome-text p:last-of-type { margin-bottom: 22px; }
+.welcome-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.welcome-art { flex: 1 1 480px; min-width: 0; }
+
+.foot { max-width: 1240px; margin: 0 auto; padding: 0 32px 40px; font-size: 12px; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .top-inner { padding: 12px 16px; }
+  main { padding: 16px 16px 40px; }
+  .foot { padding: 0 16px 32px; }
+  .report { padding: 16px 14px 22px; border-radius: 16px; }
+  .hero h1 { font-size: 23px; }
+  .hero { gap: 18px; }
+  .answers { grid-template-columns: minmax(0, 1fr); }
+  .fail-list { max-width: none; }
+  .welcome { padding: 12px; align-items: flex-start; }
+  .welcome-box { padding: 22px 16px; gap: 18px; }
+  .welcome-text h2 { font-size: 24px; padding-right: 40px; }
+  .hero-text, .welcome-art, .welcome-text, .fail-detail-wrap { flex-basis: 100%; }
+  .tab-nav { margin-left: auto; }
+}
+
+</style>
+</head>
+<body><div role="note" style="background:#EEF0FF;color:#312E81;border-bottom:1px solid #C7CBF5;padding:10px 16px;font:600 13px/1.5 Manrope,system-ui,sans-serif;text-align:center">Sample report from a real run on 15 Nov 2026 with local Ollama models: qwen2.5:7b writes questions, answers and judges; llama3.1:8b verifies the questions. Harder bundled demo docs (demo/v3/docs) and the demo adapter. ragaudit improve --budget-calls 400: locked exam 60 &rarr; 100 on 5 questions (3 &rarr; 5 correct), practice 38 &rarr; 100 on 16.</div>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="brand-name">ragaudit</div>
+      <div class="brand-meta">Run report · Nov 15, 2026 · ragaudit_adapter.py · run 8797eda2</div>
+    </div>
+    <div class="top-actions">
+      <span class="badge badge-strong" title="STRONG: 80% or more true passes · GOOD: 60% or more · NEEDS WORK: below 60%">STRONG</span>
+      <button type="button" class="btn" data-welcome-open>What is this?</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p class="scope">The questions below show the best settings on 16 practice question(s). The honest score is the locked exam: 100 (see Improvement loop).</p>
+  <section class="report" aria-label="Report">
+    <div class="tabbar">
+      <div class="tabs" role="tablist" aria-label="Report sections">
+        <button type="button" role="tab" id="tab-overview" data-tab="overview" aria-controls="panel-overview" aria-selected="true" tabindex="0" class="tab">Overview</button>
+        <button type="button" role="tab" id="tab-history" data-tab="history" aria-controls="panel-history" aria-selected="false" tabindex="-1" class="tab">Score history</button>
+        <button type="button" role="tab" id="tab-verdicts" data-tab="verdicts" aria-controls="panel-verdicts" aria-selected="false" tabindex="-1" class="tab">Verdicts</button>
+        <button type="button" role="tab" id="tab-failed" data-tab="failed" aria-controls="panel-failed" aria-selected="false" tabindex="-1" class="tab">What failed</button>
+        <button type="button" role="tab" id="tab-loop" data-tab="loop" aria-controls="panel-loop" aria-selected="false" tabindex="-1" class="tab">Improvement loop</button>
+        <button type="button" role="tab" id="tab-questions" data-tab="questions" aria-controls="panel-questions" aria-selected="false" tabindex="-1" class="tab">All questions</button>
+        <button type="button" role="tab" id="tab-how" data-tab="how" aria-controls="panel-how" aria-selected="false" tabindex="-1" class="tab">How it works</button>
+        <button type="button" role="tab" id="tab-run" data-tab="run" aria-controls="panel-run" aria-selected="false" tabindex="-1" class="tab">How to run</button>
+      </div>
+      <div class="tab-nav">
+        <span class="tab-pos" data-tab-pos>1 / 8</span>
+        <button type="button" class="btn btn-arrow" data-tab-prev aria-label="Previous section">←</button>
+        <button type="button" class="btn btn-arrow btn-primary" data-tab-next aria-label="Next section">→</button>
+      </div>
+    </div>
+
+    
+    <div class="panel" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+      <div class="hero">
+        <svg class="ring" width="150" height="150" viewBox="0 0 148 148" role="img" aria-label="16 of 16 true passes">
+          <circle cx="74" cy="74" r="62" fill="none" stroke="#E6E8F5" stroke-width="14"></circle>
+          <circle cx="74" cy="74" r="62" fill="none" stroke="#4338CA" stroke-width="14" stroke-linecap="round" stroke-dasharray="389.6 389.6" transform="rotate(-90 74 74)"></circle>
+          <text x="74" y="72" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="34" font-weight="800" fill="#111827">16/16</text>
+          <text x="74" y="96" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#5B6577">true passes</text>
+        </svg>
+        <div class="hero-text">
+          <h1>Every answer was right, and came from the right page.</h1>
+          <p>All 16 questions pulled the passage their answer lives on and were judged correct. This is the result to protect: re-run after every change.</p>
+        </div>
+      </div>
+      <div class="stats">
+        
+        <div class="stat"><div class="stat-label">Retrieval hit</div><div class="stat-value">100%</div><div class="stat-note">16 of 16 found the source page</div></div>
+        
+        <div class="stat"><div class="stat-label">Answer correctness</div><div class="stat-value">100%</div><div class="stat-note">16 of 16 judged correct</div></div>
+        
+        <div class="stat"><div class="stat-label">Grounded</div><div class="stat-value">n/a</div><div class="stat-note">not measured by improve</div></div>
+        
+        <div class="stat"><div class="stat-label">Lucky passes</div><div class="stat-value">0</div><div class="stat-note">none answered from memory</div></div>
+        
+      </div>
+      <div class="row-16">
+        <div class="card-soft reading col-2">
+          <div class="card-label">HOW TO READ THESE NUMBERS</div>
+          <ul><li>Retrieval hit and correctness match: when the search found the page, the answer followed.</li><li>Lucky passes at 0 means your correct answers really came from your documents.</li><li>16 questions is a small sample. Run with the default 20 (or more) before trusting a trend.</li></ul>
+        </div>
+        <div class="card-deep col-side">
+          <div class="card-label">NEXT STEP</div>
+          <div class="next-title">Keep this check in CI and re-run it after every change.</div>
+          <button type="button" class="btn btn-lilac" data-goto="failed">See what failed →</button>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="panel" role="tabpanel" id="panel-history" aria-labelledby="tab-history" hidden>
+      <h2 class="sr-only">Score history</h2>
+      <div class="row">
+        <div class="col-main chart" data-chart>
+          
+          <div class="chart-head">
+            <div class="chart-title">Score history</div>
+            <div class="legend">
+              <span><span class="legend-line" aria-hidden="true"></span>true pass</span>
+              <span><span class="legend-dash" aria-hidden="true"></span>retrieval hit</span>
+              
+            </div>
+          </div>
+          
+          <div class="chart-sub">Your first recorded run. Each new run of this project adds a point.</div>
+          <svg viewBox="0 0 640 280" role="img" aria-label="True pass rate across 1 run: 100%">
+            <line x1="40" y1="250" x2="620" y2="250" stroke="#E2E6EE"></line>
+            <line x1="40" y1="145" x2="620" y2="145" stroke="#E2E6EE" stroke-dasharray="3 5"></line>
+            <line x1="40" y1="40" x2="620" y2="40" stroke="#E2E6EE" stroke-dasharray="3 5"></line>
+            <text x="34" y="254" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="11" fill="#5B6577">0</text>
+            <text x="34" y="149" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="11" fill="#5B6577">50</text>
+            <text x="34" y="44" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="11" fill="#5B6577">100</text>
+            <line data-sel-band x1="335.0" y1="30" x2="335.0" y2="250" stroke="#EEF0FF" stroke-width="22"></line>
+            
+            <circle cx="335.0" cy="40.0" r="5" fill="#FFFFFF" stroke="#D97706" stroke-width="2.5"></circle>
+            
+            
+            
+            <circle data-point cx="335.0" cy="40.0" r="9" fill="#4338CA" stroke="#FFFFFF" stroke-width="2"></circle>
+            
+            <text data-sel-label x="335.0" y="22.0" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="800" fill="#4338CA">100%</text>
+          </svg>
+          <div class="runs">
+            
+            <button type="button" class="run-btn" data-run aria-pressed="true" aria-label="Run 1, Nov 15: true pass 100%">
+              <span class="run-name">Run 1</span><span class="run-date">Nov 15</span>
+            </button>
+            
+          </div>
+          
+          <div class="run-detail" data-run-detail aria-live="polite">
+            <div class="run-detail-main">
+              <div class="run-detail-meta" data-d="meta">Run 1 · Nov 15 · Improve · this report</div>
+              <div class="run-detail-note" data-d="note">First improve · 5 questions</div>
+            </div>
+            <div class="run-detail-nums">
+              <div><div class="muted">true pass</div><div class="num" data-d="tp">100%</div></div>
+              <div><div class="muted">retrieval hit</div><div class="num" data-d="hit">100%</div></div>
+              <div><div class="muted">vs last run</div><div class="num " data-d="delta">first run</div></div>
+            </div>
+            <div class="run-detail-warn" data-d="warn" hidden></div>
+          </div>
+          
+          <div class="empty">
+            <div class="empty-title">Run the same check again after a change to see a trend</div>
+            <div class="card-text">ragaudit reuses the same questions while your documents stay the same, so the next point is a fair comparison.</div>
+            <div class="cmd-inline"><code>ragaudit check --docs docs --adapter ragaudit_adapter.py --note &#34;what you changed&#34;</code><button type="button" class="copy" data-copy="ragaudit check --docs docs --adapter ragaudit_adapter.py --note &#34;what you changed&#34;" aria-label="Copy command: ragaudit check --docs docs --adapter ragaudit_adapter.py --note &#34;what you changed&#34;">Copy</button></div>
+          </div>
+          
+          
+        </div>
+        <div class="col-side">
+          <div class="card-soft"><div class="card-label">WHERE THIS COMES FROM</div><div class="card-text">Every check is saved in your project folder, so each new report draws every earlier run.</div></div>
+          <div class="card-soft"><div class="card-label">FAIR COMPARISONS</div><div class="card-text">Runs reuse the same questions while your documents stay the same. Runs where documents changed are marked.</div></div>
+          <div class="card-soft"><div class="card-label">READING A DIP</div><div class="card-text">A drop right after new documents usually means look-alike pages now compete. Try raising top-k or adding re-ranking.</div></div>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="panel" role="tabpanel" id="panel-verdicts" aria-labelledby="tab-verdicts" hidden>
+      <h2 class="panel-title">Verdicts: two checks, crossed</h2>
+      <p class="panel-lede">Each question is judged on retrieval and on the answer separately. Where it lands tells you what to fix.</p>
+      <div class="verdicts">
+        <div></div>
+        <div class="vg-col">FOUND THE PAGE</div>
+        <div class="vg-col">MISSED THE PAGE</div>
+        <div class="vg-row">RIGHT ANSWER</div>
+        <div class="cell cell-true_pass"><div class="cell-head"><span class="cell-count">16</span><span class="cell-name">True pass</span></div><div class="cell-text">Worked end to end. This is the number to protect when you change anything.</div></div>
+        <div class="cell"><div class="cell-head"><span class="cell-count">0</span><span class="cell-name">Lucky pass</span></div><div class="cell-text">Right answer from the wrong page: the model guessed from memory. Each one is re-asked with no pages to confirm.</div></div>
+        <div class="vg-row">WRONG ANSWER</div>
+        <div class="cell"><div class="cell-head"><span class="cell-count">0</span><span class="cell-name">Generation failure</span></div><div class="cell-text">The page was there and the model still got it wrong. Fix the prompt, passage length or model.</div></div>
+        <div class="cell"><div class="cell-head"><span class="cell-count">0</span><span class="cell-name">Retrieval failure</span></div><div class="cell-text">Wrong page, wrong answer. Fix chunking, embeddings or top-k.</div></div>
+      </div>
+    </div>
+
+    
+    <div class="panel" role="tabpanel" id="panel-failed" aria-labelledby="tab-failed" hidden>
+      
+      <h2 class="panel-title">Nothing failed.</h2>
+      <p class="panel-lede">Protect this: re-run after every change.</p>
+      <div class="empty"><div class="cmd-inline"><code>ragaudit check --docs docs --adapter ragaudit_adapter.py --note &#34;what you changed&#34;</code><button type="button" class="copy" data-copy="ragaudit check --docs docs --adapter ragaudit_adapter.py --note &#34;what you changed&#34;" aria-label="Copy command: ragaudit check --docs docs --adapter ragaudit_adapter.py --note &#34;what you changed&#34;">Copy</button></div></div>
+      
+    </div>
+
+    
+    <div class="panel" role="tabpanel" id="panel-loop" aria-labelledby="tab-loop" hidden>
+      
+      
+      <div class="row-16">
+        <div class="card-soft col-2" style="padding: 20px">
+          <h2 style="margin: 0 0 4px; font-size: 18px; font-weight: 800">Self-improvement loop</h2>
+          <p style="margin: 0 0 16px; font-size: 14px; color: #4B5565">Tuned on 16 practice questions, scored once on the 5-question locked exam · Nov 15, 2026.</p>
+          <div class="bars">
+            
+            <div><div class="bar-head"><span>Baseline · locked exam</span><b>60</b></div><div class="bar"><span style="width: 60.0%; background: #A5B4FC"></span></div></div>
+            
+            <div><div class="bar-head"><span>Best config · locked exam</span><b>100</b></div><div class="bar"><span style="width: 100.0%; background: #4338CA"></span></div></div>
+            
+            <div><div class="bar-head"><span>Best config · practice</span><b>100</b></div><div class="bar"><span style="width: 100.0%; background: #6366F1"></span></div></div>
+            
+          </div>
+          
+          
+          <div class="chip chip-good">✓ Practice − exam = 0 pts: no memorising</div>
+          
+          
+        </div>
+        <div class="card-soft col-side" style="padding: 20px; display: block">
+          <div class="card-label">WHAT IT CHANGED</div>
+          
+          <div class="changes">
+            <div><span class="knob">chunk_size</span><span>paragraph → <b>800</b></span></div><div><span class="knob">top_k</span><span>3 → <b>5</b></span></div>
+          </div>
+          
+          <div class="muted" style="font-size: 13px; margin-top: 10px">8 trials · saved to best_config.yaml</div>
+          
+          <svg class="sparkline" viewBox="-4 0 288 64" role="img" aria-label="Practice score per trial: 38, 44, 75, 75, 88, 44, 44, 100">
+            <polyline fill="none" stroke="#4338CA" stroke-width="2" stroke-linejoin="round" points="0.0,38.5 40.0,35.2 80.0,19.0 120.0,19.0 160.0,12.5 200.0,35.2 240.0,35.2 280.0,6.0"></polyline>
+            <circle cx="0.0" cy="38.5" r="3" fill="#4338CA"></circle><circle cx="40.0" cy="35.2" r="3" fill="#4338CA"></circle><circle cx="80.0" cy="19.0" r="3" fill="#4338CA"></circle><circle cx="120.0" cy="19.0" r="3" fill="#4338CA"></circle><circle cx="160.0" cy="12.5" r="3" fill="#4338CA"></circle><circle cx="200.0" cy="35.2" r="3" fill="#4338CA"></circle><circle cx="240.0" cy="35.2" r="3" fill="#4338CA"></circle><circle cx="280.0" cy="6.0" r="4.5" fill="#F59E0B"></circle>
+          </svg>
+          <div class="muted" style="font-size: 12px">Practice score per trial; the best one in amber.</div>
+          
+        </div>
+      </div>
+      
+    </div>
+
+    
+    <div class="panel" role="tabpanel" id="panel-questions" aria-labelledby="tab-questions" hidden>
+      <div class="table-head">
+        <h2 class="panel-title" style="margin: 0">All 16 questions</h2>
+        <div class="muted" style="font-size: 13px">matched by text · threshold 0.5</div>
+      </div>
+      
+      <div class="table-scroll" tabindex="0" aria-label="All questions table, scrolls sideways">
+        <table class="cases">
+          <thead><tr><th scope="col">Question</th><th scope="col" style="width: 150px">Key</th><th scope="col" style="width: 170px">Answered</th><th scope="col" style="width: 60px">Rank</th><th scope="col" style="width: 160px">Verdict</th></tr></thead>
+          <tbody>
+            
+            <tr data-case="true_pass"><td>How frequently does the tide gauge at Ashgrove Point require recalibration?</td><td>every 90 days.</td><td>The tide gauge at Ashgrove Point requires recalibration every 90 days.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>How frequently does a helicopter supply the necessary items to Dunmarrow tide station?</td><td>every 12 days</td><td>A helicopter supplies provisions to Dunmarrow tide station every 12 days.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>How frequently do supplies for the station arrive by mail boat?</td><td>every 10 days</td><td>Supplies for the Corran Sound station arrive by mail boat every 10 days.</td><td>#2</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>In which year was the RV Selkie Moss constructed?</td><td>2011</td><td>The RV Selkie Moss was constructed in 2011.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>In which month does the annual maintenance of the RV Selkie Moss typically take place?</td><td>November</td><td>The annual maintenance of the RV Selkie Moss typically takes place in November.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>What year did RV Tamberlin start its service?</td><td>2005</td><td>RV Tamberlin entered service in 2005.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>In which month does RV Tamberlin get taken out of the water for painting and engine maintenance?</td><td>each September</td><td>RV Tamberlin gets taken out of the water for painting and engine maintenance every September.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>What is the update frequency of the Swell Index?</td><td>every 15 minutes, around the clock.</td><td>The Swell Index updates every 15 minutes.</td><td>#2</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>What is the yearly subscription cost for the Swell Index?</td><td>75 marks a year.</td><td>The yearly subscription cost for the Swell Index is 75 marks.</td><td>#2</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>At what interval is the Fog Register updated?</td><td>every hour on the hour</td><td>The Fog Register is updated every hour on the hour.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>What difference in measurement would cause the gauge to be discontinued according to procedure KS-11?</td><td>more than 8 millimetres</td><td>If the reading differs from the portable reference float by more than 8 millimetres, the gauge is taken out of service according to procedure KS-11.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>Based on KS-22, which situation could lead to delaying a data release?</td><td>any station&#39;s readings are more than 12 hours late</td><td>If any station&#39;s readings are more than 12 hours late, a release is held back according to procedure KS-22.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>Which regions are included in the service area of the Estuary office?</td><td>Quillmere and the RV Selkie Moss</td><td>The Estuary office covers Quillmere and the RV Selkie Moss.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>What locations does the Islands office cover?</td><td>Dunmarrow and Ashgrove Point</td><td>The Islands office covers Dunmarrow and Ashgrove Point.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>At what depth in meters does the buoy Fulmar indicate the entry point to the Quillmere lagoon?</td><td>12 metres</td><td>The buoy Fulmar indicates the entry point to the Quillmere lagoon at a depth of just 12 metres.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+            <tr data-case="true_pass"><td>What is the required duration of work at the Office before an editor can become a product editor?</td><td>3 years at the Office</td><td>An editor needs 3 years at the Office before taking the role of a product editor.</td><td>#1</td><td class="v-true_pass">True pass</td></tr>
+            
+          </tbody>
+        </table>
+      </div>
+      <div class="facts"><span>Ablation: not run by improve</span><span>Judge parse failures: 0</span><span>Model calls: 300</span><span>matched by text · threshold 0.5</span></div>
+    </div>
+
+    
+    <div class="panel" role="tabpanel" id="panel-how" aria-labelledby="tab-how" hidden>
+      <h2 class="sr-only">How it works</h2>
+      <div class="row" style="align-items: flex-start">
+        <div class="col-main">
+<div class="slides" data-slides id="how-slides">
+<div class="slides-inner">
+<div class="slides-top">
+<div class="eyebrow muted">HOW IT WORKS · <span data-slide-label>1 / 6</span></div>
+<button type="button" class="btn btn-small slides-fs" data-slide-fs aria-label="Open pictures full screen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"></path></svg><span data-slide-fs-text>Full screen</span></button>
+</div>
+<div class="slides-stage">
+<figure class="slide" data-slide="0">
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Three document pages turn into three quiz cards, each pinned to a page number">
+<rect x="94" y="54" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="82" y="66" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="70" y="78" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="90" y="102" width="90" height="10" rx="5" fill="#4338CA"></rect>
+<rect x="90" y="126" width="110" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="142" width="100" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="158" width="112" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="174" width="80" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="198" width="106" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="214" width="94" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<text x="145" y="304" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">your docs</text>
+<path d="M268 170h66" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<path d="M322 158l14 12-14 12" fill="none" stroke="#4338CA" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="370" y="58" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="96" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q1</text>
+<rect x="426" y="84" width="86" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="78" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="94" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.2</text>
+<rect x="370" y="138" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="176" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q2</text>
+<rect x="426" y="164" width="70" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="158" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="174" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.5</text>
+<rect x="370" y="218" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="256" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q3</text>
+<rect x="426" y="244" width="80" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="238" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="254" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.9</text>
+<text x="475" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">a quiz, each answer pinned to its page</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Your documents become a quiz</span><span class="slide-body">ragaudit writes questions from your files and pins each answer to the page it came from.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="1" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A magnifying glass finds the pinned page among five pages and marks it with a check">
+<rect x="54" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="160" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="266" y="96" width="84" height="112" rx="8" fill="#E0E7FF" stroke="#4338CA" stroke-width="3"></rect>
+<rect x="372" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="478" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="280" y="116" width="44" height="8" rx="4" fill="#4338CA"></rect>
+<rect x="280" y="134" width="56" height="6" rx="3" fill="#A5B4FC"></rect>
+<rect x="280" y="148" width="50" height="6" rx="3" fill="#A5B4FC"></rect>
+<rect x="280" y="162" width="54" height="6" rx="3" fill="#A5B4FC"></rect>
+<text x="308" y="196" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="800" fill="#4338CA">p.5</text>
+<circle cx="308" cy="152" r="76" fill="none" stroke="#1E1B4B" stroke-width="8"></circle>
+<path d="M362 206l52 52" stroke="#1E1B4B" stroke-width="16" stroke-linecap="round"></path>
+<circle cx="368" cy="86" r="20" fill="#4338CA"></circle>
+<path d="M359 86l6 7 12-14" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="150" y="282" width="340" height="38" rx="19" fill="#FFFFFF" stroke="#E2E6EE" stroke-width="2"></rect>
+<text x="320" y="307" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">Q2 pinned to p.5 · search returned p.5 ✓</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 1: did it find the right page?</span><span class="slide-body">We look at what your search returned. If the pinned page is in there, that is a hit.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="2" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="The answer key says 20, the pipeline said 5, and the judge marks it wrong">
+<rect x="60" y="66" width="220" height="132" rx="18" fill="#E0E7FF"></rect>
+<path d="M110 198l-6 30 30-30z" fill="#E0E7FF"></path>
+<text x="84" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#4338CA">answer key</text>
+<text x="84" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#4338CA">20</text>
+<rect x="360" y="66" width="220" height="132" rx="18" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3"></rect>
+<path d="M530 198l6 30-30-30z" fill="#FEF3C7"></path>
+<text x="384" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#92400E">your pipeline said</text>
+<text x="384" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#92400E">5</text>
+<text x="320" y="152" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="44" font-weight="800" fill="#5B6577">≠</text>
+<rect x="200" y="258" width="240" height="44" rx="22" fill="#1E1B4B"></rect>
+<text x="320" y="286" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">judge model: wrong ✕</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 2: was the answer right?</span><span class="slide-body">A separate judge model compares your pipeline’s answer to the answer key.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="3" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A two by two grid: true pass, lucky pass highlighted, generation failure and retrieval failure">
+<text x="250" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">found the page</text>
+<text x="440" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">missed the page</text>
+<text x="148" y="116" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">right</text>
+<text x="148" y="246" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">wrong</text>
+<rect x="160" y="56" width="180" height="118" rx="14" fill="#E0E7FF"></rect>
+<text x="250" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#4338CA">true pass</text>
+<text x="250" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#4338CA">it worked</text>
+<rect x="350" y="56" width="180" height="118" rx="14" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3"></rect>
+<text x="440" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#92400E">lucky pass</text>
+<text x="440" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#92400E">guessed from memory</text>
+<path d="M520 46l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="#F59E0B"></path>
+<rect x="160" y="184" width="180" height="118" rx="14" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="250" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#111827">generation fail</text>
+<text x="250" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">fix the prompt</text>
+<rect x="350" y="184" width="180" height="118" rx="14" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="440" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#111827">retrieval fail</text>
+<text x="440" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">fix the search</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Two checks, four verdicts</span><span class="slide-body">A lucky pass is a right answer from the wrong page. Most tests count it as a win; ragaudit flags it.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="4" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Practice questions feed a tuning loop that keeps better settings, while a locked final exam is opened once at the end">
+<rect x="66" y="96" width="140" height="96" rx="12" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="58" y="108" width="140" height="96" rx="12" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="50" y="120" width="140" height="96" rx="12" fill="#FFFFFF" stroke="#4338CA" stroke-width="2"></rect>
+<text x="120" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#4338CA">practice</text>
+<text x="120" y="186" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">7 of 10 questions</text>
+<path d="M200 168h44" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<circle cx="320" cy="168" r="62" fill="none" stroke="#4338CA" stroke-width="6" stroke-dasharray="300 90"></circle>
+<path d="M366 120l14 -4 -4 14" fill="none" stroke="#4338CA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+<text x="320" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="800" fill="#111827">try a setting</text>
+<text x="320" y="184" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">keep it if better</text>
+<text x="320" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#5B6577">chunk size · top-k · re-rank</text>
+<rect x="444" y="96" width="140" height="132" rx="14" fill="#1E1B4B"></rect>
+<rect x="497" y="144" width="34" height="28" rx="5" fill="#F59E0B"></rect>
+<path d="M503 144v-10a11 11 0 0 1 22 0v10" fill="none" stroke="#F59E0B" stroke-width="5"></path>
+<text x="514" y="200" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#FFFFFF">final exam</text>
+<text x="514" y="218" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#FFFFFF">locked · 3 of 10</text>
+<text x="514" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#5B6577">opened once, at the end</text>
+<rect x="130" y="290" width="380" height="36" rx="18" fill="#FFFFFF" stroke="#E2E6EE" stroke-width="2"></rect>
+<text x="320" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#111827">practice high, exam low = it memorised, alarm rings</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Then it gets better on its own</span><span class="slide-body">ragaudit tune tries settings on practice questions and keeps what scores better. A locked final exam is opened once, so the score can’t be faked.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="5" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="New pages get new questions, old pages get a few spot checks, deleted pages have their questions retired">
+<rect x="70" y="40" width="56" height="70" rx="7" fill="#E0E7FF" stroke="#4338CA" stroke-width="2"></rect>
+<rect x="140" y="40" width="56" height="70" rx="7" fill="#E0E7FF" stroke="#4338CA" stroke-width="2"></rect>
+<rect x="74" y="30" width="40" height="18" rx="9" fill="#4338CA"></rect>
+<text x="94" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#FFFFFF">NEW</text>
+<rect x="144" y="30" width="40" height="18" rx="9" fill="#4338CA"></rect>
+<text x="164" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#FFFFFF">NEW</text>
+<path d="M224 75h70" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="52" width="270" height="46" rx="23" fill="#E0E7FF"></rect>
+<text x="445" y="81" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#4338CA">new questions written</text>
+<rect x="70" y="135" width="56" height="70" rx="7" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="140" y="135" width="56" height="70" rx="7" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<path d="M224 170h70" stroke="#CBD2DE" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="147" width="270" height="46" rx="23" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="445" y="176" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#111827">a few old ones spot-checked</text>
+<rect x="105" y="230" width="56" height="70" rx="7" fill="none" stroke="#5B6577" stroke-width="2" stroke-dasharray="5 4"></rect>
+<path d="M115 240l36 50M151 240l-36 50" stroke="#5B6577" stroke-width="3" stroke-linecap="round"></path>
+<path d="M224 265h70" stroke="#CBD2DE" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="242" width="270" height="46" rx="23" fill="#F6F7FB" stroke="#CBD2DE" stroke-width="2" stroke-dasharray="5 4"></rect>
+<text x="445" y="271" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#5B6577">its questions retired</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Only re-test what changed</span><span class="slide-body">Add or edit documents and only those get new questions. Old ones are spot-checked, and deleted pages retire theirs.</span></figcaption>
+</figure>
+</div>
+<div class="slides-nav">
+<div class="slide-dots">
+<button type="button" class="slide-dot" data-slide-dot="0" aria-label="Picture 1: Your documents become a quiz" aria-current="true"></button>
+<button type="button" class="slide-dot" data-slide-dot="1" aria-label="Picture 2: Check 1: did it find the right page?"></button>
+<button type="button" class="slide-dot" data-slide-dot="2" aria-label="Picture 3: Check 2: was the answer right?"></button>
+<button type="button" class="slide-dot" data-slide-dot="3" aria-label="Picture 4: Two checks, four verdicts"></button>
+<button type="button" class="slide-dot" data-slide-dot="4" aria-label="Picture 5: Then it gets better on its own"></button>
+<button type="button" class="slide-dot" data-slide-dot="5" aria-label="Picture 6: Only re-test what changed"></button>
+</div>
+<div class="slides-arrows"><button type="button" class="btn btn-arrow" data-slide-prev aria-label="Previous picture">←</button><button type="button" class="btn btn-arrow btn-primary" data-slide-next aria-label="Next picture">→</button></div>
+</div>
+</div>
+</div>
+</div>
+        <div class="col-side" style="flex: 2 1 300px">
+          <div class="card-soft"><h3>Why two checks?</h3><div class="card-text">A right answer can come from the model's memory. Checking the page separately catches that.</div></div>
+          <div class="card-soft"><h3>Why can't the score be faked?</h3><div class="card-text">Questions avoid the page's exact wording, a second model checks every answer key, and the final exam stays locked during tuning.</div></div>
+          <div class="card-soft"><h3>Why the same questions every run?</h3><div class="card-text">Scores only compare fairly on the same quiz. ragaudit keeps your questions while your documents stay the same, and writes new ones only for pages you add or edit.</div></div>
+          <button type="button" class="card-link" data-goto="run"><div class="card-title">Ready to run it yourself?</div><div class="card-text">Two commands, with copy buttons, in How to run →</div></button>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="panel" role="tabpanel" id="panel-run" aria-labelledby="tab-run" hidden>
+      <div class="row">
+        <div class="col-main">
+          <div class="eyebrow indigo" style="margin-bottom: 8px">EASIEST WAY · 2 COMMANDS</div>
+          <h2 class="panel-title">Install once, then set everything up in your browser.</h2>
+          <p class="panel-lede" style="line-height: 1.6">Open a terminal (Terminal on Mac, PowerShell on Windows), paste each line, press Enter.</p>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px">
+            
+            <div class="cmd-easy">
+              <div class="cmd-easy-head"><span class="cmd-n">1</span><span class="cmd-what-strong">Install ragaudit (once)</span></div>
+              <div class="cmd-easy-body"><code><span class="prompt" aria-hidden="true">$ </span>pip install ragaudit-cli</code><button type="button" class="copy copy-dark" data-copy="pip install ragaudit-cli" aria-label="Copy command: pip install ragaudit-cli">Copy</button></div>
+            </div>
+            
+            <div class="cmd-easy">
+              <div class="cmd-easy-head"><span class="cmd-n">2</span><span class="cmd-what-strong">Open the setup page in your browser, then click Run</span></div>
+              <div class="cmd-easy-body"><code><span class="prompt" aria-hidden="true">$ </span>ragaudit ui</code><button type="button" class="copy copy-dark" data-copy="ragaudit ui" aria-label="Copy command: ragaudit ui">Copy</button></div>
+            </div>
+            
+          </div>
+          <div class="card-label">PREFER THE TERMINAL? EVERY COMMAND</div>
+          <div class="cmd-list">
+            
+            <div class="cmd-row"><code>ragaudit doctor</code><span class="cmd-what">Checks Python, your AI settings and your adapter, and says how to fix anything missing</span><button type="button" class="copy" data-copy="ragaudit doctor" aria-label="Copy command: ragaudit doctor">Copy</button></div>
+            
+            <div class="cmd-row"><code>ragaudit init --framework demo</code><span class="cmd-what">Writes a ready-to-run adapter; use plain, langchain or llamaindex for your own app</span><button type="button" class="copy" data-copy="ragaudit init --framework demo" aria-label="Copy command: ragaudit init --framework demo">Copy</button></div>
+            
+            <div class="cmd-row"><code>ragaudit check --docs docs --adapter ragaudit_adapter.py</code><span class="cmd-what">One quick test (about 20 questions), then opens this report</span><button type="button" class="copy" data-copy="ragaudit check --docs docs --adapter ragaudit_adapter.py" aria-label="Copy command: ragaudit check --docs docs --adapter ragaudit_adapter.py">Copy</button></div>
+            
+            <div class="cmd-row"><code>ragaudit improve --docs docs --adapter ragaudit_adapter.py</code><span class="cmd-what">The self-improving loop: tunes settings on practice, scores on the locked exam</span><button type="button" class="copy" data-copy="ragaudit improve --docs docs --adapter ragaudit_adapter.py" aria-label="Copy command: ragaudit improve --docs docs --adapter ragaudit_adapter.py">Copy</button></div>
+            
+            <div class="cmd-row"><code>ragaudit report --open</code><span class="cmd-what">Re-opens the latest report</span><button type="button" class="copy" data-copy="ragaudit report --open" aria-label="Copy command: ragaudit report --open">Copy</button></div>
+            
+          </div>
+        </div>
+        <div class="col-side">
+          <div class="card-soft"><h3>What you need</h3><div class="card-text">Python 3.11 or newer, a folder of documents, and either Ollama (free, runs on your computer) or an API key. The setup page checks all three for you.</div></div>
+          <div class="card-soft"><h3>Where results go</h3><div class="card-text">Every run is saved in a .ragaudit folder next to your documents. That is what the score history reads.</div></div>
+          <div class="card-soft"><h3>Your data stays local</h3><div class="card-text">With Ollama, nothing leaves your computer. Reports are files on your disk, not web links.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="foot">Generated by ragaudit on Nov 15, 2026 · run 8797eda2-944a-4b80-b4da-600a0eb71ab0</footer>
+
+<div class="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title" data-welcome hidden>
+  <div class="welcome-box">
+    <button type="button" class="welcome-close" data-welcome-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"></path></svg>
+    </button>
+    <div class="welcome-text">
+      <div class="eyebrow indigo" style="margin-bottom: 10px">FIRST TIME HERE?</div>
+      <h2 id="welcome-title">A report card for your document-answering AI.</h2>
+      <p>ragaudit quizzed it on your own files and graded two things separately: did it find the right page, and was its answer right.</p>
+      <p>Run it again after any change and the report tracks whether you got better.</p>
+      <div class="welcome-actions">
+        <button type="button" class="btn btn-primary btn-big" data-welcome-close>Show my results</button>
+        <button type="button" class="btn btn-ghost-big" data-welcome-run>How to run it</button>
+      </div>
+    </div>
+    <div class="welcome-art">
+<div class="slides" data-slides id="welcome-slides">
+<div class="slides-inner">
+<div class="slides-top">
+<div class="eyebrow muted">HOW IT WORKS · <span data-slide-label>1 / 6</span></div>
+<button type="button" class="btn btn-small slides-fs" data-slide-fs aria-label="Open pictures full screen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"></path></svg><span data-slide-fs-text>Full screen</span></button>
+</div>
+<div class="slides-stage">
+<figure class="slide" data-slide="0">
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Three document pages turn into three quiz cards, each pinned to a page number">
+<rect x="94" y="54" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="82" y="66" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="70" y="78" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="90" y="102" width="90" height="10" rx="5" fill="#4338CA"></rect>
+<rect x="90" y="126" width="110" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="142" width="100" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="158" width="112" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="174" width="80" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="198" width="106" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<rect x="90" y="214" width="94" height="7" rx="3.5" fill="#CBD2DE"></rect>
+<text x="145" y="304" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">your docs</text>
+<path d="M268 170h66" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<path d="M322 158l14 12-14 12" fill="none" stroke="#4338CA" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="370" y="58" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="96" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q1</text>
+<rect x="426" y="84" width="86" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="78" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="94" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.2</text>
+<rect x="370" y="138" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="176" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q2</text>
+<rect x="426" y="164" width="70" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="158" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="174" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.5</text>
+<rect x="370" y="218" width="210" height="64" rx="12" fill="#E0E7FF"></rect>
+<text x="390" y="256" font-family="Manrope, system-ui, sans-serif" font-size="18" font-weight="800" fill="#4338CA">Q3</text>
+<rect x="426" y="244" width="80" height="8" rx="4" fill="#A5B4FC"></rect>
+<rect x="522" y="238" width="44" height="22" rx="11" fill="#4338CA"></rect>
+<text x="544" y="254" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">p.9</text>
+<text x="475" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">a quiz, each answer pinned to its page</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Your documents become a quiz</span><span class="slide-body">ragaudit writes questions from your files and pins each answer to the page it came from.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="1" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A magnifying glass finds the pinned page among five pages and marks it with a check">
+<rect x="54" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="160" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="266" y="96" width="84" height="112" rx="8" fill="#E0E7FF" stroke="#4338CA" stroke-width="3"></rect>
+<rect x="372" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="478" y="96" width="84" height="112" rx="8" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="280" y="116" width="44" height="8" rx="4" fill="#4338CA"></rect>
+<rect x="280" y="134" width="56" height="6" rx="3" fill="#A5B4FC"></rect>
+<rect x="280" y="148" width="50" height="6" rx="3" fill="#A5B4FC"></rect>
+<rect x="280" y="162" width="54" height="6" rx="3" fill="#A5B4FC"></rect>
+<text x="308" y="196" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" font-weight="800" fill="#4338CA">p.5</text>
+<circle cx="308" cy="152" r="76" fill="none" stroke="#1E1B4B" stroke-width="8"></circle>
+<path d="M362 206l52 52" stroke="#1E1B4B" stroke-width="16" stroke-linecap="round"></path>
+<circle cx="368" cy="86" r="20" fill="#4338CA"></circle>
+<path d="M359 86l6 7 12-14" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+<rect x="150" y="282" width="340" height="38" rx="19" fill="#FFFFFF" stroke="#E2E6EE" stroke-width="2"></rect>
+<text x="320" y="307" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#111827">Q2 pinned to p.5 · search returned p.5 ✓</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 1: did it find the right page?</span><span class="slide-body">We look at what your search returned. If the pinned page is in there, that is a hit.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="2" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="The answer key says 20, the pipeline said 5, and the judge marks it wrong">
+<rect x="60" y="66" width="220" height="132" rx="18" fill="#E0E7FF"></rect>
+<path d="M110 198l-6 30 30-30z" fill="#E0E7FF"></path>
+<text x="84" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#4338CA">answer key</text>
+<text x="84" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#4338CA">20</text>
+<rect x="360" y="66" width="220" height="132" rx="18" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3"></rect>
+<path d="M530 198l6 30-30-30z" fill="#FEF3C7"></path>
+<text x="384" y="104" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="700" fill="#92400E">your pipeline said</text>
+<text x="384" y="170" font-family="Manrope, system-ui, sans-serif" font-size="58" font-weight="800" fill="#92400E">5</text>
+<text x="320" y="152" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="44" font-weight="800" fill="#5B6577">≠</text>
+<rect x="200" y="258" width="240" height="44" rx="22" fill="#1E1B4B"></rect>
+<text x="320" y="286" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">judge model: wrong ✕</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Check 2: was the answer right?</span><span class="slide-body">A separate judge model compares your pipeline’s answer to the answer key.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="3" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="A two by two grid: true pass, lucky pass highlighted, generation failure and retrieval failure">
+<text x="250" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">found the page</text>
+<text x="440" y="42" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">missed the page</text>
+<text x="148" y="116" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">right</text>
+<text x="148" y="246" text-anchor="end" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#5B6577">wrong</text>
+<rect x="160" y="56" width="180" height="118" rx="14" fill="#E0E7FF"></rect>
+<text x="250" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#4338CA">true pass</text>
+<text x="250" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#4338CA">it worked</text>
+<rect x="350" y="56" width="180" height="118" rx="14" fill="#FEF3C7" stroke="#F59E0B" stroke-width="3"></rect>
+<text x="440" y="112" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="19" font-weight="800" fill="#92400E">lucky pass</text>
+<text x="440" y="138" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#92400E">guessed from memory</text>
+<path d="M520 46l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="#F59E0B"></path>
+<rect x="160" y="184" width="180" height="118" rx="14" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="250" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#111827">generation fail</text>
+<text x="250" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">fix the prompt</text>
+<rect x="350" y="184" width="180" height="118" rx="14" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="440" y="240" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#111827">retrieval fail</text>
+<text x="440" y="266" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">fix the search</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Two checks, four verdicts</span><span class="slide-body">A lucky pass is a right answer from the wrong page. Most tests count it as a win; ragaudit flags it.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="4" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="Practice questions feed a tuning loop that keeps better settings, while a locked final exam is opened once at the end">
+<rect x="66" y="96" width="140" height="96" rx="12" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="58" y="108" width="140" height="96" rx="12" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="2"></rect>
+<rect x="50" y="120" width="140" height="96" rx="12" fill="#FFFFFF" stroke="#4338CA" stroke-width="2"></rect>
+<text x="120" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="17" font-weight="800" fill="#4338CA">practice</text>
+<text x="120" y="186" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">7 of 10 questions</text>
+<path d="M200 168h44" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<circle cx="320" cy="168" r="62" fill="none" stroke="#4338CA" stroke-width="6" stroke-dasharray="300 90"></circle>
+<path d="M366 120l14 -4 -4 14" fill="none" stroke="#4338CA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+<text x="320" y="162" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="16" font-weight="800" fill="#111827">try a setting</text>
+<text x="320" y="184" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" fill="#5B6577">keep it if better</text>
+<text x="320" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#5B6577">chunk size · top-k · re-rank</text>
+<rect x="444" y="96" width="140" height="132" rx="14" fill="#1E1B4B"></rect>
+<rect x="497" y="144" width="34" height="28" rx="5" fill="#F59E0B"></rect>
+<path d="M503 144v-10a11 11 0 0 1 22 0v10" fill="none" stroke="#F59E0B" stroke-width="5"></path>
+<text x="514" y="200" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#FFFFFF">final exam</text>
+<text x="514" y="218" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="12" fill="#FFFFFF">locked · 3 of 10</text>
+<text x="514" y="262" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="13" font-weight="700" fill="#5B6577">opened once, at the end</text>
+<rect x="130" y="290" width="380" height="36" rx="18" fill="#FFFFFF" stroke="#E2E6EE" stroke-width="2"></rect>
+<text x="320" y="314" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="14" font-weight="700" fill="#111827">practice high, exam low = it memorised, alarm rings</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Then it gets better on its own</span><span class="slide-body">ragaudit tune tries settings on practice questions and keeps what scores better. A locked final exam is opened once, so the score can’t be faked.</span></figcaption>
+</figure>
+<figure class="slide" data-slide="5" hidden>
+<svg viewBox="0 0 640 340" class="slide-svg" role="img" aria-label="New pages get new questions, old pages get a few spot checks, deleted pages have their questions retired">
+<rect x="70" y="40" width="56" height="70" rx="7" fill="#E0E7FF" stroke="#4338CA" stroke-width="2"></rect>
+<rect x="140" y="40" width="56" height="70" rx="7" fill="#E0E7FF" stroke="#4338CA" stroke-width="2"></rect>
+<rect x="74" y="30" width="40" height="18" rx="9" fill="#4338CA"></rect>
+<text x="94" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#FFFFFF">NEW</text>
+<rect x="144" y="30" width="40" height="18" rx="9" fill="#4338CA"></rect>
+<text x="164" y="43" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="10" font-weight="800" fill="#FFFFFF">NEW</text>
+<path d="M224 75h70" stroke="#4338CA" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="52" width="270" height="46" rx="23" fill="#E0E7FF"></rect>
+<text x="445" y="81" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#4338CA">new questions written</text>
+<rect x="70" y="135" width="56" height="70" rx="7" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<rect x="140" y="135" width="56" height="70" rx="7" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<path d="M224 170h70" stroke="#CBD2DE" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="147" width="270" height="46" rx="23" fill="#FFFFFF" stroke="#CBD2DE" stroke-width="2"></rect>
+<text x="445" y="176" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#111827">a few old ones spot-checked</text>
+<rect x="105" y="230" width="56" height="70" rx="7" fill="none" stroke="#5B6577" stroke-width="2" stroke-dasharray="5 4"></rect>
+<path d="M115 240l36 50M151 240l-36 50" stroke="#5B6577" stroke-width="3" stroke-linecap="round"></path>
+<path d="M224 265h70" stroke="#CBD2DE" stroke-width="4" stroke-linecap="round"></path>
+<rect x="310" y="242" width="270" height="46" rx="23" fill="#F6F7FB" stroke="#CBD2DE" stroke-width="2" stroke-dasharray="5 4"></rect>
+<text x="445" y="271" text-anchor="middle" font-family="Manrope, system-ui, sans-serif" font-size="15" font-weight="800" fill="#5B6577">its questions retired</text>
+</svg>
+<figcaption class="slide-caption"><span class="slide-title">Only re-test what changed</span><span class="slide-body">Add or edit documents and only those get new questions. Old ones are spot-checked, and deleted pages retire theirs.</span></figcaption>
+</figure>
+</div>
+<div class="slides-nav">
+<div class="slide-dots">
+<button type="button" class="slide-dot" data-slide-dot="0" aria-label="Picture 1: Your documents become a quiz" aria-current="true"></button>
+<button type="button" class="slide-dot" data-slide-dot="1" aria-label="Picture 2: Check 1: did it find the right page?"></button>
+<button type="button" class="slide-dot" data-slide-dot="2" aria-label="Picture 3: Check 2: was the answer right?"></button>
+<button type="button" class="slide-dot" data-slide-dot="3" aria-label="Picture 4: Two checks, four verdicts"></button>
+<button type="button" class="slide-dot" data-slide-dot="4" aria-label="Picture 5: Then it gets better on its own"></button>
+<button type="button" class="slide-dot" data-slide-dot="5" aria-label="Picture 6: Only re-test what changed"></button>
+</div>
+<div class="slides-arrows"><button type="button" class="btn btn-arrow" data-slide-prev aria-label="Previous picture">←</button><button type="button" class="btn btn-arrow btn-primary" data-slide-next aria-label="Next picture">→</button></div>
+</div>
+</div>
+</div>
+</div>
+  </div>
+</div>
+<script type="application/json" id="ra-data">{"history":[{"number":1,"name":"Run 1","date":"Nov 15","kind":"improve","x":335.0,"y":40.0,"y_hit":40.0,"label_y":22.0,"tp_text":"100%","hit_text":"100%","delta_text":"first run","delta_class":"","note":"First improve \u00b7 5 questions","meta":"Run 1 \u00b7 Nov 15 \u00b7 Improve \u00b7 this report","warn":"","corpus_changed":false}]}</script>
+<script>
+/* ragaudit design system: shared behaviour for copy buttons, pill tabs and the slides widget.
+   Canonical source. The report inlines it; the website loads a synced copy
+   (docs/assets/ragaudit.js, written by scripts/sync_site.py). No dependencies. */
+(function () {
+  "use strict";
+  var UI = window.RagauditUI = window.RagauditUI || {};
+  var doc = document.documentElement;
+  doc.classList.remove("no-js");
+  doc.classList.add("js");
+
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  UI.$ = $;
+  UI.$$ = $$;
+
+  /* ---- copy buttons: any button whose data-copy attribute holds the text */
+  function fallbackCopy(text) {
+    var area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.top = "-1000px";
+    document.body.appendChild(area);
+    area.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(area);
+    return ok;
+  }
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallbackCopy(text); });
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+  UI.copyText = copyText;
+  $$("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var text = btn.getAttribute("data-copy");
+      copyText(text).then(function (ok) {
+        btn.textContent = ok ? "Copied ✓" : "Select & copy";
+        clearTimeout(btn._t);
+        btn._t = setTimeout(function () { btn.textContent = "Copy"; }, 1500);
+      });
+    });
+  });
+
+  /* ---- pill tabs --------------------------------------------------------
+     root holds one [role=tablist] of [role=tab] buttons, each with aria-controls
+     naming its [role=tabpanel]; optional [data-tab-prev], [data-tab-next],
+     [data-tab-pos]. opts.hash: mirror data-tab names in the URL hash. */
+  UI.Tabs = function (root, opts) {
+    opts = opts || {};
+    var tablist = $("[role=tablist]", root);
+    var tabs = $$("[role=tab]", tablist);
+    var panels = tabs.map(function (t) { return document.getElementById(t.getAttribute("aria-controls")); });
+    var pos = $("[data-tab-pos]", root);
+    var current = 0;
+    function indexOf(name) {
+      for (var i = 0; i < tabs.length; i++) if (tabs[i].getAttribute("data-tab") === name) return i;
+      return -1;
+    }
+    function select(index, o) {
+      o = o || {};
+      var n = tabs.length;
+      if (!n) return;
+      index = (index + n) % n;
+      current = index;
+      tabs.forEach(function (tab, i) {
+        var on = i === index;
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+        tab.tabIndex = on ? 0 : -1;
+        if (panels[i]) panels[i].hidden = !on;
+      });
+      if (pos) pos.textContent = (index + 1) + " / " + n;
+      if (o.focus) tabs[index].focus();
+      if (opts.hash && !o.noHash) {
+        var hash = "#" + tabs[index].getAttribute("data-tab");
+        try { history.replaceState(null, "", hash); } catch (e) { location.hash = hash; }
+      }
+      if (opts.onSelect) opts.onSelect(index, tabs[index], panels[index]);
+    }
+    tabs.forEach(function (tab, i) { tab.addEventListener("click", function () { select(i); }); });
+    tablist.addEventListener("keydown", function (ev) {
+      var key = ev.key;
+      if (key === "ArrowRight") { select(current + 1, { focus: true }); ev.preventDefault(); }
+      else if (key === "ArrowLeft") { select(current - 1, { focus: true }); ev.preventDefault(); }
+      else if (key === "Home") { select(0, { focus: true }); ev.preventDefault(); }
+      else if (key === "End") { select(tabs.length - 1, { focus: true }); ev.preventDefault(); }
+    });
+    var prev = $("[data-tab-prev]", root), next = $("[data-tab-next]", root);
+    if (prev) prev.addEventListener("click", function () { select(current - 1); });
+    if (next) next.addEventListener("click", function () { select(current + 1); });
+    if (opts.hash) {
+      var fromHash = function () {
+        var i = indexOf((location.hash || "").replace("#", ""));
+        select(i >= 0 ? i : 0, { noHash: i < 0 });
+      };
+      fromHash();
+      window.addEventListener("hashchange", fromHash);
+    } else {
+      var start = 0;
+      tabs.forEach(function (t, i) { if (t.getAttribute("aria-selected") === "true") start = i; });
+      select(start);
+    }
+    return { select: select, indexOf: indexOf, current: function () { return current; } };
+  };
+
+  /* ---- slides: [data-slides] with [data-slide] figures ------------------- */
+  UI.openSlides = null;
+  function Slides(root) {
+    var slides = $$("[data-slide]", root);
+    var dots = $$("[data-slide-dot]", root);
+    var label = $("[data-slide-label]", root);
+    var fsBtn = $("[data-slide-fs]", root);
+    var fsText = $("[data-slide-fs-text]", root);
+    var i = 0, fs = false, overlay = false;
+    function show(k) {
+      var n = slides.length;
+      i = (k + n) % n;
+      slides.forEach(function (s, j) { s.hidden = j !== i; });
+      dots.forEach(function (d, j) {
+        if (j === i) d.setAttribute("aria-current", "true"); else d.removeAttribute("aria-current");
+      });
+      if (label) label.textContent = (i + 1) + " / " + n;
+    }
+    function setFs(on) {
+      fs = on;
+      root.classList.toggle("is-fs", on);
+      fsText.textContent = on ? "Close" : "Full screen";
+      fsBtn.setAttribute("aria-label", on ? "Close full screen" : "Open pictures full screen");
+      if (on) { UI.openSlides = api; document.addEventListener("keydown", onKey, true); }
+      else { if (UI.openSlides === api) UI.openSlides = null; document.removeEventListener("keydown", onKey, true); }
+    }
+    function openFs() {
+      var req = root.requestFullscreen || root.webkitRequestFullscreen;
+      var useOverlay = function () { overlay = true; root.classList.add("fs"); setFs(true); fsBtn.focus(); };
+      if (!req) return useOverlay();
+      try {
+        var p = req.call(root);
+        if (p && p.then) {
+          p.then(function () { setFs(true); }, useOverlay);
+        } else {
+          setFs(true);
+        }
+      } catch (e) { useOverlay(); }
+    }
+    function closeFs() {
+      if (overlay) { overlay = false; root.classList.remove("fs"); setFs(false); return; }
+      var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+      if (fsEl === root) {
+        var exit = document.exitFullscreen || document.webkitExitFullscreen;
+        try { exit.call(document); } catch (e) {}
+      }
+      setFs(false);
+    }
+    function onKey(ev) {
+      if (!fs) return;
+      if (ev.key === "ArrowRight") { show(i + 1); ev.preventDefault(); ev.stopPropagation(); }
+      else if (ev.key === "ArrowLeft") { show(i - 1); ev.preventDefault(); ev.stopPropagation(); }
+      else if (ev.key === "Escape") { closeFs(); ev.preventDefault(); ev.stopPropagation(); }
+    }
+    document.addEventListener("fullscreenchange", function () {
+      if (!document.fullscreenElement && fs && !overlay) setFs(false);
+    });
+    $("[data-slide-prev]", root).addEventListener("click", function () { show(i - 1); });
+    $("[data-slide-next]", root).addEventListener("click", function () { show(i + 1); });
+    dots.forEach(function (d, j) { d.addEventListener("click", function () { show(j); }); });
+    fsBtn.addEventListener("click", function () { if (fs) closeFs(); else openFs(); });
+    var api = { show: show, close: closeFs, isOpen: function () { return fs; } };
+    show(0);
+    return api;
+  }
+  UI.Slides = Slides;
+  $$("[data-slides]").forEach(function (root) { Slides(root); });
+})();
+
+/* report-only behaviour; the shared design system (design.js) runs before this and provides window.RagauditUI. */
+(function () {
+  "use strict";
+  var UI = window.RagauditUI;
+  var data = {};
+  try {
+    data = JSON.parse(document.getElementById("ra-data").textContent);
+  } catch (e) {}
+
+  var $ = UI.$, $$ = UI.$$;
+
+  /* ---- report tabs (the shared pill-tab widget, mirrored in the URL hash) */
+  var reportTabs = UI.Tabs($(".report"), { hash: true });
+  function selectTab(index) { reportTabs.select(index); }
+  function tabIndexFor(name) { return reportTabs.indexOf(name); }
+  $$("[data-goto]").forEach(function (el) {
+    el.addEventListener("click", function () {
+      var i = tabIndexFor(el.getAttribute("data-goto"));
+      if (i >= 0) { selectTab(i); window.scrollTo(0, 0); }
+    });
+  });
+
+  /* ---- welcome popup ---------------------------------------------------- */
+  var dialog = $("[data-welcome]");
+  var lastFocus = null;
+  var SEEN = "ragaudit.welcome.seen";
+  function onDialogKey(ev) {
+    if (ev.key === "Escape" && !(UI.openSlides && UI.openSlides.isOpen())) { closeWelcome(); ev.preventDefault(); }
+    if (ev.key === "Tab") {
+      var focusable = $$("button, a[href], [tabindex='0']", dialog).filter(function (el) { return el.offsetParent !== null; });
+      if (!focusable.length) return;
+      var first = focusable[0], last = focusable[focusable.length - 1];
+      if (ev.shiftKey && document.activeElement === first) { last.focus(); ev.preventDefault(); }
+      else if (!ev.shiftKey && document.activeElement === last) { first.focus(); ev.preventDefault(); }
+    }
+  }
+  function openWelcome() {
+    if (!dialog) return;
+    lastFocus = document.activeElement;
+    dialog.hidden = false;
+    document.addEventListener("keydown", onDialogKey);
+    var close = $("[data-welcome-close]", dialog);
+    if (close) close.focus();
+    try { localStorage.setItem(SEEN, "1"); } catch (e) {}
+  }
+  function closeWelcome() {
+    if (!dialog || dialog.hidden) return;
+    if (UI.openSlides && UI.openSlides.isOpen()) UI.openSlides.close();
+    dialog.hidden = true;
+    document.removeEventListener("keydown", onDialogKey);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  if (dialog) {
+    $$("[data-welcome-close]", dialog).forEach(function (b) { b.addEventListener("click", closeWelcome); });
+    dialog.addEventListener("click", function (ev) { if (ev.target === dialog) closeWelcome(); });
+    $$("[data-welcome-run]", dialog).forEach(function (b) {
+      b.addEventListener("click", function () { closeWelcome(); selectTab(tabIndexFor("run")); window.scrollTo(0, 0); });
+    });
+    $$("[data-welcome-open]").forEach(function (b) { b.addEventListener("click", openWelcome); });
+    var seen = null, embedded = false;
+    try { seen = localStorage.getItem(SEEN); } catch (e) { seen = null; }
+    try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+    // Shown inside another page (the website's sample viewer): don't cover it; "What is this?" still opens it.
+    if (!seen && !embedded) openWelcome();
+  }
+
+  /* ---- score history ---------------------------------------------------- */
+  var runs = data.history || [];
+  var chart = $("[data-chart]");
+  if (chart && runs.length) {
+    var band = $("[data-sel-band]", chart);
+    var selLabel = $("[data-sel-label]", chart);
+    var points = $$("[data-point]", chart);
+    var buttons = $$("[data-run]");
+    var detail = $("[data-run-detail]");
+    function fill(name, value) { var el = $("[data-d=" + name + "]", detail); if (el) el.textContent = value; }
+    function pick(k) {
+      var r = runs[k];
+      if (!r) return;
+      band.setAttribute("x1", r.x); band.setAttribute("x2", r.x);
+      selLabel.setAttribute("x", r.x); selLabel.setAttribute("y", r.label_y); selLabel.textContent = r.tp_text;
+      points.forEach(function (p, j) { p.setAttribute("r", j === k ? 9 : 6); });
+      buttons.forEach(function (b, j) { b.setAttribute("aria-pressed", j === k ? "true" : "false"); });
+      fill("meta", r.meta); fill("note", r.note); fill("tp", r.tp_text); fill("hit", r.hit_text); fill("delta", r.delta_text);
+      var d = $("[data-d=delta]", detail);
+      d.className = "num" + (r.delta_class ? " " + r.delta_class : "");
+      var warn = $("[data-d=warn]", detail);
+      warn.textContent = r.warn || "";
+      warn.hidden = !r.warn;
+    }
+    buttons.forEach(function (b, j) { b.addEventListener("click", function () { pick(j); }); });
+  }
+
+  /* ---- what failed ------------------------------------------------------ */
+  var failButtons = $$("[data-fail]");
+  var failDetails = $$("[data-fail-detail]");
+  function pickFail(k) {
+    failButtons.forEach(function (b, j) { b.setAttribute("aria-pressed", j === k ? "true" : "false"); });
+    failDetails.forEach(function (d, j) { d.hidden = j !== k; });
+  }
+  failButtons.forEach(function (b, j) { b.addEventListener("click", function () { pickFail(j); }); });
+  if (failDetails.length > 1) pickFail(0);
+
+  /* ---- all-questions filters -------------------------------------------- */
+  var filters = $$("[data-filter]");
+  var caseRows = $$("[data-case]");
+  filters.forEach(function (f) {
+    f.addEventListener("click", function () {
+      var want = f.getAttribute("data-filter");
+      filters.forEach(function (o) { o.setAttribute("aria-pressed", o === f ? "true" : "false"); });
+      caseRows.forEach(function (row) {
+        row.hidden = !(want === "all" || row.getAttribute("data-case") === want);
+      });
+    });
+  });
+})();
+
+</script>
+</body>
+</html>

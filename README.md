@@ -285,12 +285,32 @@ ragaudit generate --n 100               # generate a test set (n questions/chunk
 ragaudit run --adapter my_adapter.py    # run + score + ablate against the latest test set
 ragaudit run --adapter my_adapter.py --match-by text   # same, matching retrieval by context text
 ragaudit report --out report.html       # render the latest run as a static HTML report
+ragaudit report --lucky                 # lucky-pass report: lucky-report.md + lucky.csv (see below)
 ```
 
 Every command takes `--db` (default `./ragaudit.db`) to point at a
 specific database file. All commands read `RAGAUDIT_*` settings from the
 environment or from a `.env` file in the current folder (exported
 variables win); `ragaudit init` writes a `.env.example` to copy.
+
+## Lucky-pass report (`report --lucky`)
+
+`ragaudit report --lucky` writes `lucky-report.md` and `lucky.csv` for the
+latest run (or `--run-id`). It uses the run's saved scores, so it makes no
+LLM calls. For every question it records whether the gold passage was
+retrieved, whether the answer was judged correct, and, for each lucky pass
+(correct without the gold passage), the closed-book check:
+
+- **memory lucky**: still correct with no context, so the model knew it;
+- **guess lucky**: wrong with no context, so other passages or a guess got it right;
+- **unchecked**: the run used `--no-ablation`, so there is no closed-book answer.
+
+The headline is the **overstatement**: answer accuracy minus the true-pass
+rate, which equals the lucky-pass rate. It is how much an answer-only score
+gives retrieval credit it didn't earn. It is reported with a seeded 95%
+bootstrap interval (1,000 resamples) and n, because with 20 questions a
+single lucky pass moves it by 5 points. A sample made from invented data is
+in [`docs/sample-lucky-report.md`](docs/sample-lucky-report.md).
 
 ## v2: generate, evaluate, tune
 

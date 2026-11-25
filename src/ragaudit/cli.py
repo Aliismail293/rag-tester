@@ -627,6 +627,9 @@ def report(
     ),
     store: Path = STORE_OPTION,
     legacy: bool = typer.Option(False, "--legacy", help="Render the run with the old (v1) report template."),
+    lucky: bool = typer.Option(
+        False, "--lucky", help="Write the lucky-pass report (Markdown + lucky.csv): per question, memory vs guess, overstatement with a CI."
+    ),
     open_report: bool = typer.Option(
         False, "--open", help="Open the report in the browser. With no ragaudit.db here, re-opens the latest check or improve report."
     ),
@@ -653,7 +656,7 @@ def report(
         typer.echo(f"Opening {latest}")
         webbrowser.open(latest.resolve().as_uri())
         return
-    out = out or Path("report.html")
+    out = out or Path("lucky-report.md" if lucky else "report.html")
     if not db.exists():
         _error_exit(f"database not found at {db} — run `ragaudit ingest`, `generate`, and `run` first.")
 
@@ -674,6 +677,11 @@ def report(
     finally:
         conn.close()
 
+    if lucky:
+        from ragaudit.report.lucky import write_lucky_report
+
+        done(write_lucky_report(run, test_set, out))
+        return
     if legacy:
         done(generate_report(run, test_set, out))
         return

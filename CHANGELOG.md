@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `ragaudit report --lucky`: a lucky-pass report (`lucky-report.md` plus
+  `lucky.csv`) from a saved run, with no LLM calls. One row per question;
+  lucky passes are split into memory lucky and guess lucky by the run's
+  closed-book check; the overstatement (accuracy minus true-pass rate) comes
+  with a seeded 95% bootstrap interval and n.
+
 ## 0.4.0
 
 A setup page, a new report with history, and a command that improves your

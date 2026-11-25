@@ -166,3 +166,14 @@ def test_full_pipeline_ingest_generate_run_report(corpus_dir, db_path, adapter_p
     html = out_path.read_text(encoding="utf-8")
     assert "ragaudit report" in html
     assert "What is in this document?" in html
+
+
+def test_cli_report_lucky(corpus_dir, db_path, adapter_path, tmp_path):
+    assert runner.invoke(app, ["ingest", str(corpus_dir), "--db", str(db_path)]).exit_code == 0
+    assert runner.invoke(app, ["generate", "--n", "1", "--db", str(db_path)]).exit_code == 0
+    assert runner.invoke(app, ["run", "--adapter", str(adapter_path), "--db", str(db_path)]).exit_code == 0
+    out = tmp_path / "lucky-report.md"
+    result = runner.invoke(app, ["report", "--lucky", "--db", str(db_path), "--out", str(out)])
+    assert result.exit_code == 0, result.output
+    assert "Lucky-pass report" in out.read_text()
+    assert (tmp_path / "lucky.csv").exists()

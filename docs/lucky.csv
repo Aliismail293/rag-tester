@@ -1,0 +1,9 @@
+test_id,question,expected_answer,answer,verdict,gold_retrieved,correct,closed_book_answer,closed_book_correct,lucky_kind
+q1,What is the capital of France?,Paris,Paris,lucky_pass,False,True,Paris,True,memory_lucky
+q2,Who wrote Pride and Prejudice?,Jane Austen,Jane Austen,lucky_pass,False,True,Jane Austen,True,memory_lucky
+q3,How many tide gauges does the Harrow Point office run?,14,14,true_pass,True,True,,,
+q4,Which boat surveys the north channel?,the Wren,the Wren,true_pass,True,True,,,
+q5,When is the survey office's annual report due?,March 31,March 31,lucky_pass,False,True,June 30,False,guess_lucky
+q6,Who approves overtime for field crews?,the duty hydrographer,the office manager,generation_failure,True,False,,,
+q7,What depth triggers a re-survey?,0.5 m change,I don't know,retrieval_failure,False,False,,,
+q8,Which datum do the charts use?,chart datum CD-2,CD-2,true_pass,True,True,,,
